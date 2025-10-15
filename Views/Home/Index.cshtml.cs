@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace VectorRagDemo.Pages
+namespace VectorRagDemo.Views.Home
 {
     public class IndexModel : PageModel
     {

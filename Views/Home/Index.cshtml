@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Vector RAG Demo</h1>
+    <p class="lead">SQL Server 2025 Vector Search with RAG Chatbot</p>
+</div>
+
+<div class="mt-4">
+    @await Html.PartialAsync("_StatsPartial")
+</div>
+
+<div class="mt-5">
+    <a asp-controller="Chunk" asp-action="Index" class="btn btn-primary btn-lg">View Chunks</a>
+    <a asp-controller="Chat" asp-action="Index" class="btn btn-success btn-lg">Chat with RAG</a>
+</div>

@@ -1,0 +1,35 @@
+﻿@model IEnumerable<VectorRagDemo.Models.Chunk>
+
+@{
+    ViewData["Title"] = "Chunks Overview";
+}
+
+<h1>Chunks in Database</h1>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tekst</th>
+            <th>Bron</th>
+            <th>Project</th>
+            <th>Gemaakt Op</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var chunk in Model)
+        {
+            <tr>
+                <td>@chunk.ID</td>
+                <td>@chunk.Tekst</td>
+                <td>@chunk.Bron?.Title</td>
+                <td>@chunk.Bron?.ProjectNavigation?.Naam</td>
+                <td>@chunk.GemaaktOp.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@chunk.Status</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p>Total chunks: @Model.Count()</p>

@@ -1,0 +1,36 @@
+
+
+USE VectorRagDemo;
+GO
+
+DROP TABLE Bron
+DROP TABLE Chunk
+DROP TABLE Project
+
+CREATE TABLE Chunk (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    BronID INT NOT NULL,
+    Tekst NVARCHAR(MAX) NOT NULL,
+    TekstVector VECTOR(768) NOT NULL,  
+    GemaaktOp DATETIME2 NOT NULL,
+    GewijzigdOp DATETIME2 NULL,
+    Status INT NOT NULL 
+);
+GO
+
+CREATE TABLE Bron (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    Title VARCHAR(200) NOT NULL,
+    Project INT NOT NULL,
+    GemaaktOp DATETIME2 NOT NULL,
+    GewijzigdOp DATETIME2 NULL,
+    Status INT NOT NULL 
+)
+
+CREATE TABLE Project (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    Naam VARCHAR(200),
+    GemaaktOp DATETIME2 NOT NULL,
+    GewijzigdOp DATETIME2 NULL,
+    Status INT NOT NULL 
+)

@@ -1,0 +1,208 @@
+﻿using Grpc.Core;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using VectorRagDemo.Data;
+using VectorRagDemo.Models;
+
+namespace VectorRagDemo.Services
+{
+    public class VectorDbGrpcService : VectorDbService.VectorDbServiceBase
+    {
+        private readonly VectorDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<VectorDbGrpcService> _logger;
+
+        public VectorDbGrpcService(
+            VectorDbContext context,
+            IConfiguration configuration,
+            ILogger<VectorDbGrpcService> logger)
+        {
+            _context = context;
+            _configuration = configuration;
+            _logger = logger;
+        }
+
+        public override async Task<SearchResponse> SearchSimilarChunks(
+            SearchRequest request,
+            ServerCallContext context)
+        {
+            var response = new SearchResponse();
+
+            try
+            {
+                // Convert the query vector to a string format for SQL
+                var vectorString = "[" + string.Join(",", request.QueryVector) + "]";
+
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using var connection = new SqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                // SQL query using VECTOR_DISTANCE for cosine similarity
+                var sql = @"
+                    SELECT TOP (@TopK)
+                        c.ID,
+                        c.BronID,
+                        c.Tekst,
+                        b.Title as BronTitle,
+                        VECTOR_DISTANCE('cosine', c.TekstVector, CAST(@QueryVector AS VECTOR(768))) as Distance
+                    FROM Chunk c
+                    INNER JOIN Bron b ON c.BronID = b.ID
+                    WHERE c.Status = 1"; // Assuming Status 1 = Active
+
+                if (request.ProjectId > 0)
+                {
+                    sql += " AND b.Project = @ProjectId";
+                }
+
+                sql += " ORDER BY Distance ASC";
+
+                using var command = new SqlCommand(sql, connection);
+                command.Parameters.AddWithValue("@TopK", request.TopK);
+                command.Parameters.AddWithValue("@QueryVector", vectorString);
+
+                if (request.ProjectId > 0)
+                {
+                    command.Parameters.AddWithValue("@ProjectId", request.ProjectId);
+                }
+
+                using var reader = await command.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    var result = new ChunkResult
+                    {
+                        Id = reader.GetInt32(0),
+                        BronId = reader.GetInt32(1),
+                        Tekst = reader.GetString(2),
+                        BronTitle = reader.GetString(3),
+                        SimilarityScore = 1 - reader.GetFloat(4) // Convert distance to similarity
+                    };
+
+                    response.Results.Add(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching similar chunks");
+                throw new RpcException(new Status(StatusCode.Internal, ex.Message));
+            }
+
+            return response;
+        }
+
+        public override async Task<AddChunkResponse> AddChunk(
+            AddChunkRequest request,
+            ServerCallContext context)
+        {
+            try
+            {
+                var vectorString = "[" + string.Join(",", request.TekstVector) + "]";
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using var connection = new SqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                var sql = @"
+                    INSERT INTO Chunk (BronID, Tekst, TekstVector, GemaaktOp, Status)
+                    VALUES (@BronID, @Tekst, CAST(@TekstVector AS VECTOR(768)), GETDATE(), @Status);
+                    SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                using var command = new SqlCommand(sql, connection);
+                command.Parameters.AddWithValue("@BronID", request.BronId);
+                command.Parameters.AddWithValue("@Tekst", request.Tekst);
+                command.Parameters.AddWithValue("@TekstVector", vectorString);
+                command.Parameters.AddWithValue("@Status", request.Status);
+
+                var newId = (int)await command.ExecuteScalarAsync();
+
+                return new AddChunkResponse { Id = newId, Success = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding chunk");
+                return new AddChunkResponse { Id = 0, Success = false };
+            }
+        }
+
+        public override async Task<AddBronResponse> AddBron(
+            AddBronRequest request,
+            ServerCallContext context)
+        {
+            try
+            {
+                var bron = new Bron
+                {
+                    Title = request.Title,
+                    Project = request.Project,
+                    GemaaktOp = DateTime.Now,
+                    Status = request.Status
+                };
+
+                _context.Bronnen.Add(bron);
+                await _context.SaveChangesAsync();
+
+                return new AddBronResponse { Id = bron.ID, Success = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding bron");
+                return new AddBronResponse { Id = 0, Success = false };
+            }
+        }
+
+        public override async Task<AddProjectResponse> AddProject(
+            AddProjectRequest request,
+            ServerCallContext context)
+        {
+            try
+            {
+                var project = new Project
+                {
+                    Naam = request.Naam,
+                    GemaaktOp = DateTime.Now,
+                    Status = request.Status
+                };
+
+                _context.Projects.Add(project);
+                await _context.SaveChangesAsync();
+
+                return new AddProjectResponse { Id = project.ID, Success = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding project");
+                return new AddProjectResponse { Id = 0, Success = false };
+            }
+        }
+
+        public override async Task<ChunkResponse> GetChunkById(
+            GetChunkRequest request,
+            ServerCallContext context)
+        {
+            try
+            {
+                var chunk = await _context.Chunks
+                    .FirstOrDefaultAsync(c => c.ID == request.Id);
+
+                if (chunk == null)
+                {
+                    throw new RpcException(new Status(StatusCode.NotFound, "Chunk not found"));
+                }
+
+                return new ChunkResponse
+                {
+                    Id = chunk.ID,
+                    BronId = chunk.BronID,
+                    Tekst = chunk.Tekst,
+                    Status = chunk.Status
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting chunk");
+                throw new RpcException(new Status(StatusCode.Internal, ex.Message));
+            }
+        }
+    }
+}

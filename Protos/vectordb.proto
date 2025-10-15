@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+option csharp_namespace = "VectorRagDemo.Services";
+
+package vectordb;
+
+service VectorDbService {
+  rpc SearchSimilarChunks (SearchRequest) returns (SearchResponse);
+  rpc AddChunk (AddChunkRequest) returns (AddChunkResponse);
+  rpc AddBron (AddBronRequest) returns (AddBronResponse);
+  rpc AddProject (AddProjectRequest) returns (AddProjectResponse);
+  rpc GetChunkById (GetChunkRequest) returns (ChunkResponse);
+}
+
+message SearchRequest {
+  repeated float query_vector = 1;
+  int32 top_k = 2;
+  int32 project_id = 3;
+}
+
+message SearchResponse {
+  repeated ChunkResult results = 1;
+}
+
+message ChunkResult {
+  int32 id = 1;
+  int32 bron_id = 2;
+  string tekst = 3;
+  float similarity_score = 4;
+  string bron_title = 5;
+}
+
+message AddChunkRequest {
+  int32 bron_id = 1;
+  string tekst = 2;
+  repeated float tekst_vector = 3;
+  int32 status = 4;
+}
+
+message AddChunkResponse {
+  int32 id = 1;
+  bool success = 2;
+}
+
+message AddBronRequest {
+  string title = 1;
+  int32 project = 2;
+  int32 status = 3;
+}
+
+message AddBronResponse {
+  int32 id = 1;
+  bool success = 2;
+}
+
+message AddProjectRequest {
+  string naam = 1;
+  int32 status = 2;
+}
+
+message AddProjectResponse {
+  int32 id = 1;
+  bool success = 2;
+}
+
+message GetChunkRequest {
+  int32 id = 1;
+}
+
+message ChunkResponse {
+  int32 id = 1;
+  int32 bron_id = 2;
+  string tekst = 3;
+  int32 status = 4;
+}

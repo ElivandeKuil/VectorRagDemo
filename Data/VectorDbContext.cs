@@ -1,0 +1,70 @@
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+using VectorRagDemo.Models;
+
+namespace VectorRagDemo.Data
+{
+    public class VectorDbContext : DbContext
+    {
+        public VectorDbContext(DbContextOptions<VectorDbContext> options)
+            : base(options)
+        {
+        }
+
+        public DbSet<Chunk> Chunks { get; set; }
+        public DbSet<Bron> Bronnen { get; set; }
+        public DbSet<Project> Projects { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Project configuration
+            modelBuilder.Entity<Project>(entity =>
+            {
+                entity.ToTable("Project");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Naam).HasMaxLength(200);
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+            });
+
+            // Bron configuration
+            modelBuilder.Entity<Bron>(entity =>
+            {
+                entity.ToTable("Bron");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Project).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany(p => p.Bronnen)
+                    .HasForeignKey(e => e.Project)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Chunk configuration
+            modelBuilder.Entity<Chunk>(entity =>
+            {
+                entity.ToTable("Chunk");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.BronID).IsRequired();
+                entity.Property(e => e.Tekst).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                // EF Core doesn't natively support VECTOR type yet in SQL Server 2025
+                // We'll handle vector operations with raw SQL
+                entity.Ignore(e => e.TekstVector);
+
+                entity.HasOne(e => e.Bron)
+                    .WithMany(b => b.Chunks)
+                    .HasForeignKey(e => e.BronID)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+        }
+    }
+}
