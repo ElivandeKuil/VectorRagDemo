@@ -2,7 +2,6 @@
 using System.Text;
 using VectorRagDemo.Data;
 using Microsoft.EntityFrameworkCore;
-using VectorRagDemo.Models;
 
 namespace VectorRagDemo.BLL
 {
@@ -12,12 +11,11 @@ namespace VectorRagDemo.BLL
             VectorDbContext context,
             string connectionString,
             List<float> queryEmbedding,
-            int topK,
-            SearchFilters filters)
+            int topK)
         {
             try
             {
-                var neighbors = await GetNearestNeighbors(connectionString, queryEmbedding, topK, filters);
+                var neighbors = await GetNearestNeighbors(connectionString, queryEmbedding, topK);
 
                 if (neighbors == null || !neighbors.Any())
                 {
@@ -38,8 +36,7 @@ namespace VectorRagDemo.BLL
         private static async Task<List<Models.Neighbor>> GetNearestNeighbors(
             string connectionString,
             List<float> queryEmbedding,
-            int topK,
-            SearchFilters filters)
+            int topK)
         {
             var results = new List<Models.Neighbor>();
             var vectorString = "[" + string.Join(",", queryEmbedding) + "]";
@@ -59,14 +56,6 @@ namespace VectorRagDemo.BLL
                 FROM Chunk c
                 INNER JOIN Bron b ON c.BronID = b.ID
                 WHERE c.Status = 1";
-
-            // Add filters if provided
-            if (filters?.HasFilters == true)
-            {
-                // Add your custom filter logic here if needed
-                // For example, filter by project:
-                // sql += " AND b.Project IN @ProjectIds";
-            }
 
             sql += " ORDER BY Distance ASC";
 

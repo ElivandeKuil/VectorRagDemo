@@ -3,6 +3,7 @@ using VectorRagDemo.Data;
 using VectorRagDemo.BLL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
+using VectorRagDemo.Models;
 
 namespace VectorRagDemo.Controllers
 {
@@ -89,8 +90,7 @@ namespace VectorRagDemo.Controllers
                     _context,
                     connectionString,
                     queryEmbedding,
-                    topK: 3,
-                    filters: null
+                    topK: 3
                 );
 
                 return Json(new
@@ -120,8 +120,7 @@ namespace VectorRagDemo.Controllers
                     _context,
                     connectionString,
                     queryEmbedding,
-                    topK: 3,
-                    filters: null
+                    topK: 3
                 );
 
                 // 3. Send to Gemini with context
