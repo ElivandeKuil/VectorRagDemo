@@ -7,6 +7,6 @@
         public string Tekst { get; set; }
         public string BronTitle { get; set; }
         public int ProjectId { get; set; }
-        public float Distance { get; set; }
+        public double Distance { get; set; }
     }
 }

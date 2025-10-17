@@ -64,19 +64,15 @@ namespace VectorRagDemo.BLL
                     responseMimeType = "application/json",
                     responseSchema = new
                     {
-                        type = "array",
-                        items = new
+                        type = "object",
+                        properties = new
                         {
-                            type = "object",
-                            properties = new
-                            {
-                                answer = new { type = "string" },
-                                supplementalInfo = new { type = "string" },
-                                questionToUser = new { type = "string" },
-                                usedChunks = new { type = "string" }
-                            },
-                            propertyOrdering = new[] { "answer", "supplementalInfo", "questionToUser", "usedChunks" }
-                        }
+                            answer = new { type = "string" },
+                            supplementalInfo = new { type = "string" },
+                            questionToUser = new { type = "string" },
+                            usedChunks = new { type = "string" }
+                        },
+                        propertyOrdering = new[] { "answer", "supplementalInfo", "questionToUser", "usedChunks" }
                     }
                 }
             };
@@ -101,24 +97,23 @@ namespace VectorRagDemo.BLL
             string jsonResponse = await response.Content.ReadAsStringAsync();
             var geminiResponse = JsonConvert.DeserializeObject<GeminiResponse>(jsonResponse);
 
-            if (geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault() is { } part)
+            if (geminiResponse?.Candidates?.FirstOrDefault().Content?.Parts?.FirstOrDefault() is { } part)
             {
                 var innerJsonString = part.Text;
-                var innerData = JsonConvert.DeserializeObject<List<GeminiInnerResponse>>(innerJsonString);
+                var innerData = JsonConvert.DeserializeObject<GeminiInnerResponse>(innerJsonString);
 
-                if (innerData != null && innerData.SingleOrDefault() != null)
+                if (innerData != null)
                 {
-                    var innerResponse = innerData.Single();
-                    output.ResponseText = innerResponse.Answer;
+                    output.ResponseText = innerData.Answer;
 
-                    if (!string.IsNullOrEmpty(innerResponse.SupplementalInfo))
+                    if (!string.IsNullOrEmpty(innerData.SupplementalInfo))
                     {
-                        output.ResponseText += $"\n\n{innerResponse.SupplementalInfo}";
+                        output.ResponseText += $"\n\n{innerData.SupplementalInfo}";
                     }
 
-                    if (!string.IsNullOrEmpty(innerResponse.UsedChunks) && innerResponse.UsedChunks != "[]")
+                    if (!string.IsNullOrEmpty(innerData.UsedChunks) && innerData.UsedChunks != "[]")
                     {
-                        int[] chunkIds = innerResponse.UsedChunks.Split(',').Select(int.Parse).ToArray();
+                        int[] chunkIds = innerData.UsedChunks.Split(',').Select(int.Parse).ToArray();
 
                         var chunks = context.Chunks
                             .Where(c => chunkIds.Contains(c.ID))

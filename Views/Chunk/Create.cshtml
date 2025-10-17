@@ -1,0 +1,70 @@
+@{
+    ViewData["Title"] = "Create Chunk";
+}
+
+<h1>Create New Chunk</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div class="mb-3">
+                <label for="bronId" class="form-label">Select Bron (Source)</label>
+                <select class="form-select" id="bronId" name="bronId" required>
+                    <option value="">-- Select a Bron --</option>
+                    @foreach (var item in ViewBag.Bronnen as SelectList)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+                <div class="form-text">Choose the source document this chunk belongs to.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="tekst" class="form-label">Chunk Text</label>
+                <textarea class="form-control" id="tekst" name="tekst" rows="8" required placeholder="Enter the text content for this chunk..."></textarea>
+                <div class="form-text">
+                    The text will be automatically embedded using Google's text-embedding-004 model (768 dimensions).
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create Chunk
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="mt-4">
+    <div class="card bg-light">
+        <div class="card-body">
+            <h5 class="card-title">How it works</h5>
+            <ol class="mb-0">
+                <li>Enter your text content in the textarea above</li>
+                <li>The system will automatically generate a 768-dimensional embedding vector using Google's Vertex AI</li>
+                <li>The chunk and its vector embedding will be stored in SQL Server 2025 with native vector support</li>
+                <li>The chunk will be available for semantic similarity search immediately</li>
+            </ol>
+        </div>
+    </div>
+</div>

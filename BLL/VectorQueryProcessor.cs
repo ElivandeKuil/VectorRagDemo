@@ -74,7 +74,7 @@ namespace VectorRagDemo.BLL
                     Tekst = reader.GetString(2),
                     BronTitle = reader.GetString(3),
                     ProjectId = reader.GetInt32(4),
-                    Distance = reader.GetFloat(5)
+                    Distance = reader.GetDouble(5)
                 });
             }
 
