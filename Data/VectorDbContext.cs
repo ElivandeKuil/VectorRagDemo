@@ -15,6 +15,7 @@ namespace VectorRagDemo.Data
         public DbSet<Chunk> Chunks { get; set; }
         public DbSet<Bron> Bronnen { get; set; }
         public DbSet<Project> Projects { get; set; }
+        public DbSet<ScrapingElement> ScrapingElement { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,6 +43,24 @@ namespace VectorRagDemo.Data
 
                 entity.HasOne(e => e.ProjectNavigation)
                     .WithMany(p => p.Bronnen)
+                    .HasForeignKey(e => e.Project)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ScrapingElement>(entity =>
+            {
+                entity.ToTable("ScrapingElement");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Project).IsRequired();
+                entity.Property(e => e.ElementName).HasMaxLength(50).IsRequired();
+                entity.Property(e => e.Selector).HasMaxLength(500).IsRequired();
+                entity.Property(e => e.IsRequired).IsRequired();
+                entity.Property(e => e.SortOrder).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany(p => p.ScrapingElements)
                     .HasForeignKey(e => e.Project)
                     .OnDelete(DeleteBehavior.Restrict);
             });

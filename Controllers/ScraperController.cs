@@ -38,6 +38,149 @@ namespace VectorRagDemo.Controllers
             return View();
         }
 
+        // GET: Scraper/ManageElements
+        public async Task<IActionResult> ManageElements()
+        {
+            var projects = await _context.Projects
+                .Where(p => p.Status == 1)
+                .OrderBy(p => p.Naam)
+                .ToListAsync();
+
+            ViewBag.Projects = projects;
+
+            return View();
+        }
+
+        // GET: Scraper/GetScrapingElements?projectId={id}
+        [HttpGet]
+        public async Task<IActionResult> GetScrapingElements(int projectId)
+        {
+            var elements = await _context.ScrapingElement
+                .Where(e => e.Project == projectId && e.Status == 1)
+                .OrderBy(e => e.SortOrder)
+                .Select(e => new
+                {
+                    id = e.ID,
+                    project = e.Project,
+                    elementName = e.ElementName,
+                    selector = e.Selector,
+                    attributeName = e.AttributeName,
+                    isRequired = e.IsRequired,
+                    defaultValue = e.DefaultValue,
+                    sortOrder = e.SortOrder
+                })
+                .ToListAsync();
+
+            return Json(elements);
+        }
+
+        // GET: Scraper/GetProjectDetails?projectId={id}
+        [HttpGet]
+        public async Task<IActionResult> GetProjectDetails(int projectId)
+        {
+            var project = await _context.Projects
+                .Where(p => p.ID == projectId && p.Status == 1)
+                .Select(p => new
+                {
+                    id = p.ID,
+                    naam = p.Naam,
+                    baseUrl = p.BaseUrl,
+                    productLinkSelector = p.ProductLinkSelector
+                })
+                .FirstOrDefaultAsync();
+
+            if (project == null)
+            {
+                return Json(new { success = false, error = "Project not found" });
+            }
+
+            return Json(new { success = true, project = project });
+        }
+
+        // POST: Scraper/CreateScrapingElement
+        [HttpPost]
+        public async Task<IActionResult> CreateScrapingElement([FromBody] ScrapingElementRequest request)
+        {
+            try
+            {
+                var element = new Models.ScrapingElement
+                {
+                    Project = request.ProjectId,
+                    ElementName = request.ElementName,
+                    Selector = request.Selector,
+                    AttributeName = request.AttributeName ?? "text",
+                    IsRequired = request.IsRequired,
+                    DefaultValue = request.DefaultValue ?? string.Empty,
+                    SortOrder = request.SortOrder,
+                    GemaaktOp = DateTime.Now,
+                    Status = 1
+                };
+
+                _context.ScrapingElement.Add(element);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, id = element.ID });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        // POST: Scraper/UpdateScrapingElement
+        [HttpPost]
+        public async Task<IActionResult> UpdateScrapingElement([FromBody] ScrapingElementRequest request)
+        {
+            try
+            {
+                var element = await _context.ScrapingElement.FindAsync(request.Id);
+                if (element == null)
+                {
+                    return Json(new { success = false, error = "Element not found" });
+                }
+
+                element.ElementName = request.ElementName;
+                element.Selector = request.Selector;
+                element.AttributeName = request.AttributeName ?? "text";
+                element.IsRequired = request.IsRequired;
+                element.DefaultValue = request.DefaultValue ?? string.Empty;
+                element.SortOrder = request.SortOrder;
+                element.GemaaktOp = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        // POST: Scraper/DeleteScrapingElement
+        [HttpPost]
+        public async Task<IActionResult> DeleteScrapingElement([FromBody] int id)
+        {
+            try
+            {
+                var element = await _context.ScrapingElement.FindAsync(id);
+                if (element == null)
+                {
+                    return Json(new { success = false, error = "Element not found" });
+                }
+
+                // Soft delete
+                element.Status = 0;
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
         // POST: Scraper/ScrapeProducts
         [HttpPost]
         public async Task<IActionResult> ScrapeProducts([FromBody] ScrapeRequest request)
@@ -144,18 +287,18 @@ namespace VectorRagDemo.Controllers
                     return Json(new { success = false, error = "No product URLs found" });
                 }
 
-                // Step 2: Configure selectors
-                var selectors = new ScrapingSelectors
-                {
-                    TitleSelector = request.TitleSelector,
-                    DescriptionSelector = request.DescriptionSelector,
-                    PriceSelector = request.PriceSelector,
-                    SkuSelector = request.SkuSelector,
-                    ImageSelector = request.ImageSelector,
-                    SpecsSelector = request.SpecsSelector
-                };
+                // Step 2: Retrieve scraping elements from database
+                var scrapingElements = await _context.ScrapingElement
+                    .Where(e => e.Project == request.ProjectId && e.Status == 1)
+                    .OrderBy(e => e.SortOrder)
+                    .ToListAsync();
 
-                // Step 3: Scrape each product and create chunks
+                if (!scrapingElements.Any())
+                {
+                    return Json(new { success = false, error = "No scraping elements configured for this project. Please configure scraping elements in the ScrapingElement table." });
+                }
+
+                // Step 3: Scrape each product and create chunks using dynamic scraping
                 var results = new List<string>();
                 var errors = new List<string>();
                 int successCount = 0;
@@ -167,11 +310,14 @@ namespace VectorRagDemo.Controllers
                 {
                     try
                     {
-                        // Scrape product data
-                        var product = await scraper.ScrapeProduct(url, selectors);
+                        // Scrape product data using dynamic scraping based on ScrapingElements
+                        var productData = await scraper.ScrapeProductDynamic(url, scrapingElements);
 
-                        // Generate chunk text
-                        var chunkText = scraper.GenerateProductChunk(product);
+                        // Generate chunk text from dynamic data
+                        var chunkText = scraper.GenerateProductChunkFromDynamic(productData);
+
+                        // Get title for logging (use first non-empty value or URL)
+                        var productTitle = productData.Values.FirstOrDefault(v => !string.IsNullOrEmpty(v)) ?? url;
 
                         if (string.IsNullOrWhiteSpace(chunkText))
                         {
@@ -209,7 +355,7 @@ namespace VectorRagDemo.Controllers
 
                         var newId = (int)await command.ExecuteScalarAsync();
 
-                        results.Add($"Created chunk {newId} for {product.Title}");
+                        results.Add($"Created chunk {newId} for {productTitle}");
                         successCount++;
 
                         // Add small delay to be respectful to the server
@@ -260,5 +406,17 @@ namespace VectorRagDemo.Controllers
         public string BronTitle { get; set; } = string.Empty;
         public int ProjectId { get; set; }
         public int BronId { get; set; }
+    }
+
+    public class ScrapingElementRequest
+    {
+        public int Id { get; set; }
+        public int ProjectId { get; set; }
+        public string ElementName { get; set; } = string.Empty;
+        public string Selector { get; set; } = string.Empty;
+        public string? AttributeName { get; set; }
+        public bool IsRequired { get; set; }
+        public string? DefaultValue { get; set; }
+        public int SortOrder { get; set; }
     }
 }

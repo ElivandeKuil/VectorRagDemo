@@ -1,5 +1,6 @@
 using HtmlAgilityPack;
 using System.Text;
+using VectorRagDemo.Models;
 
 namespace VectorRagDemo.BLL
 {
@@ -97,6 +98,82 @@ namespace VectorRagDemo.BLL
             {
                 throw new Exception($"Error scraping product from {url}: {ex.Message}", ex);
             }
+        }
+
+        /// <summary>
+        /// Scrapes product data dynamically based on ScrapingElement configuration
+        /// </summary>
+        public async Task<Dictionary<string, string>> ScrapeProductDynamic(string url, List<ScrapingElement> scrapingElements)
+        {
+            var result = new Dictionary<string, string>();
+
+            try
+            {
+                var html = await _httpClient.GetStringAsync(url);
+                var htmlDoc = new HtmlDocument();
+                htmlDoc.LoadHtml(html);
+
+                foreach (var element in scrapingElements.OrderBy(e => e.SortOrder))
+                {
+                    string value = string.Empty;
+
+                    if (!string.IsNullOrEmpty(element.Selector))
+                    {
+                        // Check if we need to extract an attribute or text content
+                        if (!string.IsNullOrEmpty(element.AttributeName) && element.AttributeName.ToLower() != "text")
+                        {
+                            value = GetAttributeValue(htmlDoc, element.Selector, element.AttributeName);
+                        }
+                        else
+                        {
+                            value = GetTextContent(htmlDoc, element.Selector);
+                        }
+                    }
+
+                    // Use default value if extraction failed and default is provided
+                    if (string.IsNullOrEmpty(value) && !string.IsNullOrEmpty(element.DefaultValue))
+                    {
+                        value = element.DefaultValue;
+                    }
+
+                    // Store the result with ElementName as key
+                    result[element.ElementName] = value;
+                }
+
+                // Always add the URL
+                result["URL"] = url;
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error scraping product from {url}: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Generates a formatted chunk text from dynamic scraping results
+        /// </summary>
+        public string GenerateProductChunkFromDynamic(Dictionary<string, string> data)
+        {
+            var sb = new StringBuilder();
+
+            foreach (var kvp in data.Where(d => d.Key != "URL"))
+            {
+                if (!string.IsNullOrEmpty(kvp.Value))
+                {
+                    sb.AppendLine($"{kvp.Key}: {kvp.Value}");
+                }
+            }
+
+            // Add URL at the end if available
+            if (data.ContainsKey("URL"))
+            {
+                sb.AppendLine();
+                sb.AppendLine($"URL: {data["URL"]}");
+            }
+
+            return sb.ToString().Trim();
         }
 
         /// <summary>

@@ -3,10 +3,6 @@
 }
 
 <style>
-    .selector-input {
-        font-family: 'Courier New', monospace;
-        font-size: 0.9em;
-    }
     .scraping-progress {
         display: none;
     }
@@ -27,144 +23,110 @@
         background-color: #f8d7da;
         color: #721c24;
     }
+    .progress-bar-animated {
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+    .info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
 </style>
 
 <div class="container">
-    <h1 class="mb-4">Product Scraper</h1>
-
-    <div class="alert alert-info">
-        <strong>How it works:</strong>
-        <ol class="mb-0">
-            <li>Enter the webshop URL and configure CSS selectors for product data</li>
-            <li>Choose single product mode or multi-page mode to scrape all products</li>
-            <li>Each product will be converted to a text chunk with 768D embedding</li>
-            <li>All chunks are stored in the vector database for semantic search</li>
-        </ol>
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-3">
+                <i class="bi bi-globe"></i> Web Scraper
+            </h1>
+        </div>
     </div>
 
-    <div class="card">
+    <div class="card info-card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-info-circle"></i> How It Works</h5>
+            <ol class="mb-0">
+                <li><strong>Configure Elements:</strong> Define what to scrape using the <a href="@Url.Action("ManageElements")" class="text-white text-decoration-underline">Manage Scraping Elements</a> page</li>
+                <li><strong>Select Project:</strong> Choose your project with configured scraping elements</li>
+                <li><strong>Choose Mode:</strong> Pick how to discover products (sitemap, single URL, or multi-page)</li>
+                <li><strong>Start Scraping:</strong> Products are converted to text chunks with 768D embeddings and stored in the vector database</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form id="scrapeForm">
-                <h5 class="card-title mb-3">Scraping Configuration</h5>
-
-                <!-- Scrape Mode -->
-                <div class="mb-3">
-                    <label class="form-label">Scraping Mode</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="scrapeMode" id="modeSitemap" value="sitemap" checked onchange="updateModeFields()">
-                        <label class="form-check-label" for="modeSitemap">
-                            <strong>Sitemap Mode (recommended)</strong> - Auto-discover and scrape all products from sitemap.xml
-                        </label>
+                <!-- Project Selection -->
+                <div class="mb-4">
+                    <h5 class="mb-3"><i class="bi bi-folder"></i> Select Project</h5>
+                    <select class="form-select form-select-lg" id="projectId" required>
+                        <option value="">-- Select a Project --</option>
+                        @foreach (var project in ViewBag.Projects)
+                        {
+                            <option value="@project.ID">@project.Naam</option>
+                        }
+                    </select>
+                    <div class="form-text mt-2">
+                        <i class="bi bi-lightbulb"></i> Scraping elements configured for this project will be used automatically.
+                        <a href="@Url.Action("ManageElements")" target="_blank">Configure elements</a>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="scrapeMode" id="modeSingle" value="single" onchange="updateModeFields()">
-                        <label class="form-check-label" for="modeSingle">
-                            Single Product Page (scrape one product)
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="scrapeMode" id="modeMulti" value="multi" onchange="updateModeFields()">
-                        <label class="form-check-label" for="modeMulti">
-                            Multi-Page Mode (scrape products from listing page HTML)
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Base URL -->
-                <div class="mb-3">
-                    <label for="baseUrl" class="form-label">
-                        <span id="urlLabel">Website URL</span>
-                        <span class="text-danger">*</span>
-                    </label>
-                    <input type="url" class="form-control" id="baseUrl" placeholder="https://www.thisdoesnotexist.nl" required>
-                    <div class="form-text" id="urlHelp">Enter the website base URL (e.g., https://www.thisdoesnotexist.nl)</div>
-                </div>
-
-                <!-- Sitemap URL (optional for sitemap mode) -->
-                <div class="mb-3" id="sitemapUrlGroup">
-                    <label for="sitemapUrl" class="form-label">Sitemap URL (optional)</label>
-                    <input type="url" class="form-control" id="sitemapUrl" placeholder="https://www.thisdoesnotexist.nl/sitemap.xml">
-                    <div class="form-text">Leave empty to auto-discover. System will check robots.txt and common sitemap locations.</div>
-                </div>
-
-                <!-- URL Filter Pattern (for sitemap mode) -->
-                <div class="mb-3" id="urlFilterGroup">
-                    <label for="urlFilterPattern" class="form-label">URL Filter Pattern (optional)</label>
-                    <input type="text" class="form-control" id="urlFilterPattern" placeholder="/product/">
-                    <div class="form-text">Only scrape URLs containing this text (e.g., "/product/", "/item/"). Useful for filtering product URLs from sitemap.</div>
-                </div>
-
-                <!-- Product Link Selector (only for multi mode) -->
-                <div class="mb-3" id="linkSelectorGroup" style="display: none;">
-                    <label for="productLinkSelector" class="form-label">
-                        Product Link Selector (CSS)
-                        <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" class="form-control selector-input" id="productLinkSelector" placeholder="//a[@@class='product-link']">
-                    <div class="form-text">XPath or CSS selector for product links on the listing page</div>
                 </div>
 
                 <hr class="my-4">
 
-                <h5 class="mb-3">Product Data Selectors (CSS/XPath)</h5>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="titleSelector" class="form-label">Title Selector</label>
-                        <input type="text" class="form-control selector-input" id="titleSelector" placeholder="//h1[@@class='product-title']">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="priceSelector" class="form-label">Price Selector</label>
-                        <input type="text" class="form-control selector-input" id="priceSelector" placeholder="//span[@@class='price']">
-                    </div>
-                </div>
+                <!-- URL Configuration -->
+                <h5 class="mb-3"><i class="bi bi-link-45deg"></i> Sitemap Configuration</h5>
 
                 <div class="mb-3">
-                    <label for="descriptionSelector" class="form-label">Description Selector</label>
-                    <input type="text" class="form-control selector-input" id="descriptionSelector" placeholder="//div[@@class='product-description']">
+                    <label for="baseUrl" class="form-label">Website Base URL <span class="text-danger">*</span></label>
+                    <input type="url" class="form-control form-control-lg" id="baseUrl"
+                           placeholder="https://www.example.com" required readonly>
+                    <div class="form-text" id="baseUrlHelp">
+                        <i class="bi bi-lock"></i> Auto-filled from project configuration
+                    </div>
                 </div>
-
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="skuSelector" class="form-label">SKU Selector</label>
-                        <input type="text" class="form-control selector-input" id="skuSelector" placeholder="//span[@@class='sku']">
+                        <label for="sitemapUrl" class="form-label">Sitemap URL (optional)</label>
+                        <input type="url" class="form-control" id="sitemapUrl"
+                               placeholder="https://www.example.com/sitemap.xml">
+                        <div class="form-text">Leave empty for auto-discovery</div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="imageSelector" class="form-label">Image Selector</label>
-                        <input type="text" class="form-control selector-input" id="imageSelector" placeholder="//img[@@class='product-image']">
+                        <label for="urlFilterPattern" class="form-label">URL Filter Pattern (optional)</label>
+                        <input type="text" class="form-control" id="urlFilterPattern"
+                               placeholder="/product/ or /item/">
+                        <div class="form-text">Only scrape URLs containing this text</div>
                     </div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="specsSelector" class="form-label">Specifications Selector</label>
-                    <input type="text" class="form-control selector-input" id="specsSelector" placeholder="//div[@@class='specs']//li">
-                    <div class="form-text">Will extract text from all matching elements</div>
                 </div>
 
                 <hr class="my-4">
 
-                <h5 class="mb-3">Storage Options</h5>
+                <!-- Storage Configuration -->
+                <h5 class="mb-3"><i class="bi bi-database"></i> Storage Configuration</h5>
 
-                <div class="mb-3">
-                    <label class="form-label">Bron (Source)</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="bronMode" id="bronExisting" value="existing" checked onchange="updateBronFields()">
-                        <label class="form-check-label" for="bronExisting">
-                            Use Existing Bron
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="bronMode" id="bronNew" value="new" onchange="updateBronFields()">
-                        <label class="form-check-label" for="bronNew">
-                            Create New Bron
-                        </label>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="bronMode" id="bronExisting" value="existing" checked onchange="updateBronFields()">
+                            <label class="form-check-label" for="bronExisting">
+                                Use Existing Source
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="bronMode" id="bronNew" value="new" onchange="updateBronFields()">
+                            <label class="form-check-label" for="bronNew">
+                                Create New Source
+                            </label>
+                        </div>
                     </div>
                 </div>
 
                 <div id="existingBronGroup" class="mb-3">
-                    <label for="bronId" class="form-label">Select Bron</label>
+                    <label for="bronId" class="form-label">Select Source (Bron)</label>
                     <select class="form-select" id="bronId">
-                        <option value="">-- Select a Bron --</option>
+                        <option value="">-- Select a Source --</option>
                         @foreach (var bron in ViewBag.Bronnen)
                         {
                             <option value="@bron.ID">@bron.Title (@bron.ProjectNavigation?.Naam)</option>
@@ -174,107 +136,109 @@
 
                 <div id="newBronGroup" style="display: none;">
                     <div class="mb-3">
-                        <label for="bronTitle" class="form-label">New Bron Title</label>
-                        <input type="text" class="form-control" id="bronTitle" placeholder="e.g., ThisDoesNotExist.nl Products">
-                    </div>
-                    <div class="mb-3">
-                        <label for="projectId" class="form-label">Project</label>
-                        <select class="form-select" id="projectId">
-                            <option value="">-- Select a Project --</option>
-                            @foreach (var project in ViewBag.Projects)
-                            {
-                                <option value="@project.ID">@project.Naam</option>
-                            }
-                        </select>
+                        <label for="bronTitle" class="form-label">New Source Title</label>
+                        <input type="text" class="form-control" id="bronTitle" placeholder="e.g., Example.com Product Catalog">
+                        <div class="form-text">Give this source a descriptive name</div>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="maxProducts" class="form-label">Maximum Products to Scrape</label>
-                    <input type="number" class="form-control" id="maxProducts" value="50" min="1" max="500">
-                    <div class="form-text">Limit the number of products to prevent long processing times</div>
+                <div class="mb-4">
+                    <label for="maxProducts" class="form-label">
+                        <i class="bi bi-speedometer2"></i> Maximum Products
+                    </label>
+                    <input type="number" class="form-control" id="maxProducts" value="50" min="1" max="1000">
+                    <div class="form-text">Limit the number of products to scrape (prevents timeouts)</div>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary" id="startButton">
-                        <i class="bi bi-download"></i> Start Scraping
-                    </button>
-                    <a asp-controller="Chunk" asp-action="Index" class="btn btn-secondary">
-                        <i class="bi bi-list"></i> View Chunks
-                    </a>
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                    <div>
+                        <button type="submit" class="btn btn-primary btn-lg" id="startButton">
+                            <i class="bi bi-play-circle"></i> Start Scraping
+                        </button>
+                    </div>
+                    <div class="btn-group">
+                        <a href="@Url.Action("ManageElements")" class="btn btn-outline-secondary">
+                            <i class="bi bi-gear"></i> Manage Elements
+                        </a>
+                        <a href="@Url.Action("Index", "Chunk")" class="btn btn-outline-secondary">
+                            <i class="bi bi-list"></i> View Chunks
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Progress Indicator -->
     <div class="scraping-progress" id="progress">
-        <div class="card border-primary">
-            <div class="card-body text-center">
-                <div class="spinner-border text-primary mb-3" role="status">
+        <div class="card border-primary shadow-lg">
+            <div class="card-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem;" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-                <h5>Scraping in progress...</h5>
-                <p class="mb-0">Please wait while we fetch and process the products.</p>
+                <h4 class="mb-3">Scraping in Progress...</h4>
+                <p class="text-muted mb-0">
+                    Fetching and processing products. This may take several minutes depending on the number of products.
+                </p>
+                <div class="progress mt-4" style="height: 30px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">
+                        Processing...
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Results Display -->
     <div class="results-container" id="results">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Scraping Results</h5>
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-check-circle"></i> Scraping Complete</h5>
             </div>
             <div class="card-body">
                 <div id="resultsContent"></div>
             </div>
         </div>
     </div>
-
-    <div class="card mt-4 bg-light">
-        <div class="card-body">
-            <h5 class="card-title">Tips for Finding CSS Selectors</h5>
-            <ul class="mb-0">
-                <li>Right-click on the element in your browser and select "Inspect"</li>
-                <li>In the developer tools, right-click the HTML element and choose "Copy" → "Copy XPath" or "Copy selector"</li>
-                <li>XPath examples: <code>//h1[@@class='title']</code>, <code>//div[@@id='description']</code></li>
-                <li>CSS examples: <code>.product-title</code>, <code>#price</code>, <code>div.specs ul li</code></li>
-                <li>Test your selectors first on a single product before scraping multiple pages</li>
-            </ul>
-        </div>
-    </div>
 </div>
 
 @section Scripts {
 <script>
-    function updateModeFields() {
-        const mode = document.querySelector('input[name="scrapeMode"]:checked').value;
-        const linkSelectorGroup = document.getElementById('linkSelectorGroup');
-        const sitemapUrlGroup = document.getElementById('sitemapUrlGroup');
-        const urlFilterGroup = document.getElementById('urlFilterGroup');
-        const urlLabel = document.getElementById('urlLabel');
-        const urlHelp = document.getElementById('urlHelp');
-        const baseUrl = document.getElementById('baseUrl');
+    let currentProject = null;
 
-        // Hide all mode-specific groups first
-        linkSelectorGroup.style.display = 'none';
-        sitemapUrlGroup.style.display = 'none';
-        urlFilterGroup.style.display = 'none';
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listener for project selection
+        document.getElementById('projectId').addEventListener('change', loadProjectDetails);
+    });
 
-        if (mode === 'sitemap') {
-            sitemapUrlGroup.style.display = 'block';
-            urlFilterGroup.style.display = 'block';
-            urlLabel.textContent = 'Website URL';
-            urlHelp.textContent = 'Enter the website base URL (e.g., https://www.thisdoesnotexist.nl)';
-            baseUrl.placeholder = 'https://www.thisdoesnotexist.nl';
-        } else if (mode === 'multi') {
-            linkSelectorGroup.style.display = 'block';
-            urlLabel.textContent = 'Product Listing Page URL';
-            urlHelp.textContent = 'Enter the URL of the page that lists all products';
-            baseUrl.placeholder = 'https://www.thisdoesnotexist.nl/products';
-        } else {
-            urlLabel.textContent = 'Product URL';
-            urlHelp.textContent = 'Enter the full URL of the product page';
-            baseUrl.placeholder = 'https://www.thisdoesnotexist.nl/product/123';
+    async function loadProjectDetails() {
+        const projectId = parseInt(document.getElementById('projectId').value);
+
+        if (!projectId) {
+            currentProject = null;
+            document.getElementById('baseUrl').value = '';
+            return;
+        }
+
+        try {
+            const response = await fetch(`@Url.Action("GetProjectDetails", "Scraper")?projectId=${projectId}`);
+            const data = await response.json();
+
+            if (data.success && data.project) {
+                currentProject = data.project;
+                // Update the baseUrl field with project data
+                document.getElementById('baseUrl').value = data.project.baseUrl || '';
+            } else {
+                alert('Error loading project details: ' + (data.error || 'Unknown error'));
+                currentProject = null;
+                document.getElementById('baseUrl').value = '';
+            }
+        } catch (error) {
+            alert('Error loading project details: ' + error.message);
+            currentProject = null;
+            document.getElementById('baseUrl').value = '';
         }
     }
 
@@ -295,41 +259,41 @@
     document.getElementById('scrapeForm').addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const scrapeMode = document.querySelector('input[name="scrapeMode"]:checked').value;
         const bronMode = document.querySelector('input[name="bronMode"]:checked').value;
-
-        const requestData = {
-            baseUrl: document.getElementById('baseUrl').value,
-            scrapeMode: scrapeMode,
-            productLinkSelector: document.getElementById('productLinkSelector').value,
-            sitemapUrl: document.getElementById('sitemapUrl').value,
-            urlFilterPattern: document.getElementById('urlFilterPattern').value,
-            titleSelector: document.getElementById('titleSelector').value,
-            descriptionSelector: document.getElementById('descriptionSelector').value,
-            priceSelector: document.getElementById('priceSelector').value,
-            skuSelector: document.getElementById('skuSelector').value,
-            imageSelector: document.getElementById('imageSelector').value,
-            specsSelector: document.getElementById('specsSelector').value,
-            maxProducts: parseInt(document.getElementById('maxProducts').value),
-            createNewBron: bronMode === 'new',
-            bronTitle: document.getElementById('bronTitle').value,
-            projectId: parseInt(document.getElementById('projectId').value) || 0,
-            bronId: parseInt(document.getElementById('bronId').value) || 0
-        };
+        const projectId = parseInt(document.getElementById('projectId').value);
 
         // Validation
-        if (!requestData.baseUrl) {
-            alert('Please enter a URL');
+        if (!projectId) {
+            alert('Please select a project');
             return;
         }
+
+        const baseUrl = document.getElementById('baseUrl').value;
+        if (!baseUrl) {
+            alert('Please enter a URL or select a project with a configured base URL');
+            return;
+        }
+
+        const requestData = {
+            baseUrl: baseUrl,
+            scrapeMode: 'sitemap',
+            productLinkSelector: '',
+            sitemapUrl: document.getElementById('sitemapUrl').value || '',
+            urlFilterPattern: document.getElementById('urlFilterPattern').value || '',
+            maxProducts: parseInt(document.getElementById('maxProducts').value),
+            createNewBron: bronMode === 'new',
+            bronTitle: document.getElementById('bronTitle')?.value || '',
+            projectId: projectId,
+            bronId: parseInt(document.getElementById('bronId')?.value) || 0
+        };
 
         if (bronMode === 'existing' && !requestData.bronId) {
-            alert('Please select a Bron');
+            alert('Please select a source (Bron)');
             return;
         }
 
-        if (bronMode === 'new' && (!requestData.bronTitle || !requestData.projectId)) {
-            alert('Please enter a Bron title and select a Project');
+        if (bronMode === 'new' && !requestData.bronTitle) {
+            alert('Please enter a source title');
             return;
         }
 
@@ -337,6 +301,7 @@
         document.getElementById('progress').style.display = 'block';
         document.getElementById('results').style.display = 'none';
         document.getElementById('startButton').disabled = true;
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 
         try {
             const response = await fetch('@Url.Action("ScrapeProducts", "Scraper")', {
@@ -369,40 +334,53 @@
         const resultsContainer = document.getElementById('results');
         const resultsContent = document.getElementById('resultsContent');
 
-        let html = '<div class="alert alert-success">';
-        html += `<h5>Scraping Complete!</h5>`;
-        html += `<p><strong>Discovery Method:</strong> ${escapeHtml(data.discoveryMethod || 'N/A')}</p>`;
-        html += `<p><strong>Total Products Found:</strong> ${data.totalProducts}</p>`;
-        html += `<p><strong>Successfully Processed:</strong> ${data.successCount}</p>`;
-        html += `<p><strong>Errors:</strong> ${data.errorCount}</p>`;
-        html += `<p><strong>Bron ID:</strong> ${data.bronId}</p>`;
+        let html = '<div class="row mb-4">';
+        html += '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
+        html += `<h2 class="text-primary">${data.totalProducts || 0}</h2>`;
+        html += '<p class="text-muted mb-0">Products Found</p></div></div></div>';
+
+        html += '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
+        html += `<h2 class="text-success">${data.successCount || 0}</h2>`;
+        html += '<p class="text-muted mb-0">Successfully Scraped</p></div></div></div>';
+
+        html += '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
+        html += `<h2 class="text-danger">${data.errorCount || 0}</h2>`;
+        html += '<p class="text-muted mb-0">Errors</p></div></div></div>';
+
+        html += '<div class="col-md-3"><div class="card text-center"><div class="card-body">';
+        html += `<h2 class="text-info">${data.bronId || 'N/A'}</h2>`;
+        html += '<p class="text-muted mb-0">Source ID</p></div></div></div>';
         html += '</div>';
 
+        html += `<div class="alert alert-info"><strong>Discovery Method:</strong> ${escapeHtml(data.discoveryMethod || 'N/A')}</div>`;
+
         if (data.results && data.results.length > 0) {
-            html += '<h6>Success Log:</h6>';
-            html += '<div style="max-height: 300px; overflow-y: auto;">';
+            html += '<h6 class="mb-3"><i class="bi bi-check-circle"></i> Success Log:</h6>';
+            html += '<div style="max-height: 300px; overflow-y: auto;" class="border rounded p-2">';
             data.results.forEach(result => {
-                html += `<div class="result-item result-success">${escapeHtml(result)}</div>`;
+                html += `<div class="result-item result-success"><i class="bi bi-check"></i> ${escapeHtml(result)}</div>`;
             });
             html += '</div>';
         }
 
         if (data.errors && data.errors.length > 0) {
-            html += '<h6 class="mt-3">Errors:</h6>';
-            html += '<div style="max-height: 200px; overflow-y: auto;">';
+            html += '<h6 class="mt-4 mb-3"><i class="bi bi-exclamation-triangle"></i> Error Log:</h6>';
+            html += '<div style="max-height: 200px; overflow-y: auto;" class="border rounded p-2">';
             data.errors.forEach(error => {
-                html += `<div class="result-item result-error">${escapeHtml(error)}</div>`;
+                html += `<div class="result-item result-error"><i class="bi bi-x"></i> ${escapeHtml(error)}</div>`;
             });
             html += '</div>';
         }
 
-        html += '<div class="mt-3">';
-        html += '<a href="@Url.Action("Index", "Chunk")" class="btn btn-primary">View All Chunks</a> ';
-        html += '<a href="@Url.Action("Index", "Chat")" class="btn btn-success">Test in Chat</a>';
+        html += '<div class="mt-4 d-grid gap-2 d-md-flex">';
+        html += '<a href="@Url.Action("Index", "Chunk")" class="btn btn-primary"><i class="bi bi-list"></i> View All Chunks</a>';
+        html += '<a href="@Url.Action("Index", "Chat")" class="btn btn-success"><i class="bi bi-chat-dots"></i> Test in Chat</a>';
+        html += '<button class="btn btn-secondary" onclick="location.reload()"><i class="bi bi-arrow-clockwise"></i> Scrape More</button>';
         html += '</div>';
 
         resultsContent.innerHTML = html;
         resultsContainer.style.display = 'block';
+        window.scrollTo({ top: resultsContainer.offsetTop - 100, behavior: 'smooth' });
     }
 
     function escapeHtml(text) {
