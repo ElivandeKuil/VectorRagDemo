@@ -59,4 +59,27 @@ VALUES
 (1, 'ProductInfo_Title', '.description-read-more h3', 'text', 0, '', 1, GETDATE(), 1),
 (1, 'ProductInfo_Description', '.description-read-more p', 'text', 1, '', 2, GETDATE(), 1);
 
+CREATE TABLE ScrapingUrlBlackList (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    ProjectID INT NOT NULL,
+    BlackListElement VARCHAR(200) NOT NULL,
+    GemaaktOp DATETIME2 NOT NULL,
+    GewijzigdOp DATETIME2 NULL,
+    Status INT NOT NULL 
+);
+
+INSERT INTO ScrapingUrlBlackList (
+ProjectID,
+BlackListElement,
+GemaaktOp,
+Status
+)
+VALUES
+(
+1,
+'tags',
+GETDATE(),
+1
+)
+
 

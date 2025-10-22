@@ -1,4 +1,6 @@
+using Fizzler.Systems.HtmlAgilityPack;
 using HtmlAgilityPack;
+using System.Diagnostics;
 using System.Text;
 using VectorRagDemo.Models;
 
@@ -223,8 +225,16 @@ namespace VectorRagDemo.BLL
             if (string.IsNullOrEmpty(selector))
                 return string.Empty;
 
-            var node = doc.DocumentNode.SelectSingleNode(selector);
-            return node?.InnerText.Trim() ?? string.Empty;
+            try
+            {
+                var nodes = doc.DocumentNode.QuerySelectorAll(selector);
+                return string.Join("\n\n", nodes.Select(n => n.InnerText.Trim()));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error with selector '{selector}': {ex.Message}");
+                return string.Empty;
+            }
         }
 
         private string GetAttributeValue(HtmlDocument doc, string? selector, string attribute)

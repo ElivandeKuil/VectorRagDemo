@@ -13,5 +13,6 @@
         // Navigation property
         public ICollection<Bron> Bronnen { get; set; } = new List<Bron>();
         public ICollection<ScrapingElement> ScrapingElements { get; set;} = new List<ScrapingElement>();
+        public ICollection<ScrapingUrlBlackList> ScrapingUrlBlackLists { get; set; } = new HashSet<ScrapingUrlBlackList>();
     }
 }

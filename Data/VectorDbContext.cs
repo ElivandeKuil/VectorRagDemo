@@ -16,6 +16,7 @@ namespace VectorRagDemo.Data
         public DbSet<Bron> Bronnen { get; set; }
         public DbSet<Project> Projects { get; set; }
         public DbSet<ScrapingElement> ScrapingElement { get; set; }
+        public DbSet<ScrapingUrlBlackList> ScrapingUrlBlackList { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -61,6 +62,21 @@ namespace VectorRagDemo.Data
 
                 entity.HasOne(e => e.ProjectNavigation)
                     .WithMany(p => p.ScrapingElements)
+                    .HasForeignKey(e => e.Project)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ScrapingUrlBlackList>(entity =>
+            { 
+                entity.ToTable("ScrapingUrlBlackList");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Project).IsRequired();
+                entity.Property(e => e.BlackListElement).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany(p => p.ScrapingUrlBlackLists)
                     .HasForeignKey(e => e.Project)
                     .OnDelete(DeleteBehavior.Restrict);
             });

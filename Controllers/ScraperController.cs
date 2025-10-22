@@ -287,6 +287,15 @@ namespace VectorRagDemo.Controllers
                     return Json(new { success = false, error = "No product URLs found" });
                 }
 
+                var urlBlacklist = _context.ScrapingUrlBlackList
+                    .Where(e => e.Project == request.ProjectId && e.Status == 1)
+                    .ToList();
+
+                foreach (var element in urlBlacklist)
+                {
+                    productUrls = productUrls.Where(o => !o.Contains(element.BlackListElement)).ToList();
+                }
+
                 // Step 2: Retrieve scraping elements from database
                 var scrapingElements = await _context.ScrapingElement
                     .Where(e => e.Project == request.ProjectId && e.Status == 1)
@@ -306,60 +315,68 @@ namespace VectorRagDemo.Controllers
 
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                foreach (var url in productUrls.Take(request.MaxProducts))
+                for (int i = 0; i < request.MaxProducts; i++)
                 {
+                    var url = productUrls[i];
                     try
                     {
                         // Scrape product data using dynamic scraping based on ScrapingElements
-                        var productData = await scraper.ScrapeProductDynamic(url, scrapingElements);
+                        Dictionary<string, string> productData = await scraper.ScrapeProductDynamic(url, scrapingElements);
 
-                        // Generate chunk text from dynamic data
-                        var chunkText = scraper.GenerateProductChunkFromDynamic(productData);
-
-                        // Get title for logging (use first non-empty value or URL)
-                        var productTitle = productData.Values.FirstOrDefault(v => !string.IsNullOrEmpty(v)) ?? url;
-
-                        if (string.IsNullOrWhiteSpace(chunkText))
+                        if (productData.Where(o => o.Key != "URL" && !string.IsNullOrEmpty(o.Value)).Any())
                         {
-                            errors.Add($"Empty content for {url}");
-                            errorCount++;
-                            continue;
-                        }
+                            // Generate chunk text from dynamic data
+                            var chunkText = scraper.GenerateProductChunkFromDynamic(productData);
 
-                        // Generate embedding
-                        var embedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(chunkText);
+                            // Get title for logging (use first non-empty value or URL)
+                            var productTitle = productData.Values.FirstOrDefault(v => !string.IsNullOrEmpty(v)) ?? url;
 
-                        if (embedding == null || !embedding.Any())
-                        {
-                            errors.Add($"Failed to generate embedding for {url}");
-                            errorCount++;
-                            continue;
-                        }
+                            if (string.IsNullOrWhiteSpace(chunkText))
+                            {
+                                errors.Add($"Empty content for {url}");
+                                errorCount++;
+                                continue;
+                            }
 
-                        // Insert chunk with vector
-                        var vectorString = "[" + string.Join(",", embedding) + "]";
+                            // Generate embedding
+                            var embedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(chunkText);
 
-                        using var connection = new SqlConnection(connectionString);
-                        await connection.OpenAsync();
+                            if (embedding == null || !embedding.Any())
+                            {
+                                errors.Add($"Failed to generate embedding for {url}");
+                                errorCount++;
+                                continue;
+                            }
 
-                        var sql = @"
+                            // Insert chunk with vector
+                            var vectorString = "[" + string.Join(",", embedding) + "]";
+
+                            using var connection = new SqlConnection(connectionString);
+                            await connection.OpenAsync();
+
+                            var sql = @"
                             INSERT INTO Chunk (BronID, Tekst, TekstVector, GemaaktOp, Status)
                             VALUES (@BronID, @Tekst, CAST(@TekstVector AS VECTOR(768)), GETDATE(), @Status);
                             SELECT CAST(SCOPE_IDENTITY() as int);";
 
-                        using var command = new SqlCommand(sql, connection);
-                        command.Parameters.AddWithValue("@BronID", bronId);
-                        command.Parameters.AddWithValue("@Tekst", chunkText);
-                        command.Parameters.AddWithValue("@TekstVector", vectorString);
-                        command.Parameters.AddWithValue("@Status", 1);
+                            using var command = new SqlCommand(sql, connection);
+                            command.Parameters.AddWithValue("@BronID", bronId);
+                            command.Parameters.AddWithValue("@Tekst", chunkText);
+                            command.Parameters.AddWithValue("@TekstVector", vectorString);
+                            command.Parameters.AddWithValue("@Status", 1);
 
-                        var newId = (int)await command.ExecuteScalarAsync();
+                            var newId = (int)await command.ExecuteScalarAsync();
 
-                        results.Add($"Created chunk {newId} for {productTitle}");
-                        successCount++;
+                            results.Add($"Created chunk {newId} for {productTitle}");
+                            successCount++;
 
-                        // Add small delay to be respectful to the server
-                        await Task.Delay(500);
+                            // Add small delay to be respectful to the server
+                            await Task.Delay(500);
+                        }
+                        else
+                        {
+                            request.MaxProducts++;
+                        }
                     }
                     catch (Exception ex)
                     {
