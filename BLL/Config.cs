@@ -10,7 +10,7 @@
         public const int MaxTokens = 4000;
         public const double Temperature = 0.4;
         public const double TopP = 1.0;
-        public const int GeminiTopK = 32;
+        public const int TopK = 32;
 
         //Vector search parameters
         public const int BatchSize = 100;

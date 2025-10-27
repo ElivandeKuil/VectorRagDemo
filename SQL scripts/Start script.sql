@@ -82,4 +82,66 @@ GETDATE(),
 1
 )
 
+CREATE TABLE PromptType (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    Omschrijving VARCHAR(1000) NOT NULL,
+    GemaaktOp DATETIME2 NOT NULL,
+    GewijzigdOp DATETIME2 NULL,
+    Status INT NOT NULL 
+)
 
+CREATE TABLE Prompt (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    Project INT NOT NULL,
+    PromptType INT NOT NULL,
+    SystemInstruction VARCHAR(MAX) NOT NULL,
+    Content VARCHAR(MAX) NOT NULL,
+    GemaaktOp DATETIME2 NOT NULL,
+    GewijzigdOp DATETIME2 NULL,
+    Status INT NOT NULL,
+    
+    CONSTRAINT FK_Prompt_PromptType 
+        FOREIGN KEY (PromptType) REFERENCES PromptType(ID),
+
+    CONSTRAINT FK_Prompt_Project
+        FOREIGN KEY (Project) REFERENCES Project(ID)
+)
+CREATE INDEX IX_Prompt_Project ON Prompt(Project);
+CREATE INDEX IX_Prompt_PromptType ON Prompt(PromptType);
+
+INSERT INTO [VectorRagDemo].[dbo].[PromptType]
+(
+[Omschrijving]
+    ,[GemaaktOp]
+    ,[Status]
+)
+VALUES
+(
+  'MainGeminiPrompt',
+  GETDATE(),
+  1
+)
+
+INSERT INTO [VectorRagDemo].[dbo].[Prompt]
+(
+[Project]
+    ,[PromptType]
+    ,[SystemInstruction]
+    ,[Content]
+    ,[GemaaktOp]
+    ,[Status]
+)
+VALUES
+(
+1,
+1,
+'You are a helpful AI assistant with access to a knowledge base.
+              Use the following context from the knowledge base to answer the user''s question.
+              If the context doesn''t contain relevant information, say so honestly.
+              Always cite which chunks you used by including their CHUNK IDs in your response.
+
+              Context from knowledge base: {0}',
+'{0}',
+GETDATE(),
+1
+)

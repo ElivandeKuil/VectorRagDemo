@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Drawing;
+using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
 using VectorRagDemo.Data;
@@ -12,10 +13,10 @@ namespace VectorRagDemo.BLL
 
         public static async Task<ChatbotResponse> GenerateContentAsync(
             VectorDbContext context,
-            string systemPrompt,
             List<ChatMessage> chatHistory,
             string currentUserInput,
-            GeminiParameters parameters)
+            string formattedNeighbors,
+            int project)
         {
             try
             {
@@ -25,7 +26,7 @@ namespace VectorRagDemo.BLL
                 string accessToken = await ConnectionProcessor.GetAuthenticationToken();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-                StringContent content = BuildRequestConent(systemPrompt, chatHistory, currentUserInput, parameters);
+                StringContent content = BuildRequestConent(chatHistory, currentUserInput, formattedNeighbors, context, project);
 
                 HttpResponseMessage response = await client.PostAsync(geminiEndpoint, content);
 
@@ -39,28 +40,28 @@ namespace VectorRagDemo.BLL
             }
         }
 
-        private static StringContent BuildRequestConent(string systemPrompt, List<ChatMessage> chatHistory, string currentUserInput, GeminiParameters parameters)
+        private static StringContent BuildRequestConent(List<ChatMessage> chatHistory, string currentUserInput, string formattedNeighbors, VectorDbContext context, int project)
         {
             var contents = new List<GeminiContent>();
-            foreach (var message in chatHistory)
-            {
-                contents.Add(CreateGeminiContent(message.Role, message.Content));
-            }
-            contents.Add(CreateGeminiContent("user", currentUserInput));
+
+            var prompt = context.Prompts.Where(o => o.Project == project && o.PromptType == 1 && o.Status == 1).Single();
+            var chatHistoryString = string.Join("\n", chatHistory.Select(m => $"{m.Role}: {m.Content}"));
+            var formattedPrompt = string.Format(prompt.Content, formattedNeighbors, currentUserInput, chatHistoryString);
+            contents.Add(CreateGeminiContent("user", formattedPrompt));
 
             var payload = new
             {
                 systemInstruction = new GeminiContent
                 {
-                    Parts = new List<GeminiPart> { new GeminiPart { Text = systemPrompt } }
+                    Parts = new List<GeminiPart> { new GeminiPart { Text = prompt.SystemInstruction } }
                 },
                 contents = contents,
                 generationConfig = new
                 {
-                    maxOutputTokens = parameters.MaxOutputTokens,
-                    temperature = parameters.Temperature,
-                    topP = parameters.TopP,
-                    topK = parameters.TopK,
+                    maxOutputTokens = Config.MaxTokens,
+                    temperature = Config.Temperature,
+                    topP = Config.TopP,
+                    topK = Config.TopK,
                     responseMimeType = "application/json",
                     responseSchema = new
                     {
@@ -77,7 +78,7 @@ namespace VectorRagDemo.BLL
                 }
             };
 
-            var jsonPayload = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            string jsonPayload = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
             return content;
         }

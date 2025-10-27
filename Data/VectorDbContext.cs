@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Reflection.Emit;
 using VectorRagDemo.Models;
 
 namespace VectorRagDemo.Data
@@ -17,6 +15,8 @@ namespace VectorRagDemo.Data
         public DbSet<Project> Projects { get; set; }
         public DbSet<ScrapingElement> ScrapingElement { get; set; }
         public DbSet<ScrapingUrlBlackList> ScrapingUrlBlackList { get; set; }
+        public DbSet<PromptType> PromptTypes { get; set; }
+        public DbSet<Prompt> Prompts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,7 +67,7 @@ namespace VectorRagDemo.Data
             });
 
             modelBuilder.Entity<ScrapingUrlBlackList>(entity =>
-            { 
+            {
                 entity.ToTable("ScrapingUrlBlackList");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Project).IsRequired();
@@ -98,6 +98,41 @@ namespace VectorRagDemo.Data
                 entity.HasOne(e => e.Bron)
                     .WithMany(b => b.Chunks)
                     .HasForeignKey(e => e.BronID)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // PromptType configuration
+            modelBuilder.Entity<PromptType>(entity =>
+            {
+                entity.ToTable("PromptType");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Omschrijving).HasMaxLength(1000).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.GewijzigdOp);
+                entity.Property(e => e.Status).IsRequired();
+            });
+
+            // Prompt configuration
+            modelBuilder.Entity<Prompt>(entity =>
+            {
+                entity.ToTable("Prompt");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Project).IsRequired();
+                entity.Property(e => e.PromptType).IsRequired();
+                entity.Property(e => e.SystemInstruction).IsRequired();
+                entity.Property(e => e.Content).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.GewijzigdOp);
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany(p => p.Prompts)
+                    .HasForeignKey(e => e.Project)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.PromptTypeNavigation)
+                    .WithMany(pt => pt.Prompts)
+                    .HasForeignKey(e => e.PromptType)
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }
