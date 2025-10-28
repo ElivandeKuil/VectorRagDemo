@@ -160,19 +160,12 @@ namespace VectorRagDemo.BLL
         {
             var sb = new StringBuilder();
 
-            foreach (var kvp in data.Where(d => d.Key != "URL"))
+            foreach (var kvp in data.Where(d => d.Key != "URL" && d.Key != "CHUNKID"))
             {
                 if (!string.IsNullOrEmpty(kvp.Value))
                 {
                     sb.AppendLine($"{kvp.Key}: {kvp.Value}");
                 }
-            }
-
-            // Add URL at the end if available
-            if (data.ContainsKey("URL"))
-            {
-                sb.AppendLine();
-                sb.AppendLine($"URL: {data["URL"]}");
             }
 
             return sb.ToString().Trim();

@@ -1,0 +1,86 @@
+@model VectorRagDemo.Models.Prompt
+
+@{
+    ViewData["Title"] = "Create Prompt";
+}
+
+<h1>Create New Prompt</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div class="mb-3">
+                <label asp-for="Project" class="form-label">Project</label>
+                <select asp-for="Project" class="form-select" asp-items="ViewBag.Projects" required>
+                    <option value="">-- Select a Project --</option>
+                </select>
+                <div class="form-text">Select the project this prompt is associated with.</div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PromptType" class="form-label">Prompt Type</label>
+                <select asp-for="PromptType" class="form-select" asp-items="ViewBag.PromptTypes" required>
+                    <option value="">-- Select a Prompt Type --</option>
+                </select>
+                <div class="form-text">Choose the type of prompt.</div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SystemInstruction" class="form-label">System Instruction</label>
+                <textarea asp-for="SystemInstruction" class="form-control" rows="4" required
+                          placeholder="Enter system-level instructions for the AI model..."></textarea>
+                <div class="form-text">
+                    System instructions guide the overall behavior of the AI model.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Content" class="form-label">Prompt Content</label>
+                <textarea asp-for="Content" class="form-control" rows="8" required
+                          placeholder="Enter the main prompt content..."></textarea>
+                <div class="form-text">
+                    The main content of the prompt that will be used in RAG queries.
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create Prompt
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="mt-4">
+    <div class="card bg-light">
+        <div class="card-body">
+            <h5 class="card-title">Prompt Guidelines</h5>
+            <ul class="mb-0">
+                <li><strong>System Instruction:</strong> Defines the AI's role, personality, and constraints</li>
+                <li><strong>Content:</strong> The actual prompt template that will be populated with context from RAG</li>
+                <li><strong>Project:</strong> Links the prompt to a specific project for organization</li>
+                <li><strong>Type:</strong> Categorizes prompts for easy filtering and management</li>
+            </ul>
+        </div>
+    </div>
+</div>

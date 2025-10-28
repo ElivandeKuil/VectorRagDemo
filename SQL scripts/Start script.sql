@@ -145,3 +145,24 @@ VALUES
 GETDATE(),
 1
 )
+
+  ALTER TABLE [VectorRagDemo].[dbo].[Prompt]
+  ADD 
+    ResponseSchema VARCHAR(MAX) NOT NULL DEFAULT '',
+    MaxTokens INT NOT NULL DEFAULT 4000,
+    Temperature FLOAT NOT NULL DEFAULT 0.4,
+    TopP FLOAT NOT NULL DEFAULT 1.0,
+    TopK INT NOT NULL DEFAULT 32
+
+UPDATE [VectorRagDemo].[dbo].[Prompt]
+SET ResponseSchema = '{
+  "type": "object",
+  "properties": {
+    "answer": { "type": "string" },
+    "supplementalInfo": { "type": "string" },
+    "questionToUser": { "type": "string" },
+    "usedChunks": { "type": "string" }
+  },
+  "propertyOrdering": ["answer", "supplementalInfo", "questionToUser", "usedChunks"]
+}'
+WHERE ID = 1

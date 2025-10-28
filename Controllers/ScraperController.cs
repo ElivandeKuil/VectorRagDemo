@@ -17,10 +17,8 @@ namespace VectorRagDemo.Controllers
             _configuration = configuration;
         }
 
-        // GET: Scraper/Index
         public async Task<IActionResult> Index()
         {
-            // Load available Bronnen and Projects for selection
             var bronnen = await _context.Bronnen
                 .Include(b => b.ProjectNavigation)
                 .Where(b => b.Status == 1)
@@ -38,7 +36,6 @@ namespace VectorRagDemo.Controllers
             return View();
         }
 
-        // GET: Scraper/ManageElements
         public async Task<IActionResult> ManageElements()
         {
             var projects = await _context.Projects
@@ -51,7 +48,6 @@ namespace VectorRagDemo.Controllers
             return View();
         }
 
-        // GET: Scraper/GetScrapingElements?projectId={id}
         [HttpGet]
         public async Task<IActionResult> GetScrapingElements(int projectId)
         {
@@ -74,7 +70,6 @@ namespace VectorRagDemo.Controllers
             return Json(elements);
         }
 
-        // GET: Scraper/GetProjectDetails?projectId={id}
         [HttpGet]
         public async Task<IActionResult> GetProjectDetails(int projectId)
         {
@@ -97,7 +92,6 @@ namespace VectorRagDemo.Controllers
             return Json(new { success = true, project = project });
         }
 
-        // POST: Scraper/CreateScrapingElement
         [HttpPost]
         public async Task<IActionResult> CreateScrapingElement([FromBody] ScrapingElementRequest request)
         {
@@ -127,7 +121,6 @@ namespace VectorRagDemo.Controllers
             }
         }
 
-        // POST: Scraper/UpdateScrapingElement
         [HttpPost]
         public async Task<IActionResult> UpdateScrapingElement([FromBody] ScrapingElementRequest request)
         {
@@ -157,7 +150,6 @@ namespace VectorRagDemo.Controllers
             }
         }
 
-        // POST: Scraper/DeleteScrapingElement
         [HttpPost]
         public async Task<IActionResult> DeleteScrapingElement([FromBody] int id)
         {
@@ -169,8 +161,7 @@ namespace VectorRagDemo.Controllers
                     return Json(new { success = false, error = "Element not found" });
                 }
 
-                // Soft delete
-                element.Status = 0;
+                element.Status = 2;
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true });
@@ -181,7 +172,6 @@ namespace VectorRagDemo.Controllers
             }
         }
 
-        // POST: Scraper/ScrapeProducts
         [HttpPost]
         public async Task<IActionResult> ScrapeProducts([FromBody] ScrapeRequest request)
         {
@@ -192,7 +182,6 @@ namespace VectorRagDemo.Controllers
                     return Json(new { success = false, error = "Base URL is required" });
                 }
 
-                // Create or get the Bron
                 int bronId;
                 if (request.CreateNewBron)
                 {
@@ -218,28 +207,23 @@ namespace VectorRagDemo.Controllers
                     bronId = request.BronId;
                 }
 
-                // Initialize scraper
                 var scraper = new WebScraperService();
 
-                // Step 1: Get all product URLs
                 var productUrls = new List<string>();
                 string discoveryMethod = "";
 
                 if (request.ScrapeMode == "single")
                 {
-                    // Single URL mode
                     productUrls.Add(request.BaseUrl);
                     discoveryMethod = "single URL";
                 }
                 else if (request.ScrapeMode == "sitemap")
                 {
-                    // Sitemap mode
                     var sitemapParser = new SitemapParser();
                     SitemapResult sitemapResult;
 
                     if (!string.IsNullOrWhiteSpace(request.SitemapUrl))
                     {
-                        // Use provided sitemap URL
                         try
                         {
                             var urls = await sitemapParser.ParseSitemap(request.SitemapUrl, request.UrlFilterPattern);
@@ -258,7 +242,6 @@ namespace VectorRagDemo.Controllers
                     }
                     else
                     {
-                        // Auto-discover sitemap
                         sitemapResult = await sitemapParser.AutoDiscoverAndParse(request.BaseUrl, request.UrlFilterPattern);
                     }
 
@@ -272,7 +255,6 @@ namespace VectorRagDemo.Controllers
                 }
                 else
                 {
-                    // Multi-page mode (HTML scraping)
                     if (string.IsNullOrWhiteSpace(request.ProductLinkSelector))
                     {
                         return Json(new { success = false, error = "Product link selector is required for multi-page scraping" });
@@ -296,7 +278,6 @@ namespace VectorRagDemo.Controllers
                     productUrls = productUrls.Where(o => !o.Contains(element.BlackListElement)).ToList();
                 }
 
-                // Step 2: Retrieve scraping elements from database
                 var scrapingElements = await _context.ScrapingElement
                     .Where(e => e.Project == request.ProjectId && e.Status == 1)
                     .OrderBy(e => e.SortOrder)
@@ -307,7 +288,6 @@ namespace VectorRagDemo.Controllers
                     return Json(new { success = false, error = "No scraping elements configured for this project. Please configure scraping elements in the ScrapingElement table." });
                 }
 
-                // Step 3: Scrape each product and create chunks using dynamic scraping
                 var results = new List<string>();
                 var errors = new List<string>();
                 int successCount = 0;
@@ -320,15 +300,12 @@ namespace VectorRagDemo.Controllers
                     var url = productUrls[i];
                     try
                     {
-                        // Scrape product data using dynamic scraping based on ScrapingElements
                         Dictionary<string, string> productData = await scraper.ScrapeProductDynamic(url, scrapingElements);
 
                         if (productData.Where(o => o.Key != "URL" && !string.IsNullOrEmpty(o.Value)).Any())
                         {
-                            // Generate chunk text from dynamic data
                             var chunkText = scraper.GenerateProductChunkFromDynamic(productData);
 
-                            // Get title for logging (use first non-empty value or URL)
                             var productTitle = productData.Values.FirstOrDefault(v => !string.IsNullOrEmpty(v)) ?? url;
 
                             if (string.IsNullOrWhiteSpace(chunkText))
@@ -338,7 +315,6 @@ namespace VectorRagDemo.Controllers
                                 continue;
                             }
 
-                            // Generate embedding
                             var embedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(chunkText);
 
                             if (embedding == null || !embedding.Any())
@@ -348,7 +324,6 @@ namespace VectorRagDemo.Controllers
                                 continue;
                             }
 
-                            // Insert chunk with vector
                             var vectorString = "[" + string.Join(",", embedding) + "]";
 
                             using var connection = new SqlConnection(connectionString);
@@ -370,7 +345,6 @@ namespace VectorRagDemo.Controllers
                             results.Add($"Created chunk {newId} for {productTitle}");
                             successCount++;
 
-                            // Add small delay to be respectful to the server
                             await Task.Delay(500);
                         }
                         else

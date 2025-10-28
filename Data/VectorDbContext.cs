@@ -124,6 +124,11 @@ namespace VectorRagDemo.Data
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.GewijzigdOp);
                 entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.ResponseSchema).IsRequired();
+                entity.Property(e => e.MaxTokens).IsRequired();
+                entity.Property(e => e.Temperature).IsRequired();
+                entity.Property(e => e.TopP).IsRequired();
+                entity.Property(e => e.TopK).IsRequired();
 
                 entity.HasOne(e => e.ProjectNavigation)
                     .WithMany(p => p.Prompts)

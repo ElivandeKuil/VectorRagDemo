@@ -46,7 +46,7 @@ namespace VectorRagDemo.BLL
 
             var prompt = context.Prompts.Where(o => o.Project == project && o.PromptType == 1 && o.Status == 1).Single();
             var chatHistoryString = string.Join("\n", chatHistory.Select(m => $"{m.Role}: {m.Content}"));
-            var formattedPrompt = string.Format(prompt.Content, formattedNeighbors, currentUserInput, chatHistoryString);
+            var formattedPrompt = string.Format(prompt.Content, formattedNeighbors, chatHistoryString, currentUserInput);
             contents.Add(CreateGeminiContent("user", formattedPrompt));
 
             var payload = new
@@ -58,23 +58,12 @@ namespace VectorRagDemo.BLL
                 contents = contents,
                 generationConfig = new
                 {
-                    maxOutputTokens = Config.MaxTokens,
-                    temperature = Config.Temperature,
-                    topP = Config.TopP,
-                    topK = Config.TopK,
+                    maxOutputTokens = prompt.MaxTokens,
+                    temperature = prompt.Temperature,
+                    topP = prompt.TopP,
+                    topK = prompt.TopK,
                     responseMimeType = "application/json",
-                    responseSchema = new
-                    {
-                        type = "object",
-                        properties = new
-                        {
-                            answer = new { type = "string" },
-                            supplementalInfo = new { type = "string" },
-                            questionToUser = new { type = "string" },
-                            usedChunks = new { type = "string" }
-                        },
-                        propertyOrdering = new[] { "answer", "supplementalInfo", "questionToUser", "usedChunks" }
-                    }
+                    responseSchema = JsonConvert.DeserializeObject<object>(prompt.ResponseSchema)
                 }
             };
 

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-
-namespace VectorRagDemo.Models
+﻿namespace VectorRagDemo.Models
 {
     public class Prompt
     {
@@ -12,6 +10,11 @@ namespace VectorRagDemo.Models
         public DateTime GemaaktOp { get; set; }
         public DateTime? GewijzigdOp { get; set; }
         public int Status { get; set; }
+        public string ResponseSchema { get; set; } = string.Empty;
+        public int MaxTokens { get; set; }
+        public double Temperature { get; set; }
+        public double TopP { get; set; }
+        public int TopK { get; set; }
 
         // Navigation properties
         public virtual Project ProjectNavigation { get; set; }
