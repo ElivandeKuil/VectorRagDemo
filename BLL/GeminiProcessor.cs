@@ -1,53 +1,85 @@
-﻿using System.Drawing;
-using System.Net.Http.Headers;
-using System.Text;
+﻿using System.Text;
 using Newtonsoft.Json;
-using VectorRagDemo.Data;
 using VectorRagDemo.Models;
+using VectorRagDemo.Models.Enums;
+using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.BLL
 {
-    public static class GeminiProcessor
+    public class GeminiProcessor
     {
-        private static readonly HttpClient client = new HttpClient();
+        private readonly VectorDbContext _context;
+        private readonly int _project;
+        private readonly GeminiApiClient _apiClient;
 
-        public static async Task<ChatbotResponse> GenerateContentAsync(
-            VectorDbContext context,
-            List<ChatMessage> chatHistory,
-            string currentUserInput,
-            string formattedNeighbors,
-            int project)
+        public GeminiProcessor(VectorDbContext context, HttpClient client)
         {
-            try
-            {
-                string projectId = ConnectionProcessor.GetProjectId();
-                string geminiEndpoint = $"https://{Config.Location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{Config.Location}/publishers/google/models/{Config.GeminiModelID}:generateContent";
-
-                string accessToken = await ConnectionProcessor.GetAuthenticationToken();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                StringContent content = BuildRequestConent(chatHistory, currentUserInput, formattedNeighbors, context, project);
-
-                HttpResponseMessage response = await client.PostAsync(geminiEndpoint, content);
-
-                return await ProcessResponse(response, context);
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred in GeminiConnector: {ex.Message}");
-                throw;
-            }
+            _context = context;
+            _project = 1;
+            _apiClient = new GeminiApiClient(client);
         }
 
-        private static StringContent BuildRequestConent(List<ChatMessage> chatHistory, string currentUserInput, string formattedNeighbors, VectorDbContext context, int project)
+        public async Task<ChatbotResponse> GenerateContent(
+            List<ChatMessage> chatHistory,
+            string currentUserInput,
+            string formattedNeighbors)
         {
-            var contents = new List<GeminiContent>();
+            var chatHistoryString = FormatChatHistory(chatHistory);
 
-            var prompt = context.Prompts.Where(o => o.Project == project && o.PromptType == 1 && o.Status == 1).Single();
-            var chatHistoryString = string.Join("\n", chatHistory.Select(m => $"{m.Role}: {m.Content}"));
-            var formattedPrompt = string.Format(prompt.Content, formattedNeighbors, chatHistoryString, currentUserInput);
-            contents.Add(CreateGeminiContent("user", formattedPrompt));
+            var summarisedContext = await ExecutePipelineStep<GeminiSummarisingInnerResponse>(
+                PromptTypeEnum.Sumarizing,
+                response => response.SummarisedRelevantOutput,
+                formattedNeighbors,
+                chatHistoryString,
+                currentUserInput
+            );
+
+            var result = await ExecutePipelineStep<GeminiAnswerGenerationInnerResponse, ChatbotResponse>(
+                PromptTypeEnum.GenerateResponse,
+                response => new ChatbotResponse
+                {
+                    SourceText = summarisedContext,
+                    ResponseText = response.Response
+                },
+                summarisedContext,
+                currentUserInput,
+                chatHistoryString
+            );
+
+            return result;
+        }
+
+        private async Task<TOutput> ExecutePipelineStep<TResponse, TOutput>(
+            PromptTypeEnum promptType,
+            Func<TResponse, TOutput> mapper,
+            params string[] formatArgs)
+        {
+            var prompt = GetPrompt(promptType);
+            var requestContent = BuildRequestContent(prompt, formatArgs);
+            var response = await _apiClient.SendRequestAsync(requestContent, promptType);
+            return await ProcessResponse(response, mapper);
+        }
+
+        private async Task<string> ExecutePipelineStep<TResponse>(
+            PromptTypeEnum promptType,
+            Func<TResponse, string> mapper,
+            params string[] formatArgs)
+        {
+            return await ExecutePipelineStep<TResponse, string>(promptType, mapper, formatArgs);
+        }
+
+        private Prompt GetPrompt(PromptTypeEnum promptType)
+        {
+            return _context.Prompts
+                .Where(o => o.Project == _project
+                    && o.PromptType == (int)promptType
+                    && o.Status == 1)
+                .Single();
+        }
+
+        private StringContent BuildRequestContent(Prompt prompt, params string[] formatArgs)
+        {
+            var formattedPrompt = string.Format(prompt.Content, formatArgs);
 
             var payload = new
             {
@@ -55,7 +87,10 @@ namespace VectorRagDemo.BLL
                 {
                     Parts = new List<GeminiPart> { new GeminiPart { Text = prompt.SystemInstruction } }
                 },
-                contents = contents,
+                contents = new List<GeminiContent>
+                {
+                    CreateGeminiContent("user", formattedPrompt)
+                },
                 generationConfig = new
                 {
                     maxOutputTokens = prompt.MaxTokens,
@@ -67,17 +102,16 @@ namespace VectorRagDemo.BLL
                 }
             };
 
-            string jsonPayload = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            return content;
+            string jsonPayload = JsonConvert.SerializeObject(payload,
+                new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+            return new StringContent(jsonPayload, Encoding.UTF8, "application/json");
         }
 
-        private static async Task<ChatbotResponse> ProcessResponse(
-    HttpResponseMessage response,
-    VectorDbContext context)  // Add context parameter
+        private async Task<TOutput> ProcessResponse<TResponse, TOutput>(
+            HttpResponseMessage response,
+            Func<TResponse, TOutput> mapper)
         {
-            ChatbotResponse output = new ChatbotResponse();
-
             if (!response.IsSuccessStatusCode)
             {
                 string errorContent = await response.Content.ReadAsStringAsync();
@@ -87,44 +121,19 @@ namespace VectorRagDemo.BLL
             string jsonResponse = await response.Content.ReadAsStringAsync();
             var geminiResponse = JsonConvert.DeserializeObject<GeminiResponse>(jsonResponse);
 
-            if (geminiResponse?.Candidates?.FirstOrDefault().Content?.Parts?.FirstOrDefault() is { } part)
+            if (geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault() is { } part)
             {
-                var innerJsonString = part.Text;
-                var innerData = JsonConvert.DeserializeObject<GeminiInnerResponse>(innerJsonString);
-
+                var innerData = JsonConvert.DeserializeObject<TResponse>(part.Text);
                 if (innerData != null)
                 {
-                    output.ResponseText = innerData.Answer;
-
-                    if (!string.IsNullOrEmpty(innerData.SupplementalInfo))
-                    {
-                        output.ResponseText += $"\n\n{innerData.SupplementalInfo}";
-                    }
-
-                    if (!string.IsNullOrEmpty(innerData.UsedChunks) && innerData.UsedChunks != "[]")
-                    {
-                        int[] chunkIds = innerData.UsedChunks.Split(',').Select(int.Parse).ToArray();
-
-                        var chunks = context.Chunks
-                            .Where(c => chunkIds.Contains(c.ID))
-                            .Select(c => new { c.ID, c.Tekst })
-                            .ToList();
-
-                        foreach (var chunk in chunks)
-                        {
-                            output.SourceText += $"CHUNKID:{chunk.ID} : {chunk.Tekst} \n\n";
-                        }
-                    }
-                    else
-                    {
-                        output.SourceText = "No source text used.";
-                    }
+                    return mapper(innerData);
                 }
             }
-            return output;
+
+            throw new Exception("No valid response received from Gemini API");
         }
 
-        private static GeminiContent CreateGeminiContent(string role, string text)
+        private GeminiContent CreateGeminiContent(string role, string text)
         {
             var parts = new List<GeminiPart>();
 
@@ -134,6 +143,11 @@ namespace VectorRagDemo.BLL
             }
 
             return new GeminiContent { Role = role, Parts = parts };
+        }
+
+        private string FormatChatHistory(List<ChatMessage> chatHistory)
+        {
+            return string.Join("\n", chatHistory.Select(m => $"{m.Role}: {m.Content}"));
         }
     }
 }

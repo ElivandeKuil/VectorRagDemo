@@ -1,14 +1,19 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Text;
-using VectorRagDemo.Data;
 using Microsoft.EntityFrameworkCore;
+using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.BLL
 {
-    public static class VectorQueryProcessor
+    public class VectorQueryProcessor
     {
-        public static async Task<string> QueryLocalVectorDbAsync(
-            VectorDbContext context,
+        VectorDbContext _context;
+
+        public VectorQueryProcessor(VectorDbContext context)
+        {
+            _context = context;
+        }
+        public async Task<string> QueryLocalVectorDbAsync(
             string connectionString,
             List<float> queryEmbedding,
             int topK)
@@ -22,7 +27,7 @@ namespace VectorRagDemo.BLL
                     return "Geen relevante informatie gevonden";
                 }
 
-                Dictionary<int, string> chunkDataMap = await ExtractChunkData(context, neighbors);
+                Dictionary<int, string> chunkDataMap = await ExtractChunkData(neighbors);
                 StringBuilder formattedChunks = GetFormattedChunks(neighbors, chunkDataMap);
 
                 return formattedChunks.ToString();
@@ -33,7 +38,7 @@ namespace VectorRagDemo.BLL
             }
         }
 
-        private static async Task<List<Models.Neighbor>> GetNearestNeighbors(
+        private async Task<List<Models.Neighbor>> GetNearestNeighbors(
             string connectionString,
             List<float> queryEmbedding,
             int topK)
@@ -81,7 +86,7 @@ namespace VectorRagDemo.BLL
             return results;
         }
 
-        private static StringBuilder GetFormattedChunks(
+        private StringBuilder GetFormattedChunks(
             List<Models.Neighbor> neighbors,
             Dictionary<int, string> chunkDataMap)
         {
@@ -108,15 +113,13 @@ namespace VectorRagDemo.BLL
             return formattedChunks;
         }
 
-        private static async Task<Dictionary<int, string>> ExtractChunkData(
-            VectorDbContext context,
-            List<Models.Neighbor> neighbors)
+        private async Task<Dictionary<int, string>> ExtractChunkData(List<Models.Neighbor> neighbors)
         {
             var chunkDataMap = new Dictionary<int, string>();
             var chunkIds = neighbors.Select(n => n.ChunkId).ToArray();
 
             // Retrieve chunk data from local database using EF Core
-            var chunks = await context.Chunks
+            var chunks = await _context.Chunks
                 .Where(c => chunkIds.Contains(c.ID))
                 .Select(c => new { c.ID, c.Tekst })
                 .ToListAsync();

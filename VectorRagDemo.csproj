@@ -29,10 +29,6 @@
 	</ItemGroup>
 	
   <ItemGroup>
-    <Folder Include="DAL\" />
-  </ItemGroup>
-	
-  <ItemGroup>
     <Protobuf Include="Protos\vectordb.proto" GrpcServices="Server" />
   </ItemGroup>
 

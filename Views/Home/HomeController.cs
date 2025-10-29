@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using VectorRagDemo.Data;
 using Microsoft.EntityFrameworkCore;
+using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.Controllers
 {

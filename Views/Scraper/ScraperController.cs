@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using VectorRagDemo.Data;
 using VectorRagDemo.BLL;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.Controllers
 {
@@ -10,11 +10,13 @@ namespace VectorRagDemo.Controllers
     {
         private readonly VectorDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly EmbeddingProcessor _embeddingProcessor;
 
         public ScraperController(VectorDbContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
+            _embeddingProcessor = new EmbeddingProcessor(new HttpClient());
         }
 
         public async Task<IActionResult> Index()
@@ -315,7 +317,7 @@ namespace VectorRagDemo.Controllers
                                 continue;
                             }
 
-                            var embedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(chunkText);
+                            var embedding = await _embeddingProcessor.GenerateQueryEmbeddingAsync(chunkText);
 
                             if (embedding == null || !embedding.Any())
                             {

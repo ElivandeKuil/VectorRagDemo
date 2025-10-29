@@ -1,22 +1,24 @@
 using Microsoft.EntityFrameworkCore;
-using VectorRagDemo.Data;
+using VectorRagDemo.DAL;
 using VectorRagDemo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
 builder.Services.AddControllersWithViews();
 
-// Database
 builder.Services.AddDbContext<VectorDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// gRPC
+builder.Services.AddScoped<ChatService>(provider =>
+{
+    var context = provider.GetRequiredService<VectorDbContext>();
+    return new ChatService(context, builder.Configuration);
+});
+
 builder.Services.AddGrpc();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -34,7 +36,6 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Map gRPC service (we'll create this next)
-app.MapGrpcService<VectorDbGrpcService>();
+app.MapGrpcService<GrpcService>();
 
 app.Run();

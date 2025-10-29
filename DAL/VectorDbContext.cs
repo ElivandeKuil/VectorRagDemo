@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.Models;
 
-namespace VectorRagDemo.Data
+namespace VectorRagDemo.DAL
 {
     public class VectorDbContext : DbContext
     {

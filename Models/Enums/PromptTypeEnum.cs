@@ -1,0 +1,9 @@
+﻿namespace VectorRagDemo.Models.Enums
+{
+    public enum PromptTypeEnum
+    {
+        Legacy = 1,
+        Sumarizing = 2,
+        GenerateResponse = 3
+    }
+}

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using VectorRagDemo.Data;
+using VectorRagDemo.DAL;
 using VectorRagDemo.Models;
 
 namespace VectorRagDemo.Controllers

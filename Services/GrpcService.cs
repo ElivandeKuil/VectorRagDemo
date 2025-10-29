@@ -1,21 +1,21 @@
 ﻿using Grpc.Core;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using VectorRagDemo.Data;
+using VectorRagDemo.DAL;
 using VectorRagDemo.Models;
 
 namespace VectorRagDemo.Services
 {
-    public class VectorDbGrpcService : VectorDbService.VectorDbServiceBase
+    public class GrpcService : VectorDbService.VectorDbServiceBase
     {
         private readonly VectorDbContext _context;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<VectorDbGrpcService> _logger;
+        private readonly ILogger<GrpcService> _logger;
 
-        public VectorDbGrpcService(
+        public GrpcService(
             VectorDbContext context,
             IConfiguration configuration,
-            ILogger<VectorDbGrpcService> logger)
+            ILogger<GrpcService> logger)
         {
             _context = context;
             _configuration = configuration;

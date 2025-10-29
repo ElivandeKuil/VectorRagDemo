@@ -1,74 +1,147 @@
-﻿using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
+using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.BLL
 {
-    public static class EmbeddingProcessor
+    public class EmbeddingProcessor
     {
-        public static async Task<List<float>> GenerateQueryEmbeddingAsync(string query)
+        private readonly VertexApiClient _apiClient;
+
+        public EmbeddingProcessor(HttpClient client)
+        {
+            _apiClient = new VertexApiClient(client);
+        }
+
+        public async Task<List<float>> GenerateQueryEmbeddingAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
                 return new List<float>();
             }
 
-            try
+            var requestContent = BuildEmbeddingRequest(query, "RETRIEVAL_QUERY");
+            var response = await _apiClient.SendEmbeddingRequestAsync(requestContent);
+            return await ProcessEmbeddingResponse(response);
+        }
+
+        public async Task<List<float>> GenerateDocumentEmbeddingAsync(string document)
+        {
+            if (string.IsNullOrWhiteSpace(document))
             {
-                string projectId = ConnectionProcessor.GetProjectId();
-                string embeddingApiUrl = $"https://{Config.Location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{Config.Location}/publishers/google/models/{Config.EmbeddingModel}:predict";
+                return new List<float>();
+            }
 
-                using (HttpClient client = new HttpClient())
+            var requestContent = BuildEmbeddingRequest(document, "RETRIEVAL_DOCUMENT");
+            var response = await _apiClient.SendEmbeddingRequestAsync(requestContent);
+            return await ProcessEmbeddingResponse(response);
+        }
+
+        public async Task<List<List<float>>> GenerateBatchEmbeddingsAsync(
+            IEnumerable<string> texts,
+            string taskType = "RETRIEVAL_DOCUMENT")
+        {
+            var validTexts = texts.Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
+
+            if (!validTexts.Any())
+            {
+                return new List<List<float>>();
+            }
+
+            var requestContent = BuildBatchEmbeddingRequest(validTexts, taskType);
+            var response = await _apiClient.SendEmbeddingRequestAsync(requestContent);
+            return await ProcessBatchEmbeddingResponse(response);
+        }
+
+        private StringContent BuildEmbeddingRequest(string text, string taskType)
+        {
+            var requestData = new
+            {
+                instances = new[]
                 {
-                    string accessToken = await ConnectionProcessor.GetAuthenticationToken();
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                    var requestData = new
+                    new
                     {
-                        instances = new[]
-                        {
-                            new
-                            {
-                                task_type = "RETRIEVAL_QUERY",
-                                content = query
-                            }
-                        }
-                    };
-
-                    string jsonRequest = JsonConvert.SerializeObject(requestData);
-                    var httpContent = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-
-                    HttpResponseMessage response = await client.PostAsync(embeddingApiUrl, httpContent);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string responseJson = await response.Content.ReadAsStringAsync();
-                        var embeddingResult = JObject.Parse(responseJson);
-
-                        var prediction = embeddingResult["predictions"]?.FirstOrDefault();
-                        var embeddingValues = prediction?["embeddings"]?["values"];
-
-                        if (embeddingValues != null)
-                        {
-                            return embeddingValues.ToObject<List<float>>();
-                        }
-                        else
-                        {
-                            throw new Exception("API response did not contain valid embedding values.");
-                        }
-                    }
-                    else
-                    {
-                        string errorContent = await response.Content.ReadAsStringAsync();
-                        throw new Exception($"API request failed with status {response.StatusCode}: {errorContent}");
+                        task_type = taskType,
+                        content = text
                     }
                 }
-            }
-            catch (Exception ex)
+            };
+
+            return CreateJsonContent(requestData);
+        }
+
+        private StringContent BuildBatchEmbeddingRequest(List<string> texts, string taskType)
+        {
+            var requestData = new
             {
-                throw;
+                instances = texts.Select(text => new
+                {
+                    task_type = taskType,
+                    content = text
+                }).ToArray()
+            };
+
+            return CreateJsonContent(requestData);
+        }
+
+        private async Task<List<float>> ProcessEmbeddingResponse(HttpResponseMessage response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Embedding API request failed with status {response.StatusCode}: {errorContent}");
             }
+
+            string responseJson = await response.Content.ReadAsStringAsync();
+            var embeddingResult = JObject.Parse(responseJson);
+
+            var prediction = embeddingResult["predictions"]?.FirstOrDefault();
+            var embeddingValues = prediction?["embeddings"]?["values"];
+
+            if (embeddingValues != null)
+            {
+                return embeddingValues.ToObject<List<float>>();
+            }
+
+            throw new Exception("API response did not contain valid embedding values.");
+        }
+
+        private async Task<List<List<float>>> ProcessBatchEmbeddingResponse(HttpResponseMessage response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Embedding API request failed with status {response.StatusCode}: {errorContent}");
+            }
+
+            string responseJson = await response.Content.ReadAsStringAsync();
+            var embeddingResult = JObject.Parse(responseJson);
+
+            var predictions = embeddingResult["predictions"];
+            if (predictions == null)
+            {
+                throw new Exception("API response did not contain predictions.");
+            }
+
+            var embeddings = new List<List<float>>();
+            foreach (var prediction in predictions)
+            {
+                var embeddingValues = prediction["embeddings"]?["values"];
+                if (embeddingValues != null)
+                {
+                    embeddings.Add(embeddingValues.ToObject<List<float>>());
+                }
+            }
+
+            return embeddings;
+        }
+
+        private StringContent CreateJsonContent(object data)
+        {
+            string jsonRequest = JsonConvert.SerializeObject(data);
+            return new StringContent(jsonRequest, Encoding.UTF8, "application/json");
         }
     }
 }

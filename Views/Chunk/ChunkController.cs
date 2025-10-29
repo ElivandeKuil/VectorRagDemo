@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using VectorRagDemo.Data;
 using VectorRagDemo.BLL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
+using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.Controllers
 {
@@ -11,11 +11,13 @@ namespace VectorRagDemo.Controllers
     {
         private readonly VectorDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly EmbeddingProcessor _embeddingProcessor;
 
         public ChunkController(VectorDbContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
+            _embeddingProcessor = new EmbeddingProcessor(new HttpClient());
         }
 
         public async Task<IActionResult> Index()
@@ -73,7 +75,7 @@ namespace VectorRagDemo.Controllers
                 }
 
                 // Generate embedding for the chunk text
-                var embedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(tekst);
+                var embedding = await _embeddingProcessor.GenerateQueryEmbeddingAsync(tekst);
 
                 if (embedding == null || !embedding.Any())
                 {
