@@ -1,4 +1,4 @@
-﻿namespace VectorRagDemo.Models
+﻿namespace VectorRagDemo.Models.JsonContracts.GeminiAPI
 {
     public class Neighbor
     {

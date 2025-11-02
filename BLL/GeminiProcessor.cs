@@ -1,8 +1,11 @@
 ﻿using System.Text;
 using Newtonsoft.Json;
-using VectorRagDemo.Models;
 using VectorRagDemo.Models.Enums;
 using VectorRagDemo.DAL;
+using VectorRagDemo.Models.Entities;
+using VectorRagDemo.Models.ApiContracts.GeminiAPI;
+using VectorRagDemo.Models.JsonContracts.GeminiAPI;
+using VectorRagDemo.Models.DataContracts;
 
 namespace VectorRagDemo.BLL
 {
@@ -19,7 +22,7 @@ namespace VectorRagDemo.BLL
             _apiClient = new GeminiApiClient(client);
         }
 
-        public async Task<ChatbotResponse> GenerateContent(
+        public async Task<GenerativeModelResponse> GenerateContent(
             List<ChatMessage> chatHistory,
             string currentUserInput,
             string formattedNeighbors)
@@ -34,9 +37,9 @@ namespace VectorRagDemo.BLL
                 currentUserInput
             );
 
-            var result = await ExecutePipelineStep<GeminiAnswerGenerationInnerResponse, ChatbotResponse>(
+            var result = await ExecutePipelineStep<GeminiAnswerGenerationInnerResponse, GenerativeModelResponse>(
                 PromptTypeEnum.GenerateResponse,
-                response => new ChatbotResponse
+                response => new GenerativeModelResponse
                 {
                     SourceText = summarisedContext,
                     ResponseText = response.Response

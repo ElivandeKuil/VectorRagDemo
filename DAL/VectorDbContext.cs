@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using VectorRagDemo.Models;
+using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.DAL
 {

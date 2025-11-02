@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
+using VectorRagDemo.Models.JsonContracts.GeminiAPI;
 
-namespace VectorRagDemo.Models
+namespace VectorRagDemo.Models.ApiContracts.GeminiAPI
 {
     public class GeminiContent
     {

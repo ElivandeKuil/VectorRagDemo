@@ -3,6 +3,7 @@ using VectorRagDemo.BLL;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
+using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.Controllers
 {
@@ -99,7 +100,7 @@ namespace VectorRagDemo.Controllers
         {
             try
             {
-                var element = new Models.ScrapingElement
+                var element = new ScrapingElement
                 {
                     Project = request.ProjectId,
                     ElementName = request.ElementName,
@@ -192,7 +193,7 @@ namespace VectorRagDemo.Controllers
                         return Json(new { success = false, error = "Bron title is required when creating new Bron" });
                     }
 
-                    var newBron = new Models.Bron
+                    var newBron = new Bron
                     {
                         Title = request.BronTitle,
                         Project = request.ProjectId,

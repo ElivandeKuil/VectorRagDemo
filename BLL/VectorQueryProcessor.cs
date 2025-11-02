@@ -2,6 +2,7 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
+using VectorRagDemo.Models.JsonContracts.GeminiAPI;
 
 namespace VectorRagDemo.BLL
 {
@@ -38,12 +39,20 @@ namespace VectorRagDemo.BLL
             }
         }
 
-        private async Task<List<Models.Neighbor>> GetNearestNeighbors(
+        public async Task<List<Neighbor>> GetNearestNeighborsAsync(
             string connectionString,
             List<float> queryEmbedding,
             int topK)
         {
-            var results = new List<Models.Neighbor>();
+            return await GetNearestNeighbors(connectionString, queryEmbedding, topK);
+        }
+
+        private async Task<List<Neighbor>> GetNearestNeighbors(
+            string connectionString,
+            List<float> queryEmbedding,
+            int topK)
+        {
+            var results = new List<Neighbor>();
             var vectorString = "[" + string.Join(",", queryEmbedding) + "]";
 
             using var connection = new SqlConnection(connectionString);
@@ -72,7 +81,7 @@ namespace VectorRagDemo.BLL
 
             while (await reader.ReadAsync())
             {
-                results.Add(new Models.Neighbor
+                results.Add(new Neighbor
                 {
                     ChunkId = reader.GetInt32(0),
                     BronId = reader.GetInt32(1),
@@ -87,7 +96,7 @@ namespace VectorRagDemo.BLL
         }
 
         private StringBuilder GetFormattedChunks(
-            List<Models.Neighbor> neighbors,
+            List<Neighbor> neighbors,
             Dictionary<int, string> chunkDataMap)
         {
             StringBuilder formattedChunks = new StringBuilder();
@@ -113,7 +122,7 @@ namespace VectorRagDemo.BLL
             return formattedChunks;
         }
 
-        private async Task<Dictionary<int, string>> ExtractChunkData(List<Models.Neighbor> neighbors)
+        private async Task<Dictionary<int, string>> ExtractChunkData(List<Neighbor> neighbors)
         {
             var chunkDataMap = new Dictionary<int, string>();
             var chunkIds = neighbors.Select(n => n.ChunkId).ToArray();

@@ -1,5 +1,6 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
-}
+﻿@model VectorRagDemo.Models.DataContracts.ChatMessage
+
+<div class="message user">
+    <div class="message-role">You</div>
+    <div>@Model.Content</div>
+</div>

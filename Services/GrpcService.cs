@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
-using VectorRagDemo.Models;
+using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.Services
 {
@@ -131,7 +131,7 @@ namespace VectorRagDemo.Services
         {
             try
             {
-                var bron = new Bron
+                var bron = new Models.Entities.Bron
                 {
                     Title = request.Title,
                     Project = request.Project,

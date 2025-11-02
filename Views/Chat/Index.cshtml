@@ -1,79 +1,15 @@
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment WebHostEnvironment
 @{
     ViewData["Title"] = "RAG Chatbot";
+    var cssPath = System.IO.Path.Combine(WebHostEnvironment.ContentRootPath, "Views", "Chat", "Chat.css");
+    var chatCss = System.IO.File.ReadAllText(cssPath);
 }
 
 <style>
-    .chat-container {
-        max-width: 900px;
-        margin: 0 auto;
-    }
-    .chat-messages {
-        height: 500px;
-        overflow-y: auto;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 20px;
-        background-color: #f8f9fa;
-        margin-bottom: 20px;
-    }
-    .message {
-        margin-bottom: 15px;
-        padding: 12px 16px;
-        border-radius: 8px;
-        max-width: 80%;
-        word-wrap: break-word;
-    }
-    .message.user {
-        background-color: #007bff;
-        color: white;
-        margin-left: auto;
-        text-align: right;
-    }
-    .message.assistant {
-        background-color: white;
-        color: #333;
-        border: 1px solid #dee2e6;
-    }
-    .message-role {
-        font-weight: bold;
-        font-size: 0.85em;
-        margin-bottom: 5px;
-        opacity: 0.8;
-    }
-    .sources-section {
-        margin-top: 10px;
-        padding-top: 10px;
-        border-top: 1px solid #dee2e6;
-        font-size: 0.9em;
-    }
-    .sources-title {
-        font-weight: bold;
-        color: #6c757d;
-        margin-bottom: 5px;
-    }
-    .sources-content {
-        background-color: #f8f9fa;
-        padding: 8px;
-        border-radius: 4px;
-        white-space: pre-wrap;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-    .loading-spinner {
-        display: none;
-        text-align: center;
-        padding: 20px;
-    }
-    .chat-input-container {
-        display: flex;
-        gap: 10px;
-    }
-    .chat-input-container textarea {
-        flex: 1;
-    }
+    @Html.Raw(chatCss)
 </style>
 
-<div class="chat-container">
+<div class="chat-container" data-ask-url="@Url.Action("Ask", "Chat")">
     <h1 class="mb-4">RAG Chatbot</h1>
 
     <div class="card mb-3">
@@ -119,118 +55,11 @@
 </div>
 
 @section Scripts {
-<script>
-    let chatHistory = [];
-
-    function handleKeyPress(event) {
-        // Send on Ctrl+Enter or Cmd+Enter
-        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-            event.preventDefault();
-            sendMessage();
-        }
+    @{
+        var jsPath = System.IO.Path.Combine(WebHostEnvironment.ContentRootPath, "Views", "Chat", "Chat.js");
+        var chatJs = System.IO.File.ReadAllText(jsPath);
     }
-
-    async function sendMessage() {
-        const input = document.getElementById('userInput');
-        const query = input.value.trim();
-
-        if (!query) {
-            return;
-        }
-
-        // Add user message to chat
-        addMessage('user', query);
-
-        // Clear input
-        input.value = '';
-
-        // Show loading spinner
-        document.getElementById('loadingSpinner').style.display = 'block';
-        document.getElementById('sendButton').disabled = true;
-
-        try {
-            const response = await fetch('@Url.Action("Ask", "Chat")', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    query: query,
-                    history: chatHistory
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Add assistant response
-                addMessage('assistant', data.answer, data.sources);
-
-                // Update chat history
-                chatHistory.push({ role: 'user', content: query });
-                chatHistory.push({ role: 'model', content: data.answer });
-            } else {
-                addMessage('system', 'Error: ' + data.error);
-            }
-        } catch (error) {
-            addMessage('system', 'Error: Failed to communicate with the server.');
-            console.error('Error:', error);
-        } finally {
-            // Hide loading spinner
-            document.getElementById('loadingSpinner').style.display = 'none';
-            document.getElementById('sendButton').disabled = false;
-            input.focus();
-        }
-    }
-
-    function addMessage(role, content, sources = null) {
-        const messagesContainer = document.getElementById('chatMessages');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message ' + role;
-
-        let html = '';
-
-        if (role === 'user') {
-            html += '<div class="message-role">You</div>';
-            html += '<div>' + escapeHtml(content) + '</div>';
-        } else if (role === 'assistant') {
-            html += '<div class="message-role">Assistant</div>';
-            html += '<div>' + escapeHtml(content) + '</div>';
-
-            if (sources && sources !== 'No source text used.') {
-                html += '<div class="sources-section">';
-                html += '<div class="sources-title">📚 Sources:</div>';
-                html += '<div class="sources-content">' + escapeHtml(sources) + '</div>';
-                html += '</div>';
-            }
-        } else {
-            html += content;
-        }
-
-        messageDiv.innerHTML = html;
-        messagesContainer.appendChild(messageDiv);
-
-        // Scroll to bottom
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    function clearChat() {
-        if (confirm('Are you sure you want to clear the chat history?')) {
-            chatHistory = [];
-            const messagesContainer = document.getElementById('chatMessages');
-            messagesContainer.innerHTML = '<div class="message system">Chat cleared. Ask me anything!</div>';
-        }
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // Focus input on load
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('userInput').focus();
-    });
-</script>
+    <script>
+        @Html.Raw(chatJs)
+    </script>
 }

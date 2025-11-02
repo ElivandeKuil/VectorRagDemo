@@ -2,7 +2,7 @@ using Fizzler.Systems.HtmlAgilityPack;
 using HtmlAgilityPack;
 using System.Diagnostics;
 using System.Text;
-using VectorRagDemo.Models;
+using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.BLL
 {

@@ -1,6 +1,6 @@
-﻿namespace VectorRagDemo.Models
+﻿namespace VectorRagDemo.Models.JsonContracts.GeminiAPI
 {
-    public class ChatbotResponse
+    public class GenerativeModelResponse
     {
         public string ResponseText { get; set; }
 
