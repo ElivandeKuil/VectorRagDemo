@@ -23,10 +23,10 @@ namespace VectorRagDemo.DAL
             return await _client.PostAsync(endpoint, content);
         }
 
-        public async Task<HttpResponseMessage> SendGeminiRequestAsync(StringContent content, PromptTypeEnum type)
+        public async Task<HttpResponseMessage> SendGeminiRequestAsync(StringContent content, string model)
         {
             string projectId = ConnectionProcessor.GetProjectId();
-            string endpoint = BuildGeminiEndpointUrl(projectId, type);
+            string endpoint = BuildGeminiEndpointUrl(projectId, model);
 
             await SetAuthorizationHeader();
 
@@ -44,17 +44,9 @@ namespace VectorRagDemo.DAL
             return $"https://{Config.Location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{Config.Location}/publishers/google/models/{Config.EmbeddingModel}:predict";
         }
 
-        private string BuildGeminiEndpointUrl(string projectId, PromptTypeEnum type)
+        private string BuildGeminiEndpointUrl(string projectId, string model)
         {
-            switch (type)
-            {
-                case PromptTypeEnum.Sumarizing:
-                    return $"https://{GeminiLocationEnum.Netherlands}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{GeminiLocationEnum.Netherlands}/publishers/google/models/{GeminiModelEnum.Flash}:generateContent";
-                case PromptTypeEnum.GenerateResponse:
-                    return $"https://{GeminiLocationEnum.Netherlands}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{GeminiLocationEnum.Netherlands}/publishers/google/models/{GeminiModelEnum.Flash}:generateContent";
-                default:
-                    return $"https://{GeminiLocationEnum.Netherlands}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{GeminiLocationEnum.Netherlands}/publishers/google/models/{GeminiModelEnum.Flash}:generateContent";
-            }
+            return $"https://{GeminiLocationEnum.Netherlands}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{GeminiLocationEnum.Netherlands}/publishers/google/models/{model}:generateContent";
         }
     }
 }

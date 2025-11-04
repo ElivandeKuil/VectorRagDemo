@@ -59,14 +59,15 @@ namespace VectorRagDemo.Controllers
         // POST: Prompts/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Project,PromptType,SystemInstruction,Content")] Prompt prompt)
+        public async Task<IActionResult> Create([Bind("Project,PromptType,SystemInstruction,Content,ResponseSchema,Model")] Prompt prompt)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(prompt.SystemInstruction) ||
-                    string.IsNullOrWhiteSpace(prompt.Content))
+                    string.IsNullOrWhiteSpace(prompt.Content) ||
+                    string.IsNullOrWhiteSpace(prompt.Model))
                 {
-                    TempData["Error"] = "System Instruction and Content are required.";
+                    TempData["Error"] = "System Instruction, Content, and Model are required.";
                     await LoadDropdownsAsync();
                     return View(prompt);
                 }
@@ -109,7 +110,7 @@ namespace VectorRagDemo.Controllers
         // POST: Prompts/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,Project,PromptType,SystemInstruction,Content,GemaaktOp,Status")] Prompt prompt)
+        public async Task<IActionResult> Edit(int id, [Bind("ID,Project,PromptType,SystemInstruction,Content,ResponseSchema,Model,GemaaktOp,Status")] Prompt prompt)
         {
             if (id != prompt.ID)
             {
@@ -119,9 +120,10 @@ namespace VectorRagDemo.Controllers
             try
             {
                 if (string.IsNullOrWhiteSpace(prompt.SystemInstruction) ||
-                    string.IsNullOrWhiteSpace(prompt.Content))
+                    string.IsNullOrWhiteSpace(prompt.Content) ||
+                    string.IsNullOrWhiteSpace(prompt.Model))
                 {
-                    TempData["Error"] = "System Instruction and Content are required.";
+                    TempData["Error"] = "System Instruction, Content, and Model are required.";
                     await LoadDropdownsAsync(prompt.Project, prompt.PromptType);
                     return View(prompt);
                 }

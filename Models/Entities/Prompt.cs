@@ -15,6 +15,7 @@
         public double Temperature { get; set; }
         public double TopP { get; set; }
         public int TopK { get; set; }
+        public string Model { get; set; } = string.Empty;
 
         // Navigation properties
         public virtual Project ProjectNavigation { get; set; }

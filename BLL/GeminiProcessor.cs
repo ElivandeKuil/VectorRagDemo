@@ -59,7 +59,7 @@ namespace VectorRagDemo.BLL
         {
             var prompt = GetPrompt(promptType);
             var requestContent = BuildRequestContent(prompt, formatArgs);
-            var response = await _apiClient.SendRequestAsync(requestContent, promptType);
+            var response = await _apiClient.SendRequestAsync(requestContent, prompt.Model);
             return await ProcessResponse(response, mapper);
         }
 

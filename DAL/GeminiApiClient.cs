@@ -1,6 +1,4 @@
-﻿using VectorRagDemo.Models.Enums;
-
-namespace VectorRagDemo.DAL
+﻿namespace VectorRagDemo.DAL
 {
     public class GeminiApiClient
     {
@@ -11,9 +9,9 @@ namespace VectorRagDemo.DAL
             _vertexClient = new VertexApiClient(client);
         }
 
-        public async Task<HttpResponseMessage> SendRequestAsync(StringContent content, PromptTypeEnum type)
+        public async Task<HttpResponseMessage> SendRequestAsync(StringContent content, string model)
         {
-            return await _vertexClient.SendGeminiRequestAsync(content, type);
+            return await _vertexClient.SendGeminiRequestAsync(content, model);
         }
     }
 }

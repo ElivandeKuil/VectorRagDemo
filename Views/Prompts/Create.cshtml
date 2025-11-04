@@ -42,6 +42,16 @@
             </div>
 
             <div class="mb-3">
+                <label asp-for="Model" class="form-label">Model</label>
+                <select asp-for="Model" class="form-select" required>
+                    <option value="">-- Select a Model --</option>
+                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Faster, Lower Cost)</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
+                </select>
+                <div class="form-text">Select the Gemini model to use for this prompt.</div>
+            </div>
+
+            <div class="mb-3">
                 <label asp-for="SystemInstruction" class="form-label">System Instruction</label>
                 <textarea asp-for="SystemInstruction" class="form-control" rows="4" required
                           placeholder="Enter system-level instructions for the AI model..."></textarea>
@@ -56,6 +66,14 @@
                           placeholder="Enter the main prompt content..."></textarea>
                 <div class="form-text">
                     The main content of the prompt that will be used in RAG queries.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ResponseSchema" class="form-label">Response Schema (Output Format)</label>
+                <textarea asp-for="ResponseSchema" class="form-control" rows="6" placeholder="Enter JSON schema for structured output..."></textarea>
+                <div class="form-text">
+                    Define the JSON schema for the AI's response format. Leave empty for unstructured responses.
                 </div>
             </div>
 
