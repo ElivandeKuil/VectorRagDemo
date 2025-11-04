@@ -6,6 +6,7 @@ namespace VectorRagDemo.Services
     public abstract class ServiceBase
     {
         public VectorDbContext Context;
+        public LogboekDbContext LogboekContext;
         public IConfiguration Configuration;
 
         private HttpClient _httpClient;
@@ -34,7 +35,7 @@ namespace VectorRagDemo.Services
             {
                 if(_geminiProcessor == null)
                 {
-                    _geminiProcessor = new GeminiProcessor(Context, HttpClient);
+                    _geminiProcessor = new GeminiProcessor(Context, HttpClient, LogboekContext);
                 }
                 return _geminiProcessor;
             }
@@ -52,7 +53,7 @@ namespace VectorRagDemo.Services
             {
                 if (_embeddingProcessor == null)
                 {
-                    _embeddingProcessor = new EmbeddingProcessor(HttpClient);
+                    _embeddingProcessor = new EmbeddingProcessor(HttpClient, LogboekContext);
                 }
                 return _embeddingProcessor;
             }
@@ -80,9 +81,10 @@ namespace VectorRagDemo.Services
             }
         }
 
-        public ServiceBase(VectorDbContext context, IConfiguration configuration)
+        public ServiceBase(VectorDbContext context, LogboekDbContext logboekContext, IConfiguration configuration)
         {
             Context = context;
+            LogboekContext = logboekContext;
             Configuration = configuration;
         }
     }

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Newtonsoft.Json;
 using VectorRagDemo.Models.Enums;
 using VectorRagDemo.DAL;
@@ -13,13 +13,13 @@ namespace VectorRagDemo.BLL
     {
         private readonly VectorDbContext _context;
         private readonly int _project;
-        private readonly GeminiApiClient _apiClient;
+        private readonly ApiClient _apiClient;
 
-        public GeminiProcessor(VectorDbContext context, HttpClient client)
+        public GeminiProcessor(VectorDbContext context, HttpClient client, LogboekDbContext logboekContext)
         {
             _context = context;
             _project = 1;
-            _apiClient = new GeminiApiClient(client);
+            _apiClient = new ApiClient(client, logboekContext);
         }
 
         public async Task<GenerativeModelResponse> GenerateContent(
@@ -59,7 +59,7 @@ namespace VectorRagDemo.BLL
         {
             var prompt = GetPrompt(promptType);
             var requestContent = BuildRequestContent(prompt, formatArgs);
-            var response = await _apiClient.SendRequestAsync(requestContent, prompt.Model);
+            var response = await SendGeminiRequestAsync(requestContent, prompt.Model);
             return await ProcessResponse(response, mapper);
         }
 
@@ -69,6 +69,14 @@ namespace VectorRagDemo.BLL
             params string[] formatArgs)
         {
             return await ExecutePipelineStep<TResponse, string>(promptType, mapper, formatArgs);
+        }
+
+        private async Task<HttpResponseMessage> SendGeminiRequestAsync(StringContent content, string model)
+        {
+            string endpoint = VertexApiEndpointBuilder.BuildGeminiEndpoint(model);
+            string accessToken = await ConnectionProcessor.GetAuthenticationToken();
+
+            return await _apiClient.PostAsync(endpoint, content, accessToken);
         }
 
         private Prompt GetPrompt(PromptTypeEnum promptType)

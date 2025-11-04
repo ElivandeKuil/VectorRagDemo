@@ -10,14 +10,16 @@ namespace VectorRagDemo.Controllers
     public class ScraperController : Controller
     {
         private readonly VectorDbContext _context;
+        private readonly LogboekDbContext _logboekContext;
         private readonly IConfiguration _configuration;
         private readonly EmbeddingProcessor _embeddingProcessor;
 
-        public ScraperController(VectorDbContext context, IConfiguration configuration)
+        public ScraperController(VectorDbContext context, LogboekDbContext logboekContext, IConfiguration configuration)
         {
             _context = context;
+            _logboekContext = logboekContext;
             _configuration = configuration;
-            _embeddingProcessor = new EmbeddingProcessor(new HttpClient());
+            _embeddingProcessor = new EmbeddingProcessor(new HttpClient(), logboekContext);
         }
 
         public async Task<IActionResult> Index()

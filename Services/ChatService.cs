@@ -15,8 +15,8 @@ namespace VectorRagDemo.Services
         private const double FreshnessWeight = 0.3;
         private const double SimilarityWeight = 0.7;
 
-        public ChatService(VectorDbContext context, IConfiguration configuration)
-            : base(context, configuration)
+        public ChatService(VectorDbContext context, LogboekDbContext logboekContext, IConfiguration configuration)
+            : base(context, logboekContext, configuration)
         {
 
         }

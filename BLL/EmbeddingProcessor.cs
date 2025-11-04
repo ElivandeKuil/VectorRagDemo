@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
@@ -8,11 +8,11 @@ namespace VectorRagDemo.BLL
 {
     public class EmbeddingProcessor
     {
-        private readonly VertexApiClient _apiClient;
+        private readonly ApiClient _apiClient;
 
-        public EmbeddingProcessor(HttpClient client)
+        public EmbeddingProcessor(HttpClient client, LogboekDbContext logboekContext)
         {
-            _apiClient = new VertexApiClient(client);
+            _apiClient = new ApiClient(client, logboekContext);
         }
 
         public async Task<List<float>> GenerateQueryEmbeddingAsync(string query)
@@ -23,7 +23,7 @@ namespace VectorRagDemo.BLL
             }
 
             var requestContent = BuildEmbeddingRequest(query, "RETRIEVAL_QUERY");
-            var response = await _apiClient.SendEmbeddingRequestAsync(requestContent);
+            var response = await SendEmbeddingRequestAsync(requestContent);
             return await ProcessEmbeddingResponse(response);
         }
 
@@ -35,7 +35,7 @@ namespace VectorRagDemo.BLL
             }
 
             var requestContent = BuildEmbeddingRequest(document, "RETRIEVAL_DOCUMENT");
-            var response = await _apiClient.SendEmbeddingRequestAsync(requestContent);
+            var response = await SendEmbeddingRequestAsync(requestContent);
             return await ProcessEmbeddingResponse(response);
         }
 
@@ -51,8 +51,16 @@ namespace VectorRagDemo.BLL
             }
 
             var requestContent = BuildBatchEmbeddingRequest(validTexts, taskType);
-            var response = await _apiClient.SendEmbeddingRequestAsync(requestContent);
+            var response = await SendEmbeddingRequestAsync(requestContent);
             return await ProcessBatchEmbeddingResponse(response);
+        }
+
+        private async Task<HttpResponseMessage> SendEmbeddingRequestAsync(StringContent content)
+        {
+            string endpoint = VertexApiEndpointBuilder.BuildEmbeddingEndpoint();
+            string accessToken = await ConnectionProcessor.GetAuthenticationToken();
+
+            return await _apiClient.PostAsync(endpoint, content, accessToken);
         }
 
         private StringContent BuildEmbeddingRequest(string text, string taskType)
