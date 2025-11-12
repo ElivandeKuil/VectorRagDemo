@@ -4,6 +4,7 @@
     {
         Legacy = 1,
         Sumarizing = 2,
-        GenerateResponse = 3
+        GenerateResponse = 3,
+        PreProcessing = 1002
     }
 }

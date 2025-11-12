@@ -79,6 +79,34 @@
                 </div>
             </div>
 
+            <h5 class="mt-4 mb-3">Model Parameters</h5>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="MaxTokens" class="form-label">Max Tokens</label>
+                    <input asp-for="MaxTokens" type="number" class="form-control" min="1" max="8192" required />
+                    <div class="form-text">Maximum number of tokens in the response (1-8192).</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="TopK" class="form-label">Top K</label>
+                    <input asp-for="TopK" type="number" class="form-control" min="1" max="100" required />
+                    <div class="form-text">Top-K sampling parameter (1-100).</div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="Temperature" class="form-label">Temperature</label>
+                    <input asp-for="Temperature" type="number" class="form-control" step="0.1" min="0.0" max="2.0" required />
+                    <div class="form-text">Controls randomness (0.0 = deterministic, 2.0 = very random).</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="TopP" class="form-label">Top P</label>
+                    <input asp-for="TopP" type="number" class="form-control" step="0.1" min="0.0" max="1.0" required />
+                    <div class="form-text">Nucleus sampling parameter (0.0-1.0).</div>
+                </div>
+            </div>
+
             <div class="mb-3">
                 <div class="row">
                     <div class="col-md-6">

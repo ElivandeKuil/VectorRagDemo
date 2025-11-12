@@ -4,7 +4,7 @@ namespace VectorRagDemo.Models.ApiContracts.GeminiAPI
 {
     public class GeminiSummarisingInnerResponse
     {
-        [JsonProperty("summarisedRelevantOutput")]
-        public string SummarisedRelevantOutput { get; set; }
+        [JsonProperty("relevantOutput")]
+        public string RelevantOutput { get; set; }
     }
 }

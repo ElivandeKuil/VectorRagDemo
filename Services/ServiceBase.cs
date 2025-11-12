@@ -53,7 +53,7 @@ namespace VectorRagDemo.Services
             {
                 if (_embeddingProcessor == null)
                 {
-                    _embeddingProcessor = new EmbeddingProcessor(HttpClient, LogboekContext);
+                    _embeddingProcessor = new EmbeddingProcessor(HttpClient, Context, LogboekContext);
                 }
                 return _embeddingProcessor;
             }

@@ -19,7 +19,7 @@ namespace VectorRagDemo.Controllers
             _context = context;
             _logboekContext = logboekContext;
             _configuration = configuration;
-            _embeddingProcessor = new EmbeddingProcessor(new HttpClient(), logboekContext);
+            _embeddingProcessor = new EmbeddingProcessor(new HttpClient(), _context, logboekContext);
         }
 
         public async Task<IActionResult> Index()
@@ -320,7 +320,7 @@ namespace VectorRagDemo.Controllers
                                 continue;
                             }
 
-                            var embedding = await _embeddingProcessor.GenerateQueryEmbeddingAsync(chunkText);
+                            var embedding = (await _embeddingProcessor.GenerateQueryEmbeddingAsync(chunkText, new List<Models.DataContracts.ChatMessage>())).Embedding;
 
                             if (embedding == null || !embedding.Any())
                             {
