@@ -1,6 +1,9 @@
 ﻿@model VectorRagDemo.Models.DataContracts.ChatMessage
 
 <div class="message user">
-    <div class="message-role">You</div>
-    <div>@Model.Content</div>
+    <div class="message-header">
+        <div class="message-role">You</div>
+        <div class="message-timestamp">@Model.Timestamp.ToString("HH:mm")</div>
+    </div>
+    <div class="message-content">@Model.Content</div>
 </div>

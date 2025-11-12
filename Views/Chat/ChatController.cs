@@ -5,7 +5,7 @@ using VectorRagDemo.Models.Requests;
 using VectorRagDemo.Models.ViewModels;
 using VectorRagDemo.Services;
 
-namespace VectorRagDemo.Controllers
+namespace VectorRagDemo.Views.Chat
 {
     public class ChatController : Controller
     {
@@ -63,20 +63,20 @@ namespace VectorRagDemo.Controllers
                 var entity = retrievedChunk.Chunk;  // Store reference to avoid naming conflict with LINQ Chunk()
                 var chunkData = new
                 {
-                    ID = entity.ID,
-                    BronID = entity.BronID,
-                    Tekst = entity.Tekst,
-                    GemaaktOp = entity.GemaaktOp,
-                    GewijzigdOp = entity.GewijzigdOp,
-                    Status = entity.Status,
+                    entity.ID,
+                    entity.BronID,
+                    entity.Tekst,
+                    entity.GemaaktOp,
+                    entity.GewijzigdOp,
+                    entity.Status,
                     BronTitle = entity.Bron?.Title
                 };
 
                 return JsonSerializer.Serialize(new
                 {
                     Chunk = chunkData,
-                    Freshness = retrievedChunk.Freshness,
-                    InitialSimilirityScore = retrievedChunk.InitialSimilirityScore
+                    retrievedChunk.Freshness,
+                    retrievedChunk.InitialSimilirityScore
                 }, jsonOptions);
             }).ToList();
 

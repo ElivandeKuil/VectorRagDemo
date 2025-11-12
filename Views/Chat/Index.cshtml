@@ -1,31 +1,8 @@
-@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment WebHostEnvironment
-@{
-    ViewData["Title"] = "RAG Chatbot";
-    var cssPath = System.IO.Path.Combine(WebHostEnvironment.ContentRootPath, "Views", "Chat", "Chat.css");
-    var chatCss = System.IO.File.ReadAllText(cssPath);
-}
-
-<style>
-    @Html.Raw(chatCss)
-</style>
+<link rel="stylesheet" href="~/css/chat.css" />
+<script src="~/js/chat.js"></script>
 
 <div class="chat-container" data-ask-url="@Url.Action("Ask", "Chat")">
     <h1 class="mb-4">RAG Chatbot</h1>
-
-    <div class="card mb-3">
-        <div class="card-body">
-            <h5 class="card-title">How it works</h5>
-            <p class="card-text mb-0">
-                This chatbot uses Retrieval-Augmented Generation (RAG). When you ask a question:
-            </p>
-            <ol class="mb-0">
-                <li>Your question is converted to a 768D vector embedding</li>
-                <li>The system finds the most similar chunks from the knowledge base</li>
-                <li>Gemini AI generates an answer using those chunks as context</li>
-                <li>Sources are shown so you can verify the information</li>
-            </ol>
-        </div>
-    </div>
 
     <div class="chat-messages" id="chatMessages">
         <div class="message assistant">
@@ -34,10 +11,17 @@
     </div>
 
     <div class="loading-spinner" id="loadingSpinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+        <div class="typing-indicator">
+            <div class="typing-avatar">A</div>
+            <div class="typing-message">
+                <span class="typing-text">Amanda is typing</span>
+                <div class="typing-dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
         </div>
-        <p class="mt-2">Processing your question...</p>
     </div>
 
     <div class="chat-input-container">
@@ -53,13 +37,3 @@
         </button>
     </div>
 </div>
-
-@section Scripts {
-    @{
-        var jsPath = System.IO.Path.Combine(WebHostEnvironment.ContentRootPath, "Views", "Chat", "Chat.js");
-        var chatJs = System.IO.File.ReadAllText(jsPath);
-    }
-    <script>
-        @Html.Raw(chatJs)
-    </script>
-}

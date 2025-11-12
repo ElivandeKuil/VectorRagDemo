@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.ViewModels;
 
-namespace VectorRagDemo.Controllers
+namespace VectorRagDemo.Views.ApiCallLog
 {
     public class ApiCallLogController : Controller
     {

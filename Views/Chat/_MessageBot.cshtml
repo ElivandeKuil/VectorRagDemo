@@ -1,14 +1,20 @@
 ﻿@model VectorRagDemo.Models.DataContracts.ChatMessage
 
 <div class="message assistant">
-    <div class="message-role">Assistant</div>
-    <div>@Model.Content</div>
+    <div class="message-header">
+        <div class="message-role">Assistant</div>
+        <div class="message-timestamp">@Model.Timestamp.ToString("HH:mm")</div>
+    </div>
+    <div class="message-content">@Model.Content</div>
 
     @if (!string.IsNullOrWhiteSpace(Model.Context) && Model.Context != "No source text used.")
     {
         <div class="sources-section">
-            <div class="sources-title">📚 Sources:</div>
-            <div class="sources-content">@Model.Context</div>
+            <button class="sources-toggle" onclick="toggleSources(this)">
+                <i class="bi bi-book"></i> Show Sources
+                <i class="bi bi-chevron-down toggle-icon"></i>
+            </button>
+            <div class="sources-content collapsed">@Model.Context</div>
         </div>
     }
 </div>

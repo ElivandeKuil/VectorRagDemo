@@ -34,8 +34,8 @@ function getRetrievedChunks() {
 }
 
 function handleKeyPress(event) {
-    // Send on Ctrl+Enter or Cmd+Enter
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    // Send on Enter (without Shift key for new lines)
+    if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         sendMessage();
     }
@@ -51,6 +51,26 @@ async function sendMessage() {
 
     // Clear input
     input.value = '';
+
+    // Get current time for timestamp
+    const now = new Date();
+    const timestamp = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+    // Add user message to chat immediately
+    const messagesContainer = document.getElementById('chatMessages');
+    const userMessageDiv = document.createElement('div');
+    userMessageDiv.className = 'message user';
+    userMessageDiv.innerHTML = `
+        <div class="message-header">
+            <div class="message-role">You</div>
+            <div class="message-timestamp">${timestamp}</div>
+        </div>
+        <div class="message-content">${escapeHtml(query)}</div>
+    `;
+    messagesContainer.appendChild(userMessageDiv);
+
+    // Scroll to bottom to show user message
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     // Show loading spinner
     document.getElementById('loadingSpinner').style.display = 'block';
@@ -78,17 +98,15 @@ async function sendMessage() {
         );
 
         // Scroll to bottom
-        const messagesContainer = document.getElementById('chatMessages');
         if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
     } catch (error) {
         console.error('Error:', error);
-        const messagesContainer = document.getElementById('chatMessages');
         const errorDiv = document.createElement('div');
         errorDiv.className = 'message assistant';
-        errorDiv.innerHTML = '<div class="message-role">System</div><div>Error: Failed to communicate with the server.</div>';
+        errorDiv.innerHTML = '<div class="message-header"><div class="message-role">System</div><div class="message-timestamp">' + timestamp + '</div></div><div class="message-content">Error: Failed to communicate with the server.</div>';
         messagesContainer.appendChild(errorDiv);
     } finally {
         // Hide loading spinner
@@ -98,10 +116,31 @@ async function sendMessage() {
     }
 }
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function clearChat() {
     if (confirm('Are you sure you want to clear the chat history?')) {
         const messagesContainer = document.getElementById('chatMessages');
         messagesContainer.innerHTML = '<div class="message assistant">Chat cleared. Ask me anything!</div><div id="chatHistory" style="display:none;">[]</div><div id="retrievedChunks" style="display:none;">[]</div>';
+    }
+}
+
+function toggleSources(button) {
+    const sourcesContent = button.nextElementSibling;
+    const isCollapsed = sourcesContent.classList.contains('collapsed');
+
+    if (isCollapsed) {
+        sourcesContent.classList.remove('collapsed');
+        button.classList.add('expanded');
+        button.innerHTML = '<i class="bi bi-book"></i> Hide Sources<i class="bi bi-chevron-down toggle-icon"></i>';
+    } else {
+        sourcesContent.classList.add('collapsed');
+        button.classList.remove('expanded');
+        button.innerHTML = '<i class="bi bi-book"></i> Show Sources<i class="bi bi-chevron-down toggle-icon"></i>';
     }
 }
 
