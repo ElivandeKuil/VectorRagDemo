@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Services;
 
@@ -18,6 +19,9 @@ builder.Services.AddScoped<ChatService>(provider =>
     var logboekContext = provider.GetRequiredService<LogboekDbContext>();
     return new ChatService(context, logboekContext, builder.Configuration);
 });
+
+// Register LinkPreviewService with HttpClient
+builder.Services.AddHttpClient<LinkPreviewService>();
 
 builder.Services.AddGrpc();
 

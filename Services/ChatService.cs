@@ -2,7 +2,6 @@ using System.Text;
 using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.DataContracts;
-using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.JsonContracts.GeminiAPI;
 using VectorRagDemo.Models.Requests;
 using VectorRagDemo.Models.Responses;
@@ -78,7 +77,8 @@ namespace VectorRagDemo.Services
                     GenerativeResponse = new GenerativeModelResponse
                     {
                         ResponseText = $"Error: {ex.Message}",
-                        SourceText = "No source text used."
+                        SourceText = "No source text used.",
+                        RedirectUrl = string.Empty
                     },
                     Chunks = new List<RetrievedChunk>()
                 };

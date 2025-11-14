@@ -5,5 +5,6 @@
         public string ResponseText { get; set; }
 
         public string SourceText { get; set; }
+        public string RedirectUrl { get; set; }
     }
 }

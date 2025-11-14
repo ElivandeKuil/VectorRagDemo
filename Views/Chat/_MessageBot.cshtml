@@ -1,20 +1,82 @@
 ﻿@model VectorRagDemo.Models.DataContracts.ChatMessage
 
+@{
+    var hasSources = !string.IsNullOrWhiteSpace(Model.Context) && Model.Context != "No source text used.";
+}
+
 <div class="message assistant">
-    <div class="message-header">
-        <div class="message-role">Assistant</div>
+    <div class="message-header @(hasSources ? "has-sources" : "")" @(hasSources ? "onclick=toggleSources(this)" : "")>
+        <div class="message-role">
+            <i class="bi bi-robot"></i> Assistant
+            @if (hasSources)
+            {
+                <i class="bi bi-chevron-down toggle-icon"></i>
+            }
+        </div>
         <div class="message-timestamp">@Model.Timestamp.ToString("HH:mm")</div>
     </div>
-    <div class="message-content">@Model.Content</div>
+    <div class="message-content markdown-content" data-markdown='@System.Text.Json.JsonSerializer.Serialize(Model.Content ?? "")'></div>
 
-    @if (!string.IsNullOrWhiteSpace(Model.Context) && Model.Context != "No source text used.")
+    @if (Model.LinkPreview != null)
     {
-        <div class="sources-section">
-            <button class="sources-toggle" onclick="toggleSources(this)">
-                <i class="bi bi-book"></i> Show Sources
-                <i class="bi bi-chevron-down toggle-icon"></i>
-            </button>
-            <div class="sources-content collapsed">@Model.Context</div>
+        <div class="link-preview">
+            <a href="@Model.LinkPreview.Url" target="_blank" rel="noopener noreferrer" class="link-preview-link">
+                @if (!string.IsNullOrWhiteSpace(Model.LinkPreview.ImageUrl))
+                {
+                    <div class="link-preview-image">
+                        <img src="@Model.LinkPreview.ImageUrl" alt="@Model.LinkPreview.Title" onerror="this.parentElement.innerHTML='<i class=\'bi bi-link-45deg link-preview-fallback-icon\'></i>'">
+                    </div>
+                }
+                else
+                {
+                    <div class="link-preview-thumbnail">
+                        <i class="bi bi-link-45deg link-preview-icon"></i>
+                    </div>
+                }
+                <div class="link-preview-content">
+                    <div class="link-preview-header">
+                        @if (!string.IsNullOrWhiteSpace(Model.LinkPreview.FaviconUrl))
+                        {
+                            <img src="@Model.LinkPreview.FaviconUrl" alt="" class="link-preview-favicon" onerror="this.style.display='none'">
+                        }
+                        <span class="link-preview-site-name">@(Model.LinkPreview.SiteName ?? new Uri(Model.LinkPreview.Url).Host)</span>
+                    </div>
+                    <div class="link-preview-title">@Model.LinkPreview.Title</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.LinkPreview.Description))
+                    {
+                        <div class="link-preview-description">@Model.LinkPreview.Description</div>
+                    }
+                    <div class="link-preview-url">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        @Model.LinkPreview.Url
+                    </div>
+                </div>
+            </a>
         </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.RedirectUrl))
+    {
+        <div class="link-preview">
+            <a href="@Model.RedirectUrl" target="_blank" rel="noopener noreferrer" class="link-preview-link">
+                <div class="link-preview-thumbnail">
+                    <i class="bi bi-link-45deg link-preview-icon"></i>
+                </div>
+                <div class="link-preview-content">
+                    <div class="link-preview-title">
+                        <i class="bi bi-arrow-up-right-square"></i>
+                        <span>View External Resource</span>
+                    </div>
+                    <div class="link-preview-url">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        @Model.RedirectUrl
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+
+    @if (hasSources)
+    {
+        <div class="sources-content collapsed">@Model.Context</div>
     }
 </div>

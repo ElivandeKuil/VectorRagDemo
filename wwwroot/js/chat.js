@@ -129,25 +129,47 @@ function clearChat() {
     }
 }
 
-function toggleSources(button) {
-    const sourcesContent = button.nextElementSibling;
+function toggleSources(header) {
+    const messageDiv = header.parentElement;
+    const sourcesContent = messageDiv.querySelector('.sources-content');
+    const toggleIcon = header.querySelector('.toggle-icon');
+
+    if (!sourcesContent || !toggleIcon) return;
+
     const isCollapsed = sourcesContent.classList.contains('collapsed');
 
     if (isCollapsed) {
         sourcesContent.classList.remove('collapsed');
-        button.classList.add('expanded');
-        button.innerHTML = '<i class="bi bi-book"></i> Hide Sources<i class="bi bi-chevron-down toggle-icon"></i>';
+        header.classList.add('expanded');
+        toggleIcon.style.transform = 'rotate(180deg)';
     } else {
         sourcesContent.classList.add('collapsed');
-        button.classList.remove('expanded');
-        button.innerHTML = '<i class="bi bi-book"></i> Show Sources<i class="bi bi-chevron-down toggle-icon"></i>';
+        header.classList.remove('expanded');
+        toggleIcon.style.transform = 'rotate(0deg)';
     }
 }
 
-// Focus input on load
+// Configure marked.js for security and options
+if (typeof marked !== 'undefined') {
+    marked.setOptions({
+        breaks: true,          // Convert \n to <br>
+        gfm: true,             // GitHub Flavored Markdown
+        headerIds: false,      // Don't add IDs to headers
+        mangle: false,         // Don't mangle email addresses
+        sanitize: false        // We trust the API responses
+    });
+}
+
+// Focus input on load and parse any existing markdown content
 document.addEventListener('DOMContentLoaded', function() {
     const userInput = document.getElementById('userInput');
     if (userInput) {
         userInput.focus();
+    }
+
+    // Parse any markdown content that was rendered on initial page load
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages && typeof parseMarkdownContent !== 'undefined') {
+        parseMarkdownContent(chatMessages);
     }
 });

@@ -35,7 +35,8 @@ namespace VectorRagDemo.BLL
                 response => new GenerativeModelResponse
                 {
                     SourceText = summarisedContext,
-                    ResponseText = response.Response
+                    ResponseText = response.Response,
+                    RedirectUrl = response.RedirectUrl
                 },
                 summarisedContext,
                 currentUserInput,

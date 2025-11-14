@@ -6,5 +6,8 @@ namespace VectorRagDemo.Models.ApiContracts.GeminiAPI
     {
         [JsonProperty("response")]
         public string Response { get; set; }
+
+        [JsonProperty("redirectUrl")]
+        public string RedirectUrl { get; set; }
     }
 }
