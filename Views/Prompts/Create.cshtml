@@ -52,6 +52,12 @@
             </div>
 
             <div class="mb-3">
+                <label asp-for="Volgorde" class="form-label">Volgorde</label>
+                <input asp-for="Volgorde" type="number" class="form-control" min="0" value="0" required />
+                <div class="form-text">Order/priority of the prompt (lower values are processed first).</div>
+            </div>
+
+            <div class="mb-3">
                 <label asp-for="SystemInstruction" class="form-label">System Instruction</label>
                 <textarea asp-for="SystemInstruction" class="form-control" rows="4" required
                           placeholder="Enter system-level instructions for the AI model..."></textarea>

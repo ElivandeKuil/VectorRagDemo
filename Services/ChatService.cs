@@ -2,6 +2,7 @@ using System.Text;
 using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.DataContracts;
+using VectorRagDemo.Models.Enums;
 using VectorRagDemo.Models.JsonContracts.GeminiAPI;
 using VectorRagDemo.Models.Requests;
 using VectorRagDemo.Models.Responses;
@@ -29,9 +30,11 @@ namespace VectorRagDemo.Services
                     throw new ArgumentException("Query cannot be empty.");
                 }
 
-                var queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(request.Query, request.History);
+                var preProcessedQuery = await PreProcessingProcessor.GetPreProcessedQuery(request.Query, request.History);
 
-                if (queryEmbedding.Embedding == null || !queryEmbedding.Embedding.Any())
+                var queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery);
+
+                if (queryEmbedding == null || !queryEmbedding.Any())
                 {
                     throw new InvalidOperationException("Failed to generate query embedding.");
                 }
@@ -41,7 +44,7 @@ namespace VectorRagDemo.Services
                 // Get new chunks from vector search
                 var newNeighbors = await VectorQueryProcessor.GetNearestNeighborsAsync(
                     connectionString,
-                    queryEmbedding.Embedding,
+                    queryEmbedding,
                     topK: Config.VectorQueryTopK
                 );
 
@@ -59,7 +62,7 @@ namespace VectorRagDemo.Services
                 var formattedNeighbors = FormatChunksForGemini(retrievedChunks);
                 var geminiResponse = await GeminiProcessor.GenerateContent(
                     chatHistory,
-                    queryEmbedding.ProcessedQuery,
+                    preProcessedQuery,
                     formattedNeighbors
                 );
 

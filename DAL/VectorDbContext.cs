@@ -130,6 +130,7 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.TopP).IsRequired();
                 entity.Property(e => e.TopK).IsRequired();
                 entity.Property(e => e.Model).IsRequired();
+                entity.Property(e => e.Volgorde).IsRequired();
 
                 entity.HasOne(e => e.ProjectNavigation)
                     .WithMany(p => p.Prompts)

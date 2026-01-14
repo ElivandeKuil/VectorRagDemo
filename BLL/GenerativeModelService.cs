@@ -26,7 +26,37 @@ namespace VectorRagDemo.BLL
         }
 
         /// <summary>
-        /// Executes a single generative model pipeline step with custom response mapping.
+        /// Executes a single generative model pipeline step with a provided prompt.
+        /// </summary>
+        /// <typeparam name="TResponse">The type of the inner response from the model</typeparam>
+        /// <typeparam name="TOutput">The type of the output after mapping</typeparam>
+        /// <param name="prompt">The prompt to execute</param>
+        /// <param name="mapper">Function to map the response to the desired output</param>
+        /// <param name="formatArgs">Arguments to format the prompt content</param>
+        /// <returns>The mapped output</returns>
+        public async Task<TOutput> ExecutePipelineStep<TResponse, TOutput>(
+            Prompt prompt,
+            Func<TResponse, TOutput> mapper,
+            params string[] formatArgs)
+        {
+            var requestContent = BuildRequestContent(prompt, formatArgs);
+            var response = await SendGeminiRequestAsync(requestContent, prompt.Model);
+            return await ProcessResponse<TResponse, TOutput>(response, mapper);
+        }
+
+        /// <summary>
+        /// Executes a pipeline step with a provided prompt that returns a string result.
+        /// </summary>
+        public async Task<string> ExecutePipelineStep<TResponse>(
+            Prompt prompt,
+            Func<TResponse, string> mapper,
+            params string[] formatArgs)
+        {
+            return await ExecutePipelineStep<TResponse, string>(prompt, mapper, formatArgs);
+        }
+
+        /// <summary>
+        /// Executes a single generative model pipeline step by retrieving the first prompt of the given type.
         /// </summary>
         /// <typeparam name="TResponse">The type of the inner response from the model</typeparam>
         /// <typeparam name="TOutput">The type of the output after mapping</typeparam>
@@ -39,19 +69,17 @@ namespace VectorRagDemo.BLL
             Func<TResponse, TOutput> mapper,
             params string[] formatArgs)
         {
-            var prompt = GetPrompt(promptType);
+            var prompt = GetPrompt(promptType).FirstOrDefault();
             if (prompt == null)
             {
                 throw new Exception($"No active prompt found for type {promptType} in project {_project}");
             }
 
-            var requestContent = BuildRequestContent(prompt, formatArgs);
-            var response = await SendGeminiRequestAsync(requestContent, prompt.Model);
-            return await ProcessResponse(response, mapper);
+            return await ExecutePipelineStep<TResponse, TOutput>(prompt, mapper, formatArgs);
         }
 
         /// <summary>
-        /// Executes a pipeline step that returns a string result.
+        /// Executes a pipeline step by retrieving the first prompt of the given type, returns a string result.
         /// </summary>
         public async Task<string> ExecutePipelineStep<TResponse>(
             PromptTypeEnum promptType,
@@ -64,13 +92,14 @@ namespace VectorRagDemo.BLL
         /// <summary>
         /// Retrieves a prompt from the database by type.
         /// </summary>
-        public Prompt? GetPrompt(PromptTypeEnum promptType)
+        public List<Prompt> GetPrompt(PromptTypeEnum promptType)
         {
             return _context.Prompts
                 .Where(o => o.Project == _project
                     && o.PromptType == (int)promptType
                     && o.Status == 1)
-                .SingleOrDefault();
+                .OrderBy(o => o.Volgorde)
+                .ToList();
         }
 
         /// <summary>

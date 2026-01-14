@@ -2,51 +2,23 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
 using VectorRagDemo.DAL;
-using VectorRagDemo.Models.DataContracts;
-using VectorRagDemo.Models.Enums;
-using VectorRagDemo.Models.ApiContracts.GeminiAPI;
 
 namespace VectorRagDemo.BLL
 {
     public class EmbeddingProcessor
     {
         private readonly ApiClient _apiClient;
-        private readonly GenerativeModelService _generativeModelService;
 
-        public EmbeddingProcessor(HttpClient client, VectorDbContext vectorDbContext, LogboekDbContext logboekContext)
+        public EmbeddingProcessor(HttpClient client, LogboekDbContext logboekContext)
         {
             _apiClient = new ApiClient(client, logboekContext);
-            _generativeModelService = new GenerativeModelService(vectorDbContext, client, logboekContext);
         }
 
-        public async Task<(string ProcessedQuery, List<float> Embedding)> GenerateQueryEmbeddingAsync(string query, List<ChatMessage> chatHistory)
+        public async Task<List<float>> GenerateQueryEmbeddingAsync(string query)
         {
-            var preprocessingPrompt = _generativeModelService.GetPrompt(PromptTypeEnum.PreProcessing);
-
-            string queryToEmbed = query;
-
-            if (preprocessingPrompt != null)
-            {
-                var chatHistoryString = FormatChatHistory(chatHistory);
-
-                try
-                {
-                    queryToEmbed = await _generativeModelService.ExecutePipelineStep<GeminiPreProcessingInnerResponse>(
-                        PromptTypeEnum.PreProcessing,
-                        response => $"{response.ProcessedQuery} \n {response.DimensionAdvise} \n {response.CosmeticAdvise} \n {response.ContrastAdvise}",
-                        chatHistoryString,
-                        query
-                    );
-                }
-                catch (Exception ex)
-                {
-                    queryToEmbed = query;
-                }
-            }
-
-            var requestContent = BuildEmbeddingRequest(queryToEmbed, "RETRIEVAL_QUERY");
+            var requestContent = BuildEmbeddingRequest(query, "RETRIEVAL_QUERY");
             var response = await SendEmbeddingRequestAsync(requestContent);
-            return (queryToEmbed, await ProcessEmbeddingResponse(response));
+            return await ProcessEmbeddingResponse(response);
         }
 
         public async Task<List<float>> GenerateDocumentEmbeddingAsync(string document)
@@ -172,11 +144,6 @@ namespace VectorRagDemo.BLL
         {
             string jsonRequest = JsonConvert.SerializeObject(data);
             return new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-        }
-
-        private string FormatChatHistory(List<ChatMessage> chatHistory)
-        {
-            return string.Join("\n", chatHistory.Select(m => $"{m.Role}: {m.Content}"));
         }
     }
 }

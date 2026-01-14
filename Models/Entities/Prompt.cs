@@ -16,6 +16,7 @@
         public double TopP { get; set; }
         public int TopK { get; set; }
         public string Model { get; set; } = string.Empty;
+        public int Volgorde { get; set; }
 
         // Navigation properties
         public virtual Project ProjectNavigation { get; set; }

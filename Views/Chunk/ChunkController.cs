@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using VectorRagDemo.BLL;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
 using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.Controllers
@@ -19,7 +18,7 @@ namespace VectorRagDemo.Controllers
             _context = context;
             _logboekContext = logboekContext;
             _configuration = configuration;
-            _embeddingProcessor = new EmbeddingProcessor(new HttpClient(), _context, logboekContext);
+            _embeddingProcessor = new EmbeddingProcessor(new HttpClient(), logboekContext);
         }
 
         public async Task<IActionResult> Index()

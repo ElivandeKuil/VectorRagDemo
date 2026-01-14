@@ -22,7 +22,8 @@ namespace VectorRagDemo.Controllers
                 .Include(p => p.ProjectNavigation)
                 .Include(p => p.PromptTypeNavigation)
                 .Where(p => p.Status == 1)
-                .OrderByDescending(p => p.GemaaktOp)
+                .OrderBy(p => p.Volgorde)
+                .ThenByDescending(p => p.GemaaktOp)
                 .ToListAsync();
 
             return View(prompts);
@@ -59,7 +60,7 @@ namespace VectorRagDemo.Controllers
         // POST: Prompts/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Project,PromptType,SystemInstruction,Content,ResponseSchema,Model,MaxTokens,Temperature,TopP,TopK")] Prompt prompt)
+        public async Task<IActionResult> Create([Bind("Project,PromptType,SystemInstruction,Content,ResponseSchema,Model,MaxTokens,Temperature,TopP,TopK,Volgorde")] Prompt prompt)
         {
             try
             {
@@ -110,7 +111,7 @@ namespace VectorRagDemo.Controllers
         // POST: Prompts/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,Project,PromptType,SystemInstruction,Content,ResponseSchema,Model,MaxTokens,Temperature,TopP,TopK,GemaaktOp,Status")] Prompt prompt)
+        public async Task<IActionResult> Edit(int id, [Bind("ID,Project,PromptType,SystemInstruction,Content,ResponseSchema,Model,MaxTokens,Temperature,TopP,TopK,Volgorde,GemaaktOp,Status")] Prompt prompt)
         {
             if (id != prompt.ID)
             {

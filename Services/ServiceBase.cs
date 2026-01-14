@@ -1,4 +1,5 @@
-﻿using VectorRagDemo.BLL;
+﻿using System.Runtime.CompilerServices;
+using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.Services
@@ -53,7 +54,7 @@ namespace VectorRagDemo.Services
             {
                 if (_embeddingProcessor == null)
                 {
-                    _embeddingProcessor = new EmbeddingProcessor(HttpClient, Context, LogboekContext);
+                    _embeddingProcessor = new EmbeddingProcessor(HttpClient, LogboekContext);
                 }
                 return _embeddingProcessor;
             }
@@ -78,6 +79,24 @@ namespace VectorRagDemo.Services
             set
             {
                 _vectorQueryProcessor = value;
+            }
+        }
+
+        private PreProcessingProcessor _preProcessingProcessor;
+
+        public PreProcessingProcessor PreProcessingProcessor
+        {
+            get
+            {
+                if (_preProcessingProcessor == null)
+                {
+                    _preProcessingProcessor = new PreProcessingProcessor(HttpClient, Context, LogboekContext);
+                }
+                return _preProcessingProcessor;
+            }
+            set
+            {
+                _preProcessingProcessor = value;
             }
         }
 
