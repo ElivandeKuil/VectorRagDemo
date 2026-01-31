@@ -22,9 +22,9 @@ namespace VectorRagDemo.BLL
         {
             var chatHistoryString = FormatChatHistory(chatHistory);
 
-            var summarisedContext = await _generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse>(
+            var summarisedResult = await _generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse, (string RelevantOutput, string RedirectUrl)>(
                 PromptTypeEnum.Sumarizing,
-                response => response.RelevantOutput,
+                response => (response.RelevantOutput, response.RedirectUrl),
                 formattedNeighbors,
                 chatHistoryString,
                 currentUserInput
@@ -34,11 +34,11 @@ namespace VectorRagDemo.BLL
                 PromptTypeEnum.GenerateResponse,
                 response => new GenerativeModelResponse
                 {
-                    SourceText = summarisedContext,
+                    SourceText = summarisedResult.RelevantOutput,
                     ResponseText = response.Response,
-                    RedirectUrl = response.RedirectUrl
+                    RedirectUrl = summarisedResult.RedirectUrl
                 },
-                summarisedContext,
+                summarisedResult.RelevantOutput,
                 currentUserInput,
                 chatHistoryString
             );
