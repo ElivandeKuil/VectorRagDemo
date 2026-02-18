@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -13,31 +13,80 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">VectorRagDemo</a>
+                <a class="navbar-brand" asp-controller="Dashboard" asp-action="Index">VectorRagDemo</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
+                        @* Dashboard is always visible *@
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark" asp-controller="Dashboard" asp-action="Index">
+                                <i class="bi bi-grid me-1"></i>Dashboard
+                            </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Chat" asp-action="Index">Chat</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Scraper" asp-action="Index">Scraper</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Chunk" asp-action="Index">Chunks</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Prompts" asp-action="Index">Prompts</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="ApiCallLog" asp-action="Index">API Logs</a>
-                        </li>
+
+                        @* VectorRagDemo sub-project nav items.
+                           Visible when the user is Admin OR has the matching SubProject claim. *@
+                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Chat"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Chat" asp-action="Index">
+                                    <i class="bi bi-chat-dots me-1"></i>Chat
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Scraper"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Scraper" asp-action="Index">
+                                    <i class="bi bi-globe me-1"></i>Scraper
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Chunks"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Chunk" asp-action="Index">
+                                    <i class="bi bi-layers me-1"></i>Chunks
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Prompts"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Prompts" asp-action="Index">
+                                    <i class="bi bi-chat-square-text me-1"></i>Prompts
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "API Logs"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="ApiCallLog" asp-action="Index">
+                                    <i class="bi bi-journal-code me-1"></i>API Logs
+                                </a>
+                            </li>
+                        }
                     </ul>
+
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <span class="navbar-text me-3">
+                                    <i class="bi bi-person-circle me-1"></i>@User.Identity.Name
+                                </span>
+                            </li>
+                            <li class="nav-item">
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-box-arrow-right me-1"></i>Uitloggen
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    }
                 </div>
             </div>
         </nav>

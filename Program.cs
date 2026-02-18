@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
@@ -5,13 +8,40 @@ using VectorRagDemo.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+// Add global authorization filter - all pages require authentication
+builder.Services.AddControllersWithViews(options =>
+{
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    options.Filters.Add(new AuthorizeFilter(policy));
+});
 
 builder.Services.AddDbContext<VectorDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddDbContext<LogboekDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LogboekConnection")));
+
+builder.Services.AddDbContext<ManagementDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ManagementConnection")));
+
+// Register UserAuthenticationService
+builder.Services.AddScoped<UserAuthenticationService>();
+
+// Register ProjectAccessService
+builder.Services.AddScoped<ProjectAccessService>();
+
+// Configure cookie authentication
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+    });
 
 builder.Services.AddScoped<ChatService>(provider =>
 {
@@ -38,11 +68,12 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
 app.MapGrpcService<GrpcService>();
 
