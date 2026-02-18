@@ -46,14 +46,17 @@ namespace VectorRagDemo.Services
 
         public async Task<List<string>> GetUserRolesAsync(int userId)
         {
-            var roles = await _context.GebruikerRollen
-                .Where(gr => gr.Gebruiker == userId && gr.Status == 1)
-                .Include(gr => gr.RolNavigation)
-                .Where(gr => gr.RolNavigation.Status == 1)
-                .Select(gr => gr.RolNavigation.Omschrijving)
+            return await _context.Rollen
+                .FromSqlInterpolated(@$"
+                    SELECT Rol.*
+                        FROM Management.dbo.GebruikerRol
+                        INNER JOIN Management.dbo.Rol ON Rol.ID = GebruikerRol.Rol
+                        WHERE GebruikerRol.Status = 1 
+                        AND Rol.Status = 1
+                        AND GebruikerRol.Gebruiker = {userId}
+                    ")
+                .Select(r => r.Omschrijving)
                 .ToListAsync();
-
-            return roles;
         }
 
         public string HashPassword(string password)

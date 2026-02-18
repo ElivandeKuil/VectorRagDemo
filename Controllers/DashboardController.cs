@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using VectorRagDemo.Extensions;
 using VectorRagDemo.Models.ViewModels;
 using VectorRagDemo.Services;
 
@@ -24,7 +24,7 @@ namespace VectorRagDemo.Controllers
             }
             else
             {
-                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var userId = User.GetUserId();
                 projects = await _projectAccessService.GetUserProjectsAsync(userId);
             }
 
