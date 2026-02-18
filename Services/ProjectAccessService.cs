@@ -22,7 +22,22 @@ namespace VectorRagDemo.Services
                     Icon: "bi-cpu",
                     Description: "Semantic search & RAG chat powered by SQL Server 2025 and Google Gemini."
                 ),
+                ["Gebruikersbeheer"] = new(
+                    Url: "/Gebruiker/Index",
+                    Icon: "bi-people",
+                    Description: "Beheer gebruikers, rollen en toegangsrechten."
+                ),
             };
+
+        // Synthetic admin-only project injected into the dashboard; never stored in the DB.
+        public static readonly MgmtProject GebruikersbeheerProject = new()
+        {
+            ID = -1,
+            Omschrijving = "Gebruikersbeheer",
+            Status = 1,
+            GemaaktOp = DateTime.MinValue,
+            GewijzigdOp = DateTime.MinValue
+        };
 
         // Maps MgmtSubProject.Omschrijving → the controller/action that renders it.
         // Add an entry here when a new sub-project / personal page is created in the DB.

@@ -21,6 +21,10 @@ namespace VectorRagDemo.Controllers
             if (User.IsInRole("Admin"))
             {
                 projects = await _projectAccessService.GetAllActiveProjectsAsync();
+
+                // Append the admin-only Gebruikersbeheer card if not already in the DB.
+                if (!projects.Any(p => p.Omschrijving.Equals("Gebruikersbeheer", StringComparison.OrdinalIgnoreCase)))
+                    projects.Add(ProjectAccessService.GebruikersbeheerProject);
             }
             else
             {

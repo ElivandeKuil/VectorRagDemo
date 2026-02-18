@@ -1,0 +1,133 @@
+@model VectorRagDemo.Models.ViewModels.GebruikerViewModel
+@{
+    ViewData["Title"] = "Gebruiker bewerken";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Terug
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Gebruiker bewerken – @Model.Naam</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" asp-route-id="@Model.ID" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label asp-for="Naam" class="form-label fw-semibold"></label>
+                    <input asp-for="Naam" class="form-control" />
+                    <span asp-validation-for="Naam" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="GebruikersNaam" class="form-label fw-semibold"></label>
+                    <input asp-for="GebruikersNaam" class="form-control" />
+                    <span asp-validation-for="GebruikersNaam" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Wachtwoord" class="form-label fw-semibold"></label>
+                    <input asp-for="Wachtwoord" type="password" class="form-control" placeholder="Leeglaten om wachtwoord ongewijzigd te laten" />
+                    <div class="form-text">Laat leeg om het wachtwoord niet te wijzigen.</div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                @* Rollen *@
+                <div class="col-md-4">
+                    <h6 class="fw-semibold border-bottom pb-2">
+                        <i class="bi bi-shield-lock me-1"></i>Rollen
+                    </h6>
+                    @if (Model.BeschikbareRollen.Any())
+                    {
+                        foreach (var rol in Model.BeschikbareRollen)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="GeselecteerdeRollen" value="@rol.ID"
+                                       id="rol_@rol.ID"
+                                       @(Model.GeselecteerdeRollen.Contains(rol.ID) ? "checked" : "") />
+                                <label class="form-check-label" for="rol_@rol.ID">@rol.Omschrijving</label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic small">Geen rollen beschikbaar.</p>
+                    }
+                </div>
+
+                @* Projecten *@
+                <div class="col-md-4">
+                    <h6 class="fw-semibold border-bottom pb-2">
+                        <i class="bi bi-folder me-1"></i>Projecten
+                    </h6>
+                    @if (Model.BeschikbareProjecten.Any())
+                    {
+                        foreach (var project in Model.BeschikbareProjecten)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       name="GeselecteerdeProjecten" value="@project.ID"
+                                       id="project_@project.ID"
+                                       @(Model.GeselecteerdeProjecten.Contains(project.ID) ? "checked" : "") />
+                                <label class="form-check-label" for="project_@project.ID">@project.Omschrijving</label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic small">Geen projecten beschikbaar.</p>
+                    }
+                </div>
+
+                @* Sub-projecten *@
+                <div class="col-md-4">
+                    <h6 class="fw-semibold border-bottom pb-2">
+                        <i class="bi bi-diagram-3 me-1"></i>Modules
+                    </h6>
+                    @if (Model.BeschikbareSubProjecten.Any())
+                    {
+                        var groepen = Model.BeschikbareSubProjecten
+                            .GroupBy(sp => sp.ProjectNavigation.Omschrijving);
+
+                        foreach (var groep in groepen)
+                        {
+                            <p class="mb-1 text-muted small fw-semibold">@groep.Key</p>
+                            foreach (var sp in groep)
+                            {
+                                <div class="form-check ms-2">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="GeselecteerdeSubProjecten" value="@sp.ID"
+                                           id="sp_@sp.ID"
+                                           @(Model.GeselecteerdeSubProjecten.Contains(sp.ID) ? "checked" : "") />
+                                    <label class="form-check-label" for="sp_@sp.ID">@sp.Omschrijving</label>
+                                </div>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic small">Geen modules beschikbaar.</p>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Opslaan
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Annuleren</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@3.2.12/dist/jquery.validate.unobtrusive.min.js"></script>
+}

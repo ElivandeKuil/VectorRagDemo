@@ -26,42 +26,30 @@
                             </a>
                         </li>
 
-                        @* VectorRagDemo sub-project nav items.
-                           Visible when the user is Admin OR has the matching SubProject claim. *@
-                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Chat"))
+                        @* Sub-project nav items — admin only.
+                           Regular users navigate via the dashboard project cards. *@
+                        @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Chat" asp-action="Index">
                                     <i class="bi bi-chat-dots me-1"></i>Chat
                                 </a>
                             </li>
-                        }
-                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Scraper"))
-                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Scraper" asp-action="Index">
                                     <i class="bi bi-globe me-1"></i>Scraper
                                 </a>
                             </li>
-                        }
-                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Chunks"))
-                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Chunk" asp-action="Index">
                                     <i class="bi bi-layers me-1"></i>Chunks
                                 </a>
                             </li>
-                        }
-                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "Prompts"))
-                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Prompts" asp-action="Index">
                                     <i class="bi bi-chat-square-text me-1"></i>Prompts
                                 </a>
                             </li>
-                        }
-                        @if (User.IsInRole("Admin") || User.HasClaim("SubProject", "API Logs"))
-                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="ApiCallLog" asp-action="Index">
                                     <i class="bi bi-journal-code me-1"></i>API Logs
