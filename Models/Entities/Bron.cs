@@ -9,6 +9,9 @@
         public DateTime? GewijzigdOp { get; set; }
         public int Status { get; set; }
 
+        public string? FileName { get; set; }
+        public string? FilePath { get; set; }
+
         // Navigation properties
         public Project? ProjectNavigation { get; set; }
         public ICollection<Chunk> Chunks { get; set; } = new List<Chunk>();

@@ -1,0 +1,109 @@
+@using VectorRagDemo.BLL
+
+@{
+    ViewData["Title"] = "Document uploaden";
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="mb-0"><i class="bi bi-upload me-2"></i>Document uploaden</h1>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" asp-action="Upload" id="uploadForm">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label for="projectId" class="form-label fw-semibold">Project</label>
+                        <select name="projectId" id="projectId" class="form-select" required>
+                            <option value="">-- Selecteer een project --</option>
+                            @foreach (SelectListItem item in ViewBag.Projects)
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="file" class="form-label fw-semibold">Bestand</label>
+                        <input type="file" name="file" id="file" class="form-control" accept=".txt,.docx" required />
+                        <div class="form-text">Ondersteunde formaten: .txt en .docx (max. 50 MB)</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <span id="btnNormal">
+                                <i class="bi bi-upload me-2"></i>Uploaden en verwerken
+                            </span>
+                            <span id="btnSpinner" class="d-none">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Bezig met verwerken…
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5 mt-4 mt-lg-0">
+        <div class="card border-0 bg-light">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Verwerkingsinstellingen</h6>
+                <dl class="row small mb-0">
+                    <dt class="col-7 text-muted">Chunk grootte</dt>
+                    <dd class="col-5">@Config.MaxWords woorden</dd>
+
+                    <dt class="col-7 text-muted">Overlap</dt>
+                    <dd class="col-5">@Config.OverlapWords woorden</dd>
+
+                    <dt class="col-7 text-muted">Stap</dt>
+                    <dd class="col-5">@(Config.MaxWords - Config.OverlapWords) woorden</dd>
+
+                    <dt class="col-7 text-muted">Embedding model</dt>
+                    <dd class="col-5">@Config.EmbeddingModel</dd>
+
+                    <dt class="col-7 text-muted">Dimensies</dt>
+                    <dd class="col-5">768</dd>
+                </dl>
+
+                <hr />
+
+                <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Hoe werkt het?</h6>
+                <ol class="small text-muted ps-3 mb-0">
+                    <li>Het bestand wordt geparsed naar platte tekst</li>
+                    <li>De tekst wordt opgesplitst in overlappende chunks</li>
+                    <li>Elke chunk krijgt een 768-dimensionale embedding</li>
+                    <li>Chunks worden opgeslagen in de vectordatabase</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function () {
+            document.getElementById('btnNormal').classList.add('d-none');
+            document.getElementById('btnSpinner').classList.remove('d-none');
+            document.getElementById('submitBtn').disabled = true;
+        });
+    </script>
+}
