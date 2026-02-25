@@ -29,7 +29,7 @@ namespace VectorRagDemo.DAL
             // Gebruiker configuration
             modelBuilder.Entity<Gebruiker>(entity =>
             {
-                entity.ToTable("Gebruiker");
+                entity.ToTable("gebruiker");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Naam).HasMaxLength(200).IsRequired();
                 entity.Property(e => e.GebruikersNaam).HasMaxLength(100).IsRequired();
@@ -41,7 +41,7 @@ namespace VectorRagDemo.DAL
             // Rol configuration
             modelBuilder.Entity<Rol>(entity =>
             {
-                entity.ToTable("Rol");
+                entity.ToTable("rol");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Omschrijving).HasMaxLength(200).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
@@ -51,7 +51,7 @@ namespace VectorRagDemo.DAL
             // GebruikerRol configuration
             modelBuilder.Entity<GebruikerRol>(entity =>
             {
-                entity.ToTable("GebruikerRol");
+                entity.ToTable("gebruikerrol");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Gebruiker).IsRequired();
                 entity.Property(e => e.Rol).IsRequired();
@@ -69,10 +69,10 @@ namespace VectorRagDemo.DAL
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // MgmtProject configuration (maps to "Project" table in Management DB)
+            // MgmtProject configuration (maps to "project" table in Management DB)
             modelBuilder.Entity<MgmtProject>(entity =>
             {
-                entity.ToTable("Project");
+                entity.ToTable("project");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Omschrijving).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
@@ -80,10 +80,10 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Status).IsRequired();
             });
 
-            // MgmtSubProject configuration (maps to "SubProject" table)
+            // MgmtSubProject configuration (maps to "subproject" table)
             modelBuilder.Entity<MgmtSubProject>(entity =>
             {
-                entity.ToTable("SubProject");
+                entity.ToTable("subproject");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Omschrijving).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.Project).IsRequired();
@@ -100,7 +100,7 @@ namespace VectorRagDemo.DAL
             // GebruikerProject configuration
             modelBuilder.Entity<GebruikerProject>(entity =>
             {
-                entity.ToTable("GebruikerProject");
+                entity.ToTable("gebruikerproject");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Gebruiker).IsRequired();
                 entity.Property(e => e.Project).IsRequired();
@@ -122,7 +122,7 @@ namespace VectorRagDemo.DAL
             // GebruikerSubProject configuration
             modelBuilder.Entity<GebruikerSubProject>(entity =>
             {
-                entity.ToTable("GebruikerSubProject");
+                entity.ToTable("gebruikersubproject");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Gebruiker).IsRequired();
                 entity.Property(e => e.SubProject).IsRequired();

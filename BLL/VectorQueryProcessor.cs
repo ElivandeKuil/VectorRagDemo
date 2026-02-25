@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Npgsql;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
@@ -55,25 +55,25 @@ namespace VectorRagDemo.BLL
             var results = new List<Neighbor>();
             var vectorString = "[" + string.Join(",", queryEmbedding) + "]";
 
-            using var connection = new SqlConnection(connectionString);
+            using var connection = new NpgsqlConnection(connectionString);
             await connection.OpenAsync();
 
             // Build SQL query with optional filters
             var sql = @"
-                SELECT TOP (@TopK)
-                    c.ID,
-                    c.BronID,
-                    c.Tekst,
-                    b.Title as BronTitle,
-                    b.Project as ProjectID,
-                    VECTOR_DISTANCE('cosine', c.TekstVector, CAST(@QueryVector AS VECTOR(768))) as Distance
-                FROM Chunk c
-                INNER JOIN Bron b ON c.BronID = b.ID
-                WHERE c.Status = 1";
+                SELECT
+                    c.id,
+                    c.bronid,
+                    c.tekst,
+                    b.title as brontitle,
+                    b.project as projectid,
+                    c.tekstvector <=> @QueryVector::vector as distance
+                FROM chunk c
+                INNER JOIN bron b ON c.bronid = b.id
+                WHERE c.status = 1";
 
-            sql += " ORDER BY Distance ASC";
+            sql += " ORDER BY distance ASC LIMIT @TopK";
 
-            using var command = new SqlCommand(sql, connection);
+            using var command = new NpgsqlCommand(sql, connection);
             command.Parameters.AddWithValue("@TopK", topK);
             command.Parameters.AddWithValue("@QueryVector", vectorString);
 

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using VectorRagDemo.BLL;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.Entities;
@@ -331,15 +331,15 @@ namespace VectorRagDemo.Controllers
 
                             var vectorString = "[" + string.Join(",", embedding) + "]";
 
-                            using var connection = new SqlConnection(connectionString);
+                            using var connection = new NpgsqlConnection(connectionString);
                             await connection.OpenAsync();
 
                             var sql = @"
-                            INSERT INTO Chunk (BronID, Tekst, TekstVector, GemaaktOp, Status)
-                            VALUES (@BronID, @Tekst, CAST(@TekstVector AS VECTOR(768)), GETDATE(), @Status);
-                            SELECT CAST(SCOPE_IDENTITY() as int);";
+                            INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status)
+                            VALUES (@BronID, @Tekst, @TekstVector::vector, NOW(), @Status)
+                            RETURNING id;";
 
-                            using var command = new SqlCommand(sql, connection);
+                            using var command = new NpgsqlCommand(sql, connection);
                             command.Parameters.AddWithValue("@BronID", bronId);
                             command.Parameters.AddWithValue("@Tekst", chunkText);
                             command.Parameters.AddWithValue("@TekstVector", vectorString);

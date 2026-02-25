@@ -23,11 +23,14 @@
 		</PackageReference>
 		<PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
 		<PackageReference Include="Markdig" Version="0.43.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.36" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.36">
+		<PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="Pgvector" Version="0.2.0" />
+		<PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.2.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="System.Numerics.Tensors" Version="9.0.9" />
 	</ItemGroup>

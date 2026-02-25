@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Pgvector.EntityFrameworkCore;
 using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.DAL
@@ -22,10 +23,12 @@ namespace VectorRagDemo.DAL
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.HasPostgresExtension("vector");
+
             // Project configuration
             modelBuilder.Entity<Project>(entity =>
             {
-                entity.ToTable("Project");
+                entity.ToTable("project");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Naam).HasMaxLength(200);
                 entity.Property(e => e.GemaaktOp).IsRequired();
@@ -35,7 +38,7 @@ namespace VectorRagDemo.DAL
             // Bron configuration
             modelBuilder.Entity<Bron>(entity =>
             {
-                entity.ToTable("Bron");
+                entity.ToTable("bron");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
                 entity.Property(e => e.Project).IsRequired();
@@ -50,7 +53,7 @@ namespace VectorRagDemo.DAL
 
             modelBuilder.Entity<ScrapingElement>(entity =>
             {
-                entity.ToTable("ScrapingElement");
+                entity.ToTable("scrapingelement");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Project).IsRequired();
                 entity.Property(e => e.ElementName).HasMaxLength(50).IsRequired();
@@ -68,7 +71,7 @@ namespace VectorRagDemo.DAL
 
             modelBuilder.Entity<ScrapingUrlBlackList>(entity =>
             {
-                entity.ToTable("ScrapingUrlBlackList");
+                entity.ToTable("scrapingurlblacklist");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Project).IsRequired();
                 entity.Property(e => e.BlackListElement).HasMaxLength(200).IsRequired();
@@ -84,7 +87,7 @@ namespace VectorRagDemo.DAL
             // Chunk configuration
             modelBuilder.Entity<Chunk>(entity =>
             {
-                entity.ToTable("Chunk");
+                entity.ToTable("chunk");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.BronID).IsRequired();
                 entity.Property(e => e.Tekst).IsRequired();
@@ -104,7 +107,7 @@ namespace VectorRagDemo.DAL
             // PromptType configuration
             modelBuilder.Entity<PromptType>(entity =>
             {
-                entity.ToTable("PromptType");
+                entity.ToTable("prompttype");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Omschrijving).HasMaxLength(1000).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
@@ -115,7 +118,7 @@ namespace VectorRagDemo.DAL
             // Prompt configuration
             modelBuilder.Entity<Prompt>(entity =>
             {
-                entity.ToTable("Prompt");
+                entity.ToTable("prompt");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.Project).IsRequired();
                 entity.Property(e => e.PromptType).IsRequired();

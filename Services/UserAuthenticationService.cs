@@ -49,8 +49,8 @@ namespace VectorRagDemo.Services
             return await _context.Rollen
                 .FromSqlInterpolated(@$"
                     SELECT Rol.*
-                        FROM Management.dbo.GebruikerRol
-                        INNER JOIN Management.dbo.Rol ON Rol.ID = GebruikerRol.Rol
+                        FROM GebruikerRol
+                        INNER JOIN Rol ON Rol.ID = GebruikerRol.Rol
                         WHERE GebruikerRol.Status = 1 
                         AND Rol.Status = 1
                         AND GebruikerRol.Gebruiker = {userId}

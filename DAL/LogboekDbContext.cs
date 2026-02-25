@@ -19,21 +19,21 @@ namespace VectorRagDemo.DAL
             // ApiCallLog configuration
             modelBuilder.Entity<ApiCallLog>(entity =>
             {
-                entity.ToTable("ApiCallLog");
+                entity.ToTable("apicalllog");
                 entity.HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
                 entity.Property(e => e.RequestMethod).HasMaxLength(10).IsRequired();
                 entity.Property(e => e.RequestUri).HasMaxLength(1000).IsRequired();
-                entity.Property(e => e.RequestHeaders).HasColumnType("VARCHAR(MAX)");
-                entity.Property(e => e.RequestContent).HasColumnType("VARCHAR(MAX)");
+                entity.Property(e => e.RequestHeaders).HasColumnType("text");
+                entity.Property(e => e.RequestContent).HasColumnType("text");
                 entity.Property(e => e.ResponseStatus).IsRequired();
-                entity.Property(e => e.ResponseHeaders).HasColumnType("VARCHAR(MAX)");
-                entity.Property(e => e.ResponseContent).HasColumnType("VARCHAR(MAX)");
+                entity.Property(e => e.ResponseHeaders).HasColumnType("text");
+                entity.Property(e => e.ResponseContent).HasColumnType("text");
                 entity.Property(e => e.DurationMs);
-                entity.Property(e => e.ErrorMessage).HasColumnType("VARCHAR(MAX)");
+                entity.Property(e => e.ErrorMessage).HasColumnType("text");
                 entity.Property(e => e.CorrelationId);
                 entity.Property(e => e.ClientIP).HasMaxLength(50);
-                entity.Property(e => e.GemaaktOp).IsRequired().HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.GemaaktOp).IsRequired().HasDefaultValueSql("NOW()");
 
                 // Indexes
                 entity.HasIndex(e => e.GemaaktOp).HasDatabaseName("IX_GemaaktOp");

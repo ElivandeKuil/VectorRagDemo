@@ -1,5 +1,5 @@
 ﻿using Grpc.Core;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.Entities;
@@ -35,29 +35,29 @@ namespace VectorRagDemo.Services
 
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                using var connection = new SqlConnection(connectionString);
+                using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
 
-                // SQL query using VECTOR_DISTANCE for cosine similarity
+                // SQL query using pgvector cosine distance operator <=>
                 var sql = @"
-                    SELECT TOP (@TopK)
-                        c.ID,
-                        c.BronID,
-                        c.Tekst,
-                        b.Title as BronTitle,
-                        VECTOR_DISTANCE('cosine', c.TekstVector, CAST(@QueryVector AS VECTOR(768))) as Distance
-                    FROM Chunk c
-                    INNER JOIN Bron b ON c.BronID = b.ID
-                    WHERE c.Status = 1"; // Assuming Status 1 = Active
+                    SELECT
+                        c.id,
+                        c.bronid,
+                        c.tekst,
+                        b.title as brontitle,
+                        c.tekstvector <=> @QueryVector::vector as distance
+                    FROM chunk c
+                    INNER JOIN bron b ON c.bronid = b.id
+                    WHERE c.status = 1";
 
                 if (request.ProjectId > 0)
                 {
-                    sql += " AND b.Project = @ProjectId";
+                    sql += " AND b.project = @ProjectId";
                 }
 
-                sql += " ORDER BY Distance ASC";
+                sql += " ORDER BY distance ASC LIMIT @TopK";
 
-                using var command = new SqlCommand(sql, connection);
+                using var command = new NpgsqlCommand(sql, connection);
                 command.Parameters.AddWithValue("@TopK", request.TopK);
                 command.Parameters.AddWithValue("@QueryVector", vectorString);
 
@@ -100,15 +100,15 @@ namespace VectorRagDemo.Services
                 var vectorString = "[" + string.Join(",", request.TekstVector) + "]";
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
-                using var connection = new SqlConnection(connectionString);
+                using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
 
                 var sql = @"
-                    INSERT INTO Chunk (BronID, Tekst, TekstVector, GemaaktOp, Status)
-                    VALUES (@BronID, @Tekst, CAST(@TekstVector AS VECTOR(768)), GETDATE(), @Status);
-                    SELECT CAST(SCOPE_IDENTITY() as int);";
+                    INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status)
+                    VALUES (@BronID, @Tekst, @TekstVector::vector, NOW(), @Status)
+                    RETURNING id;";
 
-                using var command = new SqlCommand(sql, connection);
+                using var command = new NpgsqlCommand(sql, connection);
                 command.Parameters.AddWithValue("@BronID", request.BronId);
                 command.Parameters.AddWithValue("@Tekst", request.Tekst);
                 command.Parameters.AddWithValue("@TekstVector", vectorString);

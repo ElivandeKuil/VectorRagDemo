@@ -6,6 +6,11 @@ using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Services;
 
+// Must be set before any Npgsql connections are opened.
+// Allows DateTime.Now (Kind=Local) to be written to PostgreSQL timestamp columns
+// without requiring UTC conversion — equivalent to SQL Server's datetime behavior.
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add global authorization filter - all pages require authentication
@@ -18,13 +23,16 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 builder.Services.AddDbContext<VectorDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .UseLowerCaseNamingConvention());
 
 builder.Services.AddDbContext<LogboekDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("LogboekConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("LogboekConnection"))
+           .UseLowerCaseNamingConvention());
 
 builder.Services.AddDbContext<ManagementDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ManagementConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("ManagementConnection"))
+           .UseLowerCaseNamingConvention());
 
 // Register UserAuthenticationService
 builder.Services.AddScoped<UserAuthenticationService>();
