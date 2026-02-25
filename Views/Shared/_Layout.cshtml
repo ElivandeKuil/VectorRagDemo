@@ -1,3 +1,4 @@
+@inject VectorRagDemo.Services.ProjectAccessService ProjectAccessService
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,8 +27,7 @@
                             </a>
                         </li>
 
-                        @* Sub-project nav items — admin only.
-                           Regular users navigate via the dashboard project cards. *@
+                        @* Nav items: admin sees all, regular users see their assigned sub-projects *@
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
@@ -55,6 +55,29 @@
                                     <i class="bi bi-journal-code me-1"></i>API Logs
                                 </a>
                             </li>
+                        }
+                        else
+                        {
+                            @* Render nav items for each sub-project the user has access to,
+                               in the canonical order defined by SubProjectMap. *@
+                            var userSubProjects = User.Claims
+                                .Where(c => c.Type == "SubProject")
+                                .Select(c => c.Value)
+                                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                            foreach (var entry in VectorRagDemo.Services.ProjectAccessService.SubProjectMap)
+                            {
+                                if (userSubProjects.Contains(entry.Key))
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark"
+                                           asp-controller="@entry.Value.Controller"
+                                           asp-action="@entry.Value.Action">
+                                            <i class="bi @entry.Value.Icon me-1"></i>@entry.Value.DisplayName
+                                        </a>
+                                    </li>
+                                }
+                            }
                         }
                     </ul>
 

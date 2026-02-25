@@ -18,6 +18,7 @@ namespace VectorRagDemo.DAL
         public DbSet<ScrapingUrlBlackList> ScrapingUrlBlackList { get; set; }
         public DbSet<PromptType> PromptTypes { get; set; }
         public DbSet<Prompt> Prompts { get; set; }
+        public DbSet<GebruikerProject> GebruikerProjecten { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -101,6 +102,23 @@ namespace VectorRagDemo.DAL
                 entity.HasOne(e => e.Bron)
                     .WithMany(b => b.Chunks)
                     .HasForeignKey(e => e.BronID)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // GebruikerProject configuration
+            modelBuilder.Entity<GebruikerProject>(entity =>
+            {
+                entity.ToTable("gebruikerproject");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Gebruiker).IsRequired();
+                entity.Property(e => e.Project).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.GewijzigdOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany()
+                    .HasForeignKey(e => e.Project)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

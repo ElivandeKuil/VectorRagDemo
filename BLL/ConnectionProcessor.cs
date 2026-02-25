@@ -14,18 +14,18 @@ namespace VectorRagDemo.BLL
             {
                 case "DEV":
                     jsonToken = @"{
-  ""type"": ""service_account"",
-  ""project_id"": ""vectorragdemo"",
-  ""private_key_id"": ""b8d4efe74eb7af3d734707bad4129b8c460f3feb"",
-  ""private_key"": ""-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDdYsMRnni7iZnz\nM3RglTtJXwaHMz/YYxPTUXGUGgR868jw9cObG8U8W7jB0q5BOTEvkQO13qiu5srN\nsja+dYss5na6Hp79rjabjHbFOrdGnn+iUZN5B92smgtP9978/3NPobN/SXc0mnjl\nZZ/Np1LXGd88nTOuFtTffdLPiZZEI/XmXr9p+hGaSp/HLMszebNPqosTolwsGBeN\nCnWPxOT1jzw1D5pPKHGRjxzQvGuKncBmMHmhWZodrVDQI/GevmHgcrSLZIKgwzh9\ny3f8BmjgqY8ZtymVJVFj8wQ8szQLsm/QolCrnCtlykFH8KWk8kzgMjWxZBjBasur\n/DP6oqjFAgMBAAECggEAATCGPBcAU1vtxtaeFVLFquxCOAHBxn6Xga3jWerMuoRA\nGt7HMUoGe21CK5mWWK6D2LbenmCNwp9l/P+Ht3zXoQe0jsDjpz2Vr4f+r2F49TSc\niGKaZhyDtWlJV7Pxr8oKdG7wtdNhX5f8Ugc6eeBFAGV0MTFUMMKQpWWi91iDfAsY\nAY45hogjUsiT3STcjvQ2RI0HmDo8on+WinkuOP3Ujn1neDlQAZOckb34jmCUrrXk\nRY3Y6Do3hp8V8KAMxXiPSfRKuK7Zk+ekWpniFL4+U97mVGAAvTb70B7B4luZIqqJ\nQs+XLz9MJu2Rw5xAgB8oRhdUBwU7eYDSlcZGvz51YQKBgQD0bu5RmUxtOavvbNt4\nGbtCcYuZqBP0cWbPAr9KgdhsiBB7CbF4+gA8KUBZbRbXngxq8zNJ+uw94phE211g\npt+3NMow1Xxaba1F7SiInwaa9FWiJXGyxcCoudSOG8ro0L8vIjU8hJIslJlcMiqz\nRhIFW0VTCKpWwxplAeJjKZ8xuQKBgQDn3KIDIF8Griq7kFBLchU0mNd9VQniQv6g\nQI1WIe3WY/gV34FF+Ecnpjow6OVM/N7s9aeWNBkApTEYNqBfDSB6G9BRkT8Z1pmM\n0a82kTWnNNw+fM4oI2emgxIZgs1z2ksP7eKKdMlrY2mC6o7tbO/8QJEzNDhpSWRh\nc/1lXWDlbQKBgGjZbMDz0STJKEd7mmjaIMlPi2JOBsFEI6WIuCVtrThg5TDh547N\nLmygBUpW0QWMdicqS0XgrJWfLVHcByH+cthTfKeV69GeWkU0hb6U+HBffpwfE7Zr\nvUii7dpHcbKMWHYPZmafN1SIKYCyxD5CQFir3gDQJsEwz5GkTUfcAr2BAoGAUwtq\nF7aTcoAVHCLfL3aH89O+csxvgtO+AUW9mZkDZ6NcqvDni1kWmzPlabkwz7dOXQ7L\nXHgCcIG6KNL/86tu821c2qosMKP1UUOU/vVZgy7ip5rp9+RebnxJkkuQLKuF8Qmh\n9zdHISh1FQfP82fuOKojl3RftA4uXt09Z/3fA60CgYAROWgkFYgTYYxIcN9TM3kn\n0XlRQBAzwxQppm5ZS22fxO3jl++fpY2uKL/j4+m4nrC2F5ezRrXcxf4nc4iUyrkB\na1/NHj77efNL3YaHcfLJGCeNz1E15NHzcUg0euHWauJ5Ei1iNqqzbKRdvWIaO8+q\n96dzRkHWslZbdVe8ZYULRg==\n-----END PRIVATE KEY-----\n"",
-  ""client_email"": ""admin-sa@vectorragdemo.iam.gserviceaccount.com"",
-  ""client_id"": ""102649494174899893754"",
-  ""auth_uri"": ""https://accounts.google.com/o/oauth2/auth"",
-  ""token_uri"": ""https://oauth2.googleapis.com/token"",
-  ""auth_provider_x509_cert_url"": ""https://www.googleapis.com/oauth2/v1/certs"",
-  ""client_x509_cert_url"": ""https://www.googleapis.com/robot/v1/metadata/x509/admin-sa%40vectorragdemo.iam.gserviceaccount.com"",
-  ""universe_domain"": ""googleapis.com""
-}
+                      ""type"": ""service_account"",
+                      ""project_id"": ""vectorragdemo"",
+                      ""private_key_id"": ""b8d4efe74eb7af3d734707bad4129b8c460f3feb"",
+                      ""private_key"": ""-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDdYsMRnni7iZnz\nM3RglTtJXwaHMz/YYxPTUXGUGgR868jw9cObG8U8W7jB0q5BOTEvkQO13qiu5srN\nsja+dYss5na6Hp79rjabjHbFOrdGnn+iUZN5B92smgtP9978/3NPobN/SXc0mnjl\nZZ/Np1LXGd88nTOuFtTffdLPiZZEI/XmXr9p+hGaSp/HLMszebNPqosTolwsGBeN\nCnWPxOT1jzw1D5pPKHGRjxzQvGuKncBmMHmhWZodrVDQI/GevmHgcrSLZIKgwzh9\ny3f8BmjgqY8ZtymVJVFj8wQ8szQLsm/QolCrnCtlykFH8KWk8kzgMjWxZBjBasur\n/DP6oqjFAgMBAAECggEAATCGPBcAU1vtxtaeFVLFquxCOAHBxn6Xga3jWerMuoRA\nGt7HMUoGe21CK5mWWK6D2LbenmCNwp9l/P+Ht3zXoQe0jsDjpz2Vr4f+r2F49TSc\niGKaZhyDtWlJV7Pxr8oKdG7wtdNhX5f8Ugc6eeBFAGV0MTFUMMKQpWWi91iDfAsY\nAY45hogjUsiT3STcjvQ2RI0HmDo8on+WinkuOP3Ujn1neDlQAZOckb34jmCUrrXk\nRY3Y6Do3hp8V8KAMxXiPSfRKuK7Zk+ekWpniFL4+U97mVGAAvTb70B7B4luZIqqJ\nQs+XLz9MJu2Rw5xAgB8oRhdUBwU7eYDSlcZGvz51YQKBgQD0bu5RmUxtOavvbNt4\nGbtCcYuZqBP0cWbPAr9KgdhsiBB7CbF4+gA8KUBZbRbXngxq8zNJ+uw94phE211g\npt+3NMow1Xxaba1F7SiInwaa9FWiJXGyxcCoudSOG8ro0L8vIjU8hJIslJlcMiqz\nRhIFW0VTCKpWwxplAeJjKZ8xuQKBgQDn3KIDIF8Griq7kFBLchU0mNd9VQniQv6g\nQI1WIe3WY/gV34FF+Ecnpjow6OVM/N7s9aeWNBkApTEYNqBfDSB6G9BRkT8Z1pmM\n0a82kTWnNNw+fM4oI2emgxIZgs1z2ksP7eKKdMlrY2mC6o7tbO/8QJEzNDhpSWRh\nc/1lXWDlbQKBgGjZbMDz0STJKEd7mmjaIMlPi2JOBsFEI6WIuCVtrThg5TDh547N\nLmygBUpW0QWMdicqS0XgrJWfLVHcByH+cthTfKeV69GeWkU0hb6U+HBffpwfE7Zr\nvUii7dpHcbKMWHYPZmafN1SIKYCyxD5CQFir3gDQJsEwz5GkTUfcAr2BAoGAUwtq\nF7aTcoAVHCLfL3aH89O+csxvgtO+AUW9mZkDZ6NcqvDni1kWmzPlabkwz7dOXQ7L\nXHgCcIG6KNL/86tu821c2qosMKP1UUOU/vVZgy7ip5rp9+RebnxJkkuQLKuF8Qmh\n9zdHISh1FQfP82fuOKojl3RftA4uXt09Z/3fA60CgYAROWgkFYgTYYxIcN9TM3kn\n0XlRQBAzwxQppm5ZS22fxO3jl++fpY2uKL/j4+m4nrC2F5ezRrXcxf4nc4iUyrkB\na1/NHj77efNL3YaHcfLJGCeNz1E15NHzcUg0euHWauJ5Ei1iNqqzbKRdvWIaO8+q\n96dzRkHWslZbdVe8ZYULRg==\n-----END PRIVATE KEY-----\n"",
+                      ""client_email"": ""admin-sa@vectorragdemo.iam.gserviceaccount.com"",
+                      ""client_id"": ""102649494174899893754"",
+                      ""auth_uri"": ""https://accounts.google.com/o/oauth2/auth"",
+                      ""token_uri"": ""https://oauth2.googleapis.com/token"",
+                      ""auth_provider_x509_cert_url"": ""https://www.googleapis.com/oauth2/v1/certs"",
+                      ""client_x509_cert_url"": ""https://www.googleapis.com/robot/v1/metadata/x509/admin-sa%40vectorragdemo.iam.gserviceaccount.com"",
+                      ""universe_domain"": ""googleapis.com""
+                    }
 
                     ";
                     break;

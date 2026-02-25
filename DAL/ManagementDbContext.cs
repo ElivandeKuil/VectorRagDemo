@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.Entities.Management;
+using MgmtGebruikerProject = VectorRagDemo.Models.Entities.Management.GebruikerProject;
 
 namespace VectorRagDemo.DAL
 {
@@ -19,7 +20,7 @@ namespace VectorRagDemo.DAL
         // Project access tables
         public DbSet<MgmtProject> MgmtProjects { get; set; } = null!;
         public DbSet<MgmtSubProject> MgmtSubProjects { get; set; } = null!;
-        public DbSet<GebruikerProject> GebruikerProjecten { get; set; } = null!;
+        public DbSet<MgmtGebruikerProject> GebruikerProjecten { get; set; } = null!;
         public DbSet<GebruikerSubProject> GebruikerSubProjecten { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -97,8 +98,8 @@ namespace VectorRagDemo.DAL
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // GebruikerProject configuration
-            modelBuilder.Entity<GebruikerProject>(entity =>
+            // MgmtGebruikerProject configuration
+            modelBuilder.Entity<MgmtGebruikerProject>(entity =>
             {
                 entity.ToTable("gebruikerproject");
                 entity.HasKey(e => e.ID);

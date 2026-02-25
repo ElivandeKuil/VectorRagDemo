@@ -11,6 +11,7 @@ service VectorDbService {
   rpc AddProject (AddProjectRequest) returns (AddProjectResponse);
   rpc GetChunkById (GetChunkRequest) returns (ChunkResponse);
   rpc GetScrapingElementsByProject (GetScrapingElementsRequest) returns (GetScrapingElementsResponse);
+  rpc GetProjectForUser (GetProjectForUserRequest) returns (GetProjectForUserResponse);
 }
 
 message SearchRequest {
@@ -81,6 +82,15 @@ message GetScrapingElementsRequest {
 
 message GetScrapingElementsResponse {
   repeated ScrapingElementMessage elements = 1;
+}
+
+message GetProjectForUserRequest {
+  int32 gebruiker_id = 1;
+}
+
+message GetProjectForUserResponse {
+  int32 project_id = 1;
+  bool found = 2;
 }
 
 message ScrapingElementMessage {

@@ -1,7 +1,9 @@
 @using VectorRagDemo.BLL
+@using VectorRagDemo.Models.Entities
 
 @{
     ViewData["Title"] = "Document uploaden";
+    var singleProject = ViewBag.SingleProject as Project;
 }
 
 <div class="d-flex align-items-center mb-4">
@@ -31,14 +33,22 @@
                     @Html.AntiForgeryToken()
 
                     <div class="mb-4">
-                        <label for="projectId" class="form-label fw-semibold">Project</label>
-                        <select name="projectId" id="projectId" class="form-select" required>
-                            <option value="">-- Selecteer een project --</option>
-                            @foreach (SelectListItem item in ViewBag.Projects)
-                            {
-                                <option value="@item.Value">@item.Text</option>
-                            }
-                        </select>
+                        <label class="form-label fw-semibold">Project</label>
+                        @if (singleProject != null)
+                        {
+                            <input type="hidden" name="projectId" value="@singleProject.ID" />
+                            <p class="form-control-plaintext">@singleProject.Naam</p>
+                        }
+                        else
+                        {
+                            <select name="projectId" id="projectId" class="form-select" required>
+                                <option value="">-- Selecteer een project --</option>
+                                @foreach (SelectListItem item in ViewBag.Projects)
+                                {
+                                    <option value="@item.Value">@item.Text</option>
+                                }
+                            </select>
+                        }
                     </div>
 
                     <div class="mb-4">
@@ -74,25 +84,9 @@
                     <dt class="col-7 text-muted">Overlap</dt>
                     <dd class="col-5">@Config.OverlapWords woorden</dd>
 
-                    <dt class="col-7 text-muted">Stap</dt>
-                    <dd class="col-5">@(Config.MaxWords - Config.OverlapWords) woorden</dd>
-
                     <dt class="col-7 text-muted">Embedding model</dt>
                     <dd class="col-5">@Config.EmbeddingModel</dd>
-
-                    <dt class="col-7 text-muted">Dimensies</dt>
-                    <dd class="col-5">768</dd>
                 </dl>
-
-                <hr />
-
-                <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Hoe werkt het?</h6>
-                <ol class="small text-muted ps-3 mb-0">
-                    <li>Het bestand wordt geparsed naar platte tekst</li>
-                    <li>De tekst wordt opgesplitst in overlappende chunks</li>
-                    <li>Elke chunk krijgt een 768-dimensionale embedding</li>
-                    <li>Chunks worden opgeslagen in de vectordatabase</li>
-                </ol>
             </div>
         </div>
     </div>

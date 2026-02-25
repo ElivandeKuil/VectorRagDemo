@@ -8,7 +8,6 @@ namespace VectorRagDemo.Models.ViewModels
         public string? Extension { get; set; }
         public string ProjectNaam { get; set; } = string.Empty;
         public int ProjectId { get; set; }
-        public int ChunkCount { get; set; }
         public DateTime GemaaktOp { get; set; }
     }
 }

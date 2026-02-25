@@ -42,15 +42,17 @@ namespace VectorRagDemo.BLL
         public async Task<List<Neighbor>> GetNearestNeighborsAsync(
             string connectionString,
             List<float> queryEmbedding,
-            int topK)
+            int topK,
+            int projectId = 0)
         {
-            return await GetNearestNeighbors(connectionString, queryEmbedding, topK);
+            return await GetNearestNeighbors(connectionString, queryEmbedding, topK, projectId);
         }
 
         private async Task<List<Neighbor>> GetNearestNeighbors(
             string connectionString,
             List<float> queryEmbedding,
-            int topK)
+            int topK,
+            int projectId = 0)
         {
             var results = new List<Neighbor>();
             var vectorString = "[" + string.Join(",", queryEmbedding) + "]";
@@ -58,7 +60,6 @@ namespace VectorRagDemo.BLL
             using var connection = new NpgsqlConnection(connectionString);
             await connection.OpenAsync();
 
-            // Build SQL query with optional filters
             var sql = @"
                 SELECT
                     c.id,
@@ -71,11 +72,17 @@ namespace VectorRagDemo.BLL
                 INNER JOIN bron b ON c.bronid = b.id
                 WHERE c.status = 1";
 
+            if (projectId > 0)
+                sql += " AND b.project = @ProjectId";
+
             sql += " ORDER BY distance ASC LIMIT @TopK";
 
             using var command = new NpgsqlCommand(sql, connection);
             command.Parameters.AddWithValue("@TopK", topK);
             command.Parameters.AddWithValue("@QueryVector", vectorString);
+
+            if (projectId > 0)
+                command.Parameters.AddWithValue("@ProjectId", projectId);
 
             using var reader = await command.ExecuteReaderAsync();
 

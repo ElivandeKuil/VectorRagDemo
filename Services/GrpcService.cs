@@ -205,6 +205,28 @@ namespace VectorRagDemo.Services
             }
         }
 
+        public override async Task<GetProjectForUserResponse> GetProjectForUser(
+            GetProjectForUserRequest request,
+            ServerCallContext context)
+        {
+            try
+            {
+                var entry = await _context.GebruikerProjecten
+                    .Where(gp => gp.Gebruiker == request.GebruikerId && gp.Status == 1)
+                    .FirstOrDefaultAsync();
+
+                if (entry == null)
+                    return new GetProjectForUserResponse { ProjectId = 0, Found = false };
+
+                return new GetProjectForUserResponse { ProjectId = entry.Project, Found = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting project for user");
+                throw new RpcException(new Status(StatusCode.Internal, ex.Message));
+            }
+        }
+
         public override async Task<GetScrapingElementsResponse> GetScrapingElementsByProject(
             GetScrapingElementsRequest request,
             ServerCallContext context)

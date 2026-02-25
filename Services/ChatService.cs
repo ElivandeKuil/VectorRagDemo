@@ -21,7 +21,7 @@ namespace VectorRagDemo.Services
 
         }
 
-        public async Task<ChatResponse> Ask(ChatRequest request)
+        public async Task<ChatResponse> Ask(ChatRequest request, int projectId = 0)
         {
             try
             {
@@ -41,11 +41,12 @@ namespace VectorRagDemo.Services
 
                 var connectionString = Configuration.GetConnectionString("DefaultConnection");
 
-                // Get new chunks from vector search
+                // Get new chunks from vector search, filtered to user's project when set
                 var newNeighbors = await VectorQueryProcessor.GetNearestNeighborsAsync(
                     connectionString,
                     queryEmbedding,
-                    topK: Config.VectorQueryTopK
+                    topK: Config.VectorQueryTopK,
+                    projectId: projectId
                 );
 
                 // Process and merge with existing retrieved chunks
