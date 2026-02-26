@@ -31,7 +31,7 @@ namespace VectorRagDemo.Controllers
             _embeddingProcessor = new EmbeddingProcessor(new HttpClient(), logboekContext);
         }
 
-        public async Task<IActionResult> Index(int? projectId = null)
+        public async Task<IActionResult> Index(int? projectId = null, int? folderId = null)
         {
             var accessibleProjects = await GetAccessibleProjectsAsync();
 
@@ -42,22 +42,74 @@ namespace VectorRagDemo.Controllers
 
             if (User.IsInRole("Admin"))
             {
-                // Admin: use selected project or default to first
                 resolvedProjectId = accessibleProjects.Any(p => p.ID == projectId)
                     ? projectId!.Value
                     : accessibleProjects.First().ID;
 
                 ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam", resolvedProjectId);
-                ViewBag.SelectedProjectId = resolvedProjectId;
             }
             else
             {
                 resolvedProjectId = accessibleProjects.First().ID;
             }
 
-            var bronnen = await _context.Bronnen
+            ViewBag.SelectedProjectId = resolvedProjectId;
+
+            // Load all folders for this project (used for tree + breadcrumb + subtree filtering)
+            var folders = await _context.Folders
+                .Where(f => f.Project == resolvedProjectId && f.Status == 1)
+                .OrderBy(f => f.Naam)
+                .ToListAsync();
+
+            // Doc counts per folder (direct only)
+            var folderDocCounts = await _context.Bronnen
+                .Where(b => b.Project == resolvedProjectId && b.Status == 1
+                         && b.FileName != null && b.FolderId != null)
+                .GroupBy(b => b.FolderId)
+                .Select(g => new { FolderId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.FolderId!.Value, x => x.Count);
+
+            ViewBag.FolderTreeData = folders.Select(f => new
+            {
+                id = f.ID,
+                naam = f.Naam,
+                parentId = f.ParentId,
+                docCount = folderDocCounts.GetValueOrDefault(f.ID, 0)
+            }).ToList();
+
+            ViewBag.CurrentFolderId = folderId;
+
+            ViewBag.TotalDocCount = await _context.Bronnen
+                .CountAsync(b => b.FileName != null && b.Status == 1 && b.Project == resolvedProjectId);
+
+            // Build breadcrumb
+            if (folderId.HasValue)
+            {
+                var crumbs = new List<FolderCrumb>();
+                var cur = folders.FirstOrDefault(f => f.ID == folderId.Value);
+                while (cur != null)
+                {
+                    crumbs.Insert(0, new FolderCrumb(cur.ID, cur.Naam));
+                    cur = cur.ParentId.HasValue
+                        ? folders.FirstOrDefault(f => f.ID == cur.ParentId.Value)
+                        : null;
+                }
+                ViewBag.Breadcrumb = crumbs;
+            }
+
+            // Filter documents
+            IQueryable<Bron> query = _context.Bronnen
                 .Include(b => b.ProjectNavigation)
-                .Where(b => b.FileName != null && b.Status == 1 && b.Project == resolvedProjectId)
+                .Include(b => b.FolderNavigation)
+                .Where(b => b.FileName != null && b.Status == 1 && b.Project == resolvedProjectId);
+
+            if (folderId.HasValue)
+            {
+                var subtreeIds = GetSubtreeFolderIds(folders, folderId.Value);
+                query = query.Where(b => b.FolderId.HasValue && subtreeIds.Contains(b.FolderId.Value));
+            }
+
+            var bronnen = await query
                 .OrderByDescending(b => b.GemaaktOp)
                 .ToListAsync();
 
@@ -69,11 +121,123 @@ namespace VectorRagDemo.Controllers
                 Extension = b.FileName != null ? Path.GetExtension(b.FileName).ToLowerInvariant() : null,
                 ProjectNaam = b.ProjectNavigation?.Naam ?? string.Empty,
                 ProjectId = b.Project,
-                GemaaktOp = b.GemaaktOp
+                GemaaktOp = b.GemaaktOp,
+                FolderId = b.FolderId,
+                FolderNaam = b.FolderNavigation?.Naam
             }).ToList();
 
             return View(viewModels);
         }
+
+        // ── Folder CRUD (AJAX) ────────────────────────────────────────────────
+
+        [HttpPost]
+        public async Task<IActionResult> FolderCreate(string naam, int projectId, int? parentId)
+        {
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == projectId))
+                return Json(new { success = false, message = "Geen toegang tot dit project." });
+
+            if (string.IsNullOrWhiteSpace(naam))
+                return Json(new { success = false, message = "Naam is verplicht." });
+
+            if (parentId.HasValue)
+            {
+                var parent = await _context.Folders.FindAsync(parentId.Value);
+                if (parent == null || parent.Status != 1 || parent.Project != projectId)
+                    return Json(new { success = false, message = "Ongeldige bovenliggende map." });
+            }
+
+            var folder = new Folder
+            {
+                Naam = naam.Trim(),
+                Project = projectId,
+                ParentId = parentId,
+                GemaaktOp = DateTime.Now,
+                Status = 1
+            };
+
+            _context.Folders.Add(folder);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, id = folder.ID, naam = folder.Naam });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> FolderRename(int id, string naam)
+        {
+            var folder = await _context.Folders.FindAsync(id);
+            if (folder == null || folder.Status != 1)
+                return Json(new { success = false, message = "Map niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == folder.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            if (string.IsNullOrWhiteSpace(naam))
+                return Json(new { success = false, message = "Naam is verplicht." });
+
+            folder.Naam = naam.Trim();
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> FolderDelete(int id)
+        {
+            var folder = await _context.Folders.FindAsync(id);
+            if (folder == null || folder.Status != 1)
+                return Json(new { success = false, message = "Map niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == folder.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            var allFolders = await _context.Folders
+                .Where(f => f.Project == folder.Project && f.Status == 1)
+                .ToListAsync();
+
+            var subtreeIds = GetSubtreeFolderIds(allFolders, id);
+
+            var hasDocuments = await _context.Bronnen
+                .AnyAsync(b => b.FolderId.HasValue && subtreeIds.Contains(b.FolderId.Value) && b.Status == 1);
+
+            if (hasDocuments)
+                return Json(new { success = false, message = "Verwijder of verplaats eerst alle documenten in deze map." });
+
+            await _context.Folders
+                .Where(f => subtreeIds.Contains(f.ID))
+                .ExecuteUpdateAsync(s => s.SetProperty(f => f.Status, 2));
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MoveDocument(int bronId, int? folderId)
+        {
+            var bron = await _context.Bronnen.FindAsync(bronId);
+            if (bron == null || bron.Status != 1)
+                return Json(new { success = false, message = "Document niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == bron.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            if (folderId.HasValue)
+            {
+                var folder = await _context.Folders.FindAsync(folderId.Value);
+                if (folder == null || folder.Status != 1 || folder.Project != bron.Project)
+                    return Json(new { success = false, message = "Ongeldige map." });
+            }
+
+            bron.FolderId = folderId;
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
+        // ── File upload ────────────────────────────────────────────────────────
 
         [HttpGet]
         public async Task<IActionResult> Upload()
@@ -204,52 +368,7 @@ namespace VectorRagDemo.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Download(int id)
-        {
-            var bron = await _context.Bronnen.FindAsync(id);
-            if (bron == null || bron.FilePath == null || bron.FileName == null || bron.Status != 1)
-                return NotFound();
-
-            var diskPath = Path.Combine(_env.WebRootPath, bron.FilePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(diskPath))
-                return NotFound();
-
-            var ext = Path.GetExtension(bron.FileName).ToLowerInvariant();
-            var contentType = ext == ".docx"
-                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                : "text/plain";
-
-            var bytes = await System.IO.File.ReadAllBytesAsync(diskPath);
-            return File(bytes, contentType, bron.FileName);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Preview(int id)
-        {
-            var bron = await _context.Bronnen.FindAsync(id);
-            if (bron == null || bron.FilePath == null || bron.FileName == null || bron.Status != 1)
-                return NotFound();
-
-            var accessible = await GetAccessibleProjectsAsync();
-            if (!accessible.Any(p => p.ID == bron.Project))
-                return Forbid();
-
-            var diskPath = Path.Combine(_env.WebRootPath, bron.FilePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(diskPath))
-                return NotFound();
-
-            var ext = Path.GetExtension(bron.FileName).ToLowerInvariant();
-            var bytes = await System.IO.File.ReadAllBytesAsync(diskPath);
-            var text = DocumentParser.ParseToText(bytes, ext);
-
-            const int maxChars = 15000;
-            bool truncated = text.Length > maxChars;
-            if (truncated)
-                text = text[..maxChars];
-
-            return Json(new { title = bron.Title, fileName = bron.FileName, text, truncated });
-        }
+        // ── Text input ─────────────────────────────────────────────────────────
 
         [HttpGet]
         public async Task<IActionResult> TextInput()
@@ -369,6 +488,55 @@ namespace VectorRagDemo.Controllers
             }
         }
 
+        // ── Download / Preview / Delete ─────────────────────────────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> Download(int id)
+        {
+            var bron = await _context.Bronnen.FindAsync(id);
+            if (bron == null || bron.FilePath == null || bron.FileName == null || bron.Status != 1)
+                return NotFound();
+
+            var diskPath = Path.Combine(_env.WebRootPath, bron.FilePath.Replace('/', Path.DirectorySeparatorChar));
+            if (!System.IO.File.Exists(diskPath))
+                return NotFound();
+
+            var ext = Path.GetExtension(bron.FileName).ToLowerInvariant();
+            var contentType = ext == ".docx"
+                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                : "text/plain";
+
+            var bytes = await System.IO.File.ReadAllBytesAsync(diskPath);
+            return File(bytes, contentType, bron.FileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Preview(int id)
+        {
+            var bron = await _context.Bronnen.FindAsync(id);
+            if (bron == null || bron.FilePath == null || bron.FileName == null || bron.Status != 1)
+                return NotFound();
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == bron.Project))
+                return Forbid();
+
+            var diskPath = Path.Combine(_env.WebRootPath, bron.FilePath.Replace('/', Path.DirectorySeparatorChar));
+            if (!System.IO.File.Exists(diskPath))
+                return NotFound();
+
+            var ext = Path.GetExtension(bron.FileName).ToLowerInvariant();
+            var bytes = await System.IO.File.ReadAllBytesAsync(diskPath);
+            var text = DocumentParser.ParseToText(bytes, ext);
+
+            const int maxChars = 15000;
+            bool truncated = text.Length > maxChars;
+            if (truncated)
+                text = text[..maxChars];
+
+            return Json(new { title = bron.Title, fileName = bron.FileName, text, truncated });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
@@ -399,9 +567,24 @@ namespace VectorRagDemo.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Returns VectorRag projects accessible to the current user.
-        // Admin: all active projects.
-        // Regular user: projects from the gebruikerproject table in the VectorRag DB.
+        // ── Helpers ─────────────────────────────────────────────────────────────
+
+        private static HashSet<int> GetSubtreeFolderIds(List<Folder> allFolders, int rootId)
+        {
+            var result = new HashSet<int> { rootId };
+            var queue = new Queue<int>(new[] { rootId });
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                foreach (var child in allFolders.Where(f => f.ParentId == current))
+                {
+                    if (result.Add(child.ID))
+                        queue.Enqueue(child.ID);
+                }
+            }
+            return result;
+        }
+
         private async Task<List<Project>> GetAccessibleProjectsAsync()
         {
             if (User.IsInRole("Admin"))

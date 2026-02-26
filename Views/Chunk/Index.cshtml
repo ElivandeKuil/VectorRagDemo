@@ -1,7 +1,12 @@
 @model List<VectorRagDemo.Models.ViewModels.DocumentViewModel>
+@using VectorRagDemo.Models.ViewModels
 
 @{
     ViewData["Title"] = "Documenten";
+    var currentFolderId = ViewBag.CurrentFolderId as int?;
+    var selectedProjectId = (int)(ViewBag.SelectedProjectId ?? 0);
+    var totalDocCount = (int)(ViewBag.TotalDocCount ?? 0);
+    var breadcrumb = ViewBag.Breadcrumb as List<FolderCrumb>;
 }
 
 @if (TempData["Success"] != null)
@@ -20,7 +25,7 @@
     </div>
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Documenten</h1>
     <div class="btn-group">
         <a asp-action="Upload" class="btn btn-primary">
@@ -34,7 +39,7 @@
 
 @if (User.IsInRole("Admin") && ViewBag.Projects != null)
 {
-    <form method="get" asp-action="Index" class="mb-4">
+    <form method="get" asp-action="Index" class="mb-3">
         <div class="d-flex align-items-center gap-2">
             <label class="form-label mb-0 text-muted small">Project:</label>
             @Html.DropDownList("projectId", (SelectList)ViewBag.Projects,
@@ -43,108 +48,229 @@
     </form>
 }
 
-@if (!Model.Any())
-{
-    <div class="text-center py-5">
-        <i class="bi bi-file-earmark-text display-1 text-muted"></i>
-        <h4 class="mt-3 text-muted">Nog geen documenten geüpload</h4>
-        <p class="text-muted mb-4">Upload een bestand of voer tekst in om te beginnen.</p>
-        <div class="btn-group">
-            <a asp-action="Upload" class="btn btn-primary btn-lg">
-                <i class="bi bi-upload me-2"></i>Document uploaden
-            </a>
-            <a asp-action="TextInput" class="btn btn-outline-primary btn-lg">
-                <i class="bi bi-keyboard me-2"></i>Tekst invoeren
-            </a>
+<div class="row gx-4">
+
+    @* Folder sidebar *@
+    <div class="col-lg-3 col-md-4 mb-4 mb-md-0">
+        <div class="folder-sidebar">
+            <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+                <span class="small fw-semibold text-uppercase text-muted" style="letter-spacing:.05em">Mappen</span>
+            </div>
+            <div id="folderTree">
+                <div class="text-muted small py-2 px-1">Laden…</div>
+            </div>
         </div>
     </div>
-}
-else
-{
-    <p class="text-muted small mb-2">Klik op een rij om een voorvertoning te tonen.</p>
-    <table class="table table-hover align-middle">
-        <thead class="table-light">
-            <tr>
-                <th style="width:40px"></th>
-                <th>Bestandsnaam</th>
-                <th>Geüpload</th>
-                <th class="text-end">Acties</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var doc in Model)
-            {
-                <tr class="doc-row"
-                    data-bron-id="@doc.BronId"
-                    data-file-name="@doc.FileName"
-                    style="cursor:pointer">
-                    <td>
-                        @if (doc.Extension == ".docx")
+
+    @* Document area *@
+    <div class="col-lg-9 col-md-8">
+
+        @if (breadcrumb != null && breadcrumb.Any())
+        {
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="?projectId=@selectedProjectId">Alle documenten</a>
+                    </li>
+                    @for (int i = 0; i < breadcrumb.Count; i++)
+                    {
+                        var crumb = breadcrumb[i];
+                        if (i < breadcrumb.Count - 1)
                         {
-                            <i class="bi bi-file-earmark-word text-primary fs-5"></i>
+                            <li class="breadcrumb-item">
+                                <a href="?projectId=@selectedProjectId&folderId=@crumb.Id">@crumb.Naam</a>
+                            </li>
                         }
                         else
                         {
-                            <i class="bi bi-file-earmark-text text-secondary fs-5"></i>
+                            <li class="breadcrumb-item active" aria-current="page">@crumb.Naam</li>
                         }
-                    </td>
-                    <td>@doc.FileName</td>
-                    <td class="text-muted small">@doc.GemaaktOp.ToString("dd-MM-yyyy")</td>
-                    <td class="text-end doc-actions">
-                        <a asp-action="Download" asp-route-id="@doc.BronId"
-                           class="btn btn-sm btn-outline-secondary me-1"
-                           title="Downloaden">
-                            <i class="bi bi-download"></i>
-                        </a>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-danger btn-delete"
-                                data-bron-id="@doc.BronId"
-                                data-bron-name="@doc.FileName"
-                                data-bs-toggle="modal"
-                                data-bs-target="#deleteModal"
-                                title="Verwijderen">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+                    }
+                </ol>
+            </nav>
+        }
 
-<!-- Delete confirmation modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+                <h4 class="mt-3 text-muted">
+                    @(currentFolderId.HasValue ? "Geen documenten in deze map" : "Nog geen documenten geüpload")
+                </h4>
+                @if (!currentFolderId.HasValue)
+                {
+                    <p class="text-muted mb-4">Upload een bestand of voer tekst in om te beginnen.</p>
+                    <div class="btn-group">
+                        <a asp-action="Upload" class="btn btn-primary btn-lg">
+                            <i class="bi bi-upload me-2"></i>Document uploaden
+                        </a>
+                        <a asp-action="TextInput" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-keyboard me-2"></i>Tekst invoeren
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted small mb-2">Klik op een rij om een voorvertoning te tonen.</p>
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px"></th>
+                        <th>Bestandsnaam</th>
+                        <th>Geüpload</th>
+                        <th class="text-end">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in Model)
+                    {
+                        <tr class="doc-row"
+                            data-bron-id="@doc.BronId"
+                            data-file-name="@doc.FileName"
+                            style="cursor:pointer">
+                            <td>
+                                @if (doc.Extension == ".docx")
+                                {
+                                    <i class="bi bi-file-earmark-word text-primary fs-5"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-file-earmark-text text-secondary fs-5"></i>
+                                }
+                            </td>
+                            <td>
+                                @doc.FileName
+                            </td>
+                            <td class="text-muted small">
+                                @doc.GemaaktOp.ToString("dd-MM-yyyy")
+                                @if (!currentFolderId.HasValue && doc.FolderNaam != null)
+                                {
+                                    <br /><span class="text-muted" style="font-size:.75rem"><i class="bi bi-folder me-1"></i>@doc.FolderNaam</span>
+                                }
+                            </td>
+                            <td class="text-end doc-actions">
+                                <a asp-action="Download" asp-route-id="@doc.BronId"
+                                   class="btn btn-sm btn-outline-secondary me-1"
+                                   title="Downloaden">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-primary me-1 btn-move"
+                                        data-bron-id="@doc.BronId"
+                                        data-current-folder="@(doc.FolderId?.ToString() ?? "")"
+                                        title="Verplaatsen">
+                                    <i class="bi bi-folder-symlink"></i>
+                                </button>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger btn-delete"
+                                        data-bron-id="@doc.BronId"
+                                        data-bron-name="@doc.FileName"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal"
+                                        title="Verwijderen">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@* Delete modal *@
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">
-                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Document verwijderen
-                </h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Document verwijderen</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                Weet je zeker dat je <strong id="deleteFileName"></strong> wilt verwijderen?
-            </div>
+            <div class="modal-body">Weet je zeker dat je <strong id="deleteFileName"></strong> wilt verwijderen?</div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
                 <form id="deleteForm" method="post" asp-action="Delete">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" id="deleteId" />
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash me-1"></i>Verwijderen
-                    </button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Verwijderen</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Document preview offcanvas -->
-<div class="offcanvas offcanvas-end"
-     tabindex="-1"
-     id="previewPanel"
-     aria-labelledby="previewPanelLabel"
-     style="width: min(45%, 680px)">
+@* Create folder modal *@
+<div class="modal fade" id="createFolderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-folder-plus me-2"></i>Nieuwe map</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createFolderForm">
+                <div class="modal-body">
+                    <label class="form-label">Naam</label>
+                    <input type="text" id="createFolderInput" class="form-control" placeholder="Mapnaam…" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Aanmaken</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Rename folder modal *@
+<div class="modal fade" id="renameFolderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Map hernoemen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="renameFolderForm">
+                <div class="modal-body">
+                    <label class="form-label">Nieuwe naam</label>
+                    <input type="text" id="renameFolderInput" class="form-control" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Opslaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Move document modal *@
+<div class="modal fade" id="moveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-folder-symlink me-2"></i>Verplaatsen naar map</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="moveFolderForm">
+                <div class="modal-body">
+                    <label class="form-label">Bestemming</label>
+                    <select id="moveFolderSelect" class="form-select"></select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Verplaatsen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Preview offcanvas *@
+<div class="offcanvas offcanvas-end" tabindex="-1" id="previewPanel"
+     aria-labelledby="previewPanelLabel" style="width: min(45%, 680px)">
     <div class="offcanvas-header border-bottom">
         <div>
             <h5 class="offcanvas-title mb-0" id="previewPanelLabel">
@@ -160,9 +286,8 @@ else
             <p class="mt-2 text-muted small">Document laden…</p>
         </div>
         <div id="previewError" class="alert alert-danger m-3 d-none"></div>
-        <pre id="previewContent"
-             class="d-none m-0 p-4"
-             style="white-space: pre-wrap; font-size: 0.82rem; line-height: 1.65; font-family: inherit; overflow-y: auto; height: 100%;"></pre>
+        <pre id="previewContent" class="d-none m-0 p-4"
+             style="white-space:pre-wrap;font-size:.82rem;line-height:1.65;font-family:inherit;overflow-y:auto;height:100%"></pre>
         <div id="previewTruncatedNote" class="d-none border-top p-3 bg-light text-muted small">
             <i class="bi bi-info-circle me-1"></i>Voorvertoning beperkt tot de eerste 15.000 tekens.
         </div>
@@ -170,65 +295,280 @@ else
 </div>
 
 @section Scripts {
-    <script>
-        const previewUrl = '@Url.Action("Preview")';
-        const deleteActionBase = '@Url.Action("Delete")';
+<style>
+    /* Sidebar */
+    .folder-sidebar {
+        position: sticky;
+        top: 1rem;
+        background: #f8f9fa;
+        border-radius: .5rem;
+        padding: .75rem;
+        border: 1px solid #e9ecef;
+    }
+    .folder-list { list-style: none; padding: 0; margin: 0; }
+    .folder-list li { margin: 1px 0; }
+    .folder-item { border-radius: .35rem; padding: 2px 4px; }
+    .folder-item:hover { background: rgba(0,0,0,.04); }
+    .folder-item:hover .folder-btns { visibility: visible; }
+    .folder-link {
+        display: inline-flex; align-items: center; gap: .25rem;
+        padding: 3px 4px; border-radius: .3rem; color: inherit;
+        text-decoration: none; font-size: .875rem; flex: 1; min-width: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .folder-link:hover { color: var(--bs-primary); }
+    .folder-link.active { color: var(--bs-primary); font-weight: 600; }
+    .folder-btns { visibility: hidden; display: flex; gap: 1px; flex-shrink: 0; }
+    .btn-fdr {
+        background: none; border: none; padding: 1px 4px; cursor: pointer;
+        color: #6c757d; border-radius: .25rem; font-size: .8rem; line-height: 1.4;
+    }
+    .btn-fdr:hover { background: rgba(0,0,0,.08); color: #212529; }
+    .btn-fdr.text-danger:hover { color: var(--bs-danger) !important; background: rgba(220,53,69,.08); }
+    .btn-fdr:disabled, .btn-fdr.disabled { opacity: .35; cursor: not-allowed; }
+    .toggle-btn { background: none; border: none; padding: 0 3px; cursor: pointer; color: #adb5bd; font-size: .7rem; }
+    .folder-children { padding-left: 1rem; }
+    .root-link {
+        display: flex; align-items: center; gap: .3rem;
+        padding: 4px 6px; border-radius: .35rem; font-size: .875rem;
+        text-decoration: none; margin-bottom: 4px;
+    }
+    .root-link:hover { background: rgba(0,0,0,.04); }
+    .root-link.active { color: var(--bs-primary); font-weight: 600; background: rgba(13,110,253,.06); }
+</style>
+<script>
+    // ── Data from server ──────────────────────────────────────────────────────
+    const folderData = @Html.Raw(Json.Serialize(ViewBag.FolderTreeData ?? new object[0]));
+    const currentFolderId = @(currentFolderId.HasValue ? currentFolderId.Value.ToString() : "null");
+    const projectId = @selectedProjectId;
+    const totalDocCount = @totalDocCount;
+    const afToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
-        // Wire up delete modal
-        document.querySelectorAll('.btn-delete').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation(); // don't trigger row preview
-                document.getElementById('deleteFileName').textContent = this.dataset.bronName;
-                document.getElementById('deleteId').value = this.dataset.bronId;
-                document.getElementById('deleteForm').action = deleteActionBase + '/' + this.dataset.bronId;
-            });
-        });
+    // ── Tree helpers ──────────────────────────────────────────────────────────
+    function escH(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escJ(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
-        // Wire up row click → preview
-        document.querySelectorAll('.doc-row').forEach(function (row) {
-            row.addEventListener('click', function (e) {
-                if (e.target.closest('.doc-actions')) return;
-                loadPreview(this.dataset.bronId, this.dataset.fileName);
-            });
-        });
+    function buildNode(items, parentId) {
+        return items
+            .filter(i => i.parentId === parentId)
+            .sort((a, b) => a.naam.localeCompare(b.naam, 'nl'))
+            .map(i => ({ ...i, children: buildNode(items, i.id) }));
+    }
 
-        function loadPreview(bronId, fileName) {
-            const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('previewPanel'));
+    function canDelete(node) {
+        return node.docCount === 0 && node.children.every(canDelete);
+    }
 
-            document.getElementById('previewTitle').textContent = fileName;
-            document.getElementById('previewFileName').textContent = '';
-            document.getElementById('previewContent').textContent = '';
-            document.getElementById('previewContent').classList.add('d-none');
-            document.getElementById('previewError').classList.add('d-none');
-            document.getElementById('previewTruncatedNote').classList.add('d-none');
-            document.getElementById('previewLoading').classList.remove('d-none');
+    function renderNodes(nodes, depth) {
+        if (!nodes.length) return '';
+        let html = '<ul class="folder-list' + (depth > 0 ? ' folder-children' : '') + '">';
+        for (const n of nodes) {
+            const active = n.id === currentFolderId;
+            const icon = active ? 'bi-folder2-open text-primary' : 'bi-folder';
+            const deletable = canDelete(n);
+            const hasChildren = n.children.length > 0;
 
-            const ext = fileName.split('.').pop().toLowerCase();
-            const icon = document.getElementById('previewIcon');
-            icon.className = ext === 'docx'
-                ? 'bi bi-file-earmark-word text-primary me-2'
-                : 'bi bi-file-earmark-text text-secondary me-2';
-
-            offcanvas.show();
-
-            fetch(previewUrl + '/' + bronId)
-                .then(function (r) {
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    return r.json();
-                })
-                .then(function (data) {
-                    document.getElementById('previewLoading').classList.add('d-none');
-                    document.getElementById('previewContent').textContent = data.text || '(geen tekst gevonden)';
-                    document.getElementById('previewContent').classList.remove('d-none');
-                    if (data.truncated) {
-                        document.getElementById('previewTruncatedNote').classList.remove('d-none');
-                    }
-                })
-                .catch(function (err) {
-                    document.getElementById('previewLoading').classList.add('d-none');
-                    document.getElementById('previewError').textContent = 'Kon het document niet laden: ' + err.message;
-                    document.getElementById('previewError').classList.remove('d-none');
-                });
+            html += `<li>
+              <div class="d-flex align-items-center folder-item">
+                <button class="toggle-btn" onclick="toggleFolder(this)" aria-label="In/uitklappen">
+                  <i class="bi ${hasChildren ? 'bi-chevron-down' : 'bi-dot'}"></i>
+                </button>
+                <a href="?projectId=${projectId}&folderId=${n.id}"
+                   class="folder-link${active ? ' active' : ''}">
+                  <i class="bi ${icon}"></i>
+                  <span class="flex-grow-1 text-truncate">${escH(n.naam)}</span>
+                  ${n.docCount > 0 ? `<span class="badge rounded-pill bg-light text-secondary" style="font-size:.7rem">${n.docCount}</span>` : ''}
+                </a>
+                <span class="folder-btns">
+                  <button class="btn-fdr" onclick="openCreateModal(${n.id})" title="Submap aanmaken">
+                    <i class="bi bi-folder-plus"></i>
+                  </button>
+                  <button class="btn-fdr" onclick="openRenameModal(${n.id}, '${escJ(n.naam)}')" title="Hernoemen">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  ${deletable
+                    ? `<button class="btn-fdr text-danger" onclick="doDeleteFolder(${n.id})" title="Verwijderen"><i class="bi bi-trash"></i></button>`
+                    : `<button class="btn-fdr disabled" disabled title="Map bevat inhoud"><i class="bi bi-trash"></i></button>`}
+                </span>
+              </div>
+              ${hasChildren ? renderNodes(n.children, depth + 1) : ''}
+            </li>`;
         }
-    </script>
+        html += '</ul>';
+        return html;
+    }
+
+    function toggleFolder(btn) {
+        const li = btn.closest('li');
+        const children = li.querySelector('.folder-children');
+        if (!children) return;
+        const isHidden = children.style.display === 'none';
+        children.style.display = isHidden ? '' : 'none';
+        const icon = btn.querySelector('i');
+        icon.className = isHidden ? 'bi bi-chevron-down' : 'bi bi-chevron-right';
+    }
+
+    function renderTree() {
+        const tree = buildNode(folderData, null);
+        const allActive = currentFolderId === null;
+        let html = `<a href="?projectId=${projectId}" class="root-link${allActive ? ' active' : ''} text-dark">
+          <i class="bi bi-house-door${allActive ? ' text-primary' : ''}"></i>
+          <span class="flex-grow-1">Alle documenten</span>
+          <span class="badge rounded-pill bg-light text-secondary" style="font-size:.7rem">${totalDocCount}</span>
+        </a>`;
+        html += renderNodes(tree, 0);
+        html += `<div class="mt-2 pt-2 border-top">
+          <button class="btn btn-sm btn-outline-secondary w-100" onclick="openCreateModal(null)">
+            <i class="bi bi-folder-plus me-1"></i>Nieuwe map
+          </button>
+        </div>`;
+        document.getElementById('folderTree').innerHTML = html;
+    }
+
+    renderTree();
+
+    // ── Folder CRUD ───────────────────────────────────────────────────────────
+    async function ajaxPost(url, params) {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ __RequestVerificationToken: afToken, ...params })
+        });
+        return resp.json();
+    }
+
+    let createParentId = null;
+    function openCreateModal(parentId) {
+        createParentId = parentId;
+        document.getElementById('createFolderInput').value = '';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('createFolderModal')).show();
+        setTimeout(() => document.getElementById('createFolderInput').focus(), 300);
+    }
+
+    document.getElementById('createFolderForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const naam = document.getElementById('createFolderInput').value.trim();
+        if (!naam) return;
+        const params = { naam, projectId };
+        if (createParentId !== null) params.parentId = createParentId;
+        const data = await ajaxPost('/Chunk/FolderCreate', params);
+        if (data.success) location.reload();
+        else alert(data.message);
+    });
+
+    let renameFolderId = null;
+    function openRenameModal(id, naam) {
+        renameFolderId = id;
+        document.getElementById('renameFolderInput').value = naam;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('renameFolderModal')).show();
+        setTimeout(() => document.getElementById('renameFolderInput').select(), 300);
+    }
+
+    document.getElementById('renameFolderForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const naam = document.getElementById('renameFolderInput').value.trim();
+        if (!naam) return;
+        const data = await ajaxPost('/Chunk/FolderRename', { id: renameFolderId, naam });
+        if (data.success) location.reload();
+        else alert(data.message);
+    });
+
+    async function doDeleteFolder(id) {
+        if (!confirm('Weet je zeker dat je deze map wilt verwijderen?')) return;
+        const data = await ajaxPost('/Chunk/FolderDelete', { id });
+        if (data.success) location.reload();
+        else alert(data.message);
+    }
+
+    // ── Move document ─────────────────────────────────────────────────────────
+    let moveBronId = null;
+
+    function buildFolderOptions(nodes, select, depth) {
+        for (const n of nodes) {
+            const opt = document.createElement('option');
+            opt.value = n.id;
+            opt.textContent = '\u00a0\u00a0'.repeat(depth) + '📁 ' + n.naam;
+            select.appendChild(opt);
+            buildFolderOptions(n.children, select, depth + 1);
+        }
+    }
+
+    document.querySelectorAll('.btn-move').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            moveBronId = this.dataset.bronId;
+            const sel = document.getElementById('moveFolderSelect');
+            sel.innerHTML = '<option value="">— Geen map (onbestand) —</option>';
+            buildFolderOptions(buildNode(folderData, null), sel, 0);
+            const cur = this.dataset.currentFolder;
+            if (cur) sel.value = cur;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('moveModal')).show();
+        });
+    });
+
+    document.getElementById('moveFolderForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const folderId = document.getElementById('moveFolderSelect').value;
+        const params = { bronId: moveBronId };
+        if (folderId) params.folderId = folderId;
+        const data = await ajaxPost('/Chunk/MoveDocument', params);
+        if (data.success) location.reload();
+        else alert(data.message);
+    });
+
+    // ── Delete modal ──────────────────────────────────────────────────────────
+    const deleteActionBase = '@Url.Action("Delete")';
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.getElementById('deleteFileName').textContent = this.dataset.bronName;
+            document.getElementById('deleteId').value = this.dataset.bronId;
+            document.getElementById('deleteForm').action = deleteActionBase + '/' + this.dataset.bronId;
+        });
+    });
+
+    // ── Preview ───────────────────────────────────────────────────────────────
+    const previewUrl = '@Url.Action("Preview")';
+
+    document.querySelectorAll('.doc-row').forEach(row => {
+        row.addEventListener('click', function (e) {
+            if (e.target.closest('.doc-actions')) return;
+            loadPreview(this.dataset.bronId, this.dataset.fileName);
+        });
+    });
+
+    function loadPreview(bronId, fileName) {
+        const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('previewPanel'));
+        document.getElementById('previewTitle').textContent = fileName;
+        document.getElementById('previewFileName').textContent = '';
+        document.getElementById('previewContent').textContent = '';
+        document.getElementById('previewContent').classList.add('d-none');
+        document.getElementById('previewError').classList.add('d-none');
+        document.getElementById('previewTruncatedNote').classList.add('d-none');
+        document.getElementById('previewLoading').classList.remove('d-none');
+
+        const ext = fileName.split('.').pop().toLowerCase();
+        document.getElementById('previewIcon').className = ext === 'docx'
+            ? 'bi bi-file-earmark-word text-primary me-2'
+            : 'bi bi-file-earmark-text text-secondary me-2';
+
+        offcanvas.show();
+
+        fetch(previewUrl + '/' + bronId)
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(data => {
+                document.getElementById('previewLoading').classList.add('d-none');
+                document.getElementById('previewContent').textContent = data.text || '(geen tekst gevonden)';
+                document.getElementById('previewContent').classList.remove('d-none');
+                if (data.truncated) document.getElementById('previewTruncatedNote').classList.remove('d-none');
+            })
+            .catch(err => {
+                document.getElementById('previewLoading').classList.add('d-none');
+                document.getElementById('previewError').textContent = 'Kon het document niet laden: ' + err.message;
+                document.getElementById('previewError').classList.remove('d-none');
+            });
+    }
+</script>
 }

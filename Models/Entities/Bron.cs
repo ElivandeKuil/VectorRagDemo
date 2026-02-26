@@ -11,9 +11,11 @@
 
         public string? FileName { get; set; }
         public string? FilePath { get; set; }
+        public int? FolderId { get; set; }
 
         // Navigation properties
         public Project? ProjectNavigation { get; set; }
+        public Folder? FolderNavigation { get; set; }
         public ICollection<Chunk> Chunks { get; set; } = new List<Chunk>();
     }
 }

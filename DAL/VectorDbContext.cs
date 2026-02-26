@@ -19,6 +19,7 @@ namespace VectorRagDemo.DAL
         public DbSet<PromptType> PromptTypes { get; set; }
         public DbSet<Prompt> Prompts { get; set; }
         public DbSet<GebruikerProject> GebruikerProjecten { get; set; }
+        public DbSet<Folder> Folders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,6 +51,11 @@ namespace VectorRagDemo.DAL
                     .WithMany(p => p.Bronnen)
                     .HasForeignKey(e => e.Project)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.FolderNavigation)
+                    .WithMany()
+                    .HasForeignKey(e => e.FolderId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<ScrapingElement>(entity =>
@@ -102,6 +108,27 @@ namespace VectorRagDemo.DAL
                 entity.HasOne(e => e.Bron)
                     .WithMany(b => b.Chunks)
                     .HasForeignKey(e => e.BronID)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Folder configuration
+            modelBuilder.Entity<Folder>(entity =>
+            {
+                entity.ToTable("folder");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Naam).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Project).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany()
+                    .HasForeignKey(e => e.Project)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Parent)
+                    .WithMany(e => e.Children)
+                    .HasForeignKey(e => e.ParentId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 

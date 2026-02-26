@@ -9,5 +9,9 @@ namespace VectorRagDemo.Models.ViewModels
         public string ProjectNaam { get; set; } = string.Empty;
         public int ProjectId { get; set; }
         public DateTime GemaaktOp { get; set; }
+        public int? FolderId { get; set; }
+        public string? FolderNaam { get; set; }
     }
+
+    public record FolderCrumb(int Id, string Naam);
 }
