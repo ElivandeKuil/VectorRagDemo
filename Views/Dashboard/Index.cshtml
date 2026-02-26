@@ -2,68 +2,119 @@
 @{
     ViewData["Title"] = "Dashboard";
     var fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "gebruiker";
+    var isAdmin = User.IsInRole("Admin");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="mb-1">Welkom, @fullName</h2>
-        <p class="text-muted mb-0">Selecteer een project om te beginnen.</p>
+        <p class="text-muted mb-0">
+            @if (isAdmin)
+            {
+                <span>Selecteer een module om te beginnen.</span>
+            }
+            else
+            {
+                <span>Wat wil je vandaag doen?</span>
+            }
+        </p>
     </div>
 </div>
 
-@if (!Model.Any())
+@if (isAdmin)
 {
-    <div class="alert alert-info d-flex align-items-center gap-2">
-        <i class="bi bi-info-circle fs-5"></i>
-        <span>Er zijn nog geen projecten aan uw account toegewezen. Neem contact op met de beheerder.</span>
-    </div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-        @foreach (var item in Model)
-        {
-            var info = item.RouteInfo;
-            var icon = info?.Icon ?? "bi-folder";
-            var description = info?.Description ?? item.Project.Omschrijving;
-            var url = info?.Url ?? "#";
-            var hasUrl = url != "#";
+    @* Admin: card grid showing all projects / modules *@
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle fs-5"></i>
+            <span>Er zijn nog geen projecten geconfigureerd.</span>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            @foreach (var item in Model)
+            {
+                var info = item.RouteInfo;
+                var icon = info?.Icon ?? "bi-folder";
+                var description = info?.Description ?? item.Project.Omschrijving;
+                var url = info?.Url ?? "#";
+                var hasUrl = url != "#";
 
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0 @(hasUrl ? "project-card" : "")">
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="project-icon bg-primary bg-opacity-10 text-primary rounded-3 p-3">
-                                <i class="bi @icon fs-3"></i>
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 @(hasUrl ? "project-card" : "")">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="project-icon bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                                    <i class="bi @icon fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-0">@item.Project.Omschrijving</h5>
+                                </div>
                             </div>
-                            <div>
-                                <h5 class="card-title mb-0">@item.Project.Omschrijving</h5>
+                            <p class="card-text text-muted flex-grow-1">@description</p>
+                            <div class="mt-3">
+                                @if (hasUrl)
+                                {
+                                    <a href="@url" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-arrow-right-circle me-1"></i>Openen
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="btn btn-secondary btn-sm disabled">
+                                        <i class="bi bi-clock me-1"></i>Binnenkort beschikbaar
+                                    </span>
+                                }
                             </div>
-                        </div>
-                        <p class="card-text text-muted flex-grow-1">@description</p>
-                        <div class="mt-3">
-                            @if (hasUrl)
-                            {
-                                <a href="@url" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-arrow-right-circle me-1"></i>Openen
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="btn btn-secondary btn-sm disabled">
-                                    <i class="bi bi-clock me-1"></i>Binnenkort beschikbaar
-                                </span>
-                            }
                         </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
+}
+else
+{
+    @* Regular user: app-launcher tiles based on their assigned sub-projects *@
+    var userSubProjects = User.Claims
+        .Where(c => c.Type == "SubProject")
+        .Select(c => c.Value)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    var tiles = VectorRagDemo.Services.ProjectAccessService.SubProjectMap
+        .Where(e => userSubProjects.Contains(e.Key))
+        .ToList();
+
+    @if (!tiles.Any())
+    {
+        <div class="alert alert-info d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle fs-5"></i>
+            <span>Er zijn nog geen modules aan uw account toegewezen. Neem contact op met de beheerder.</span>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-4 mt-3">
+            @foreach (var entry in tiles)
+            {
+                <a asp-controller="@entry.Value.Controller"
+                   asp-action="@entry.Value.Action"
+                   class="quick-tile text-decoration-none">
+                    <div class="icon-wrap">
+                        <i class="bi @entry.Value.Icon"></i>
+                    </div>
+                    <div class="fw-semibold mt-3 text-dark">@entry.Value.DisplayName</div>
+                </a>
+            }
+        </div>
+    }
 }
 
 @section Scripts {
     <style>
+        /* Admin cards */
         .project-card {
             transition: transform 0.15s ease, box-shadow 0.15s ease;
             cursor: pointer;
@@ -78,6 +129,39 @@ else
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        /* Regular user tiles */
+        .quick-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            padding: 2rem 1rem;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+            border: 1px solid rgba(0,0,0,.06);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            text-align: center;
+        }
+        .quick-tile:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 .5rem 1.2rem rgba(0,0,0,.13);
+        }
+        .quick-tile .icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 1rem;
+            background: var(--bs-primary-bg-subtle, #cfe2ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .quick-tile .icon-wrap .bi {
+            font-size: 2rem;
+            color: var(--bs-primary, #0d6efd);
         }
     </style>
 }

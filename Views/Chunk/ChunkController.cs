@@ -251,6 +251,124 @@ namespace VectorRagDemo.Controllers
             return Json(new { title = bron.Title, fileName = bron.FileName, text, truncated });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> TextInput()
+        {
+            var accessibleProjects = await GetAccessibleProjectsAsync();
+            ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam");
+            ViewBag.SingleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
+                ? accessibleProjects.First()
+                : null;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TextInput(string title, string text, int projectId)
+        {
+            var accessibleProjects = await GetAccessibleProjectsAsync();
+            ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam");
+            ViewBag.SingleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
+                ? accessibleProjects.First()
+                : null;
+
+            if (string.IsNullOrWhiteSpace(title))
+                ModelState.AddModelError(string.Empty, "Geef een titel op.");
+
+            if (string.IsNullOrWhiteSpace(text))
+                ModelState.AddModelError(string.Empty, "Voer tekst in.");
+
+            if (!accessibleProjects.Any(p => p.ID == projectId))
+                ModelState.AddModelError(string.Empty, "Selecteer een geldig project.");
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.InputTitle = title;
+                ViewBag.InputText = text;
+                return View();
+            }
+
+            Bron? bron = null;
+            string? diskPath = null;
+
+            try
+            {
+                var chunkTexts = TextChunker.ChunkText(text);
+
+                if (chunkTexts.Count == 0)
+                {
+                    ModelState.AddModelError(string.Empty, "De tekst bevat te weinig inhoud om op te splitsen.");
+                    ViewBag.InputTitle = title;
+                    ViewBag.InputText = text;
+                    return View();
+                }
+
+                var safeTitle = string.Concat(title.Trim().Split(Path.GetInvalidFileNameChars()));
+                var fileName = (safeTitle.Length > 0 ? safeTitle : "tekst") + ".txt";
+                var relPath = $"uploads/{Guid.NewGuid()}.txt";
+                diskPath = Path.Combine(_env.WebRootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
+
+                bron = new Bron
+                {
+                    Title = title.Trim(),
+                    Project = projectId,
+                    FileName = fileName,
+                    FilePath = relPath,
+                    GemaaktOp = DateTime.Now,
+                    Status = 1
+                };
+
+                _context.Bronnen.Add(bron);
+                await _context.SaveChangesAsync();
+
+                Directory.CreateDirectory(Path.GetDirectoryName(diskPath)!);
+                await System.IO.File.WriteAllBytesAsync(diskPath, System.Text.Encoding.UTF8.GetBytes(text));
+
+                var embeddings = await _embeddingProcessor.GenerateBatchEmbeddingsAsync(chunkTexts);
+
+                if (embeddings.Count != chunkTexts.Count)
+                    throw new Exception($"Embedding count mismatch: got {embeddings.Count}, expected {chunkTexts.Count}.");
+
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                const string sql = @"
+                    INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status)
+                    VALUES (@BronID, @Tekst, @TekstVector::vector, NOW(), @Status)
+                    RETURNING id;";
+
+                for (int i = 0; i < chunkTexts.Count; i++)
+                {
+                    var vectorString = "[" + string.Join(",", embeddings[i]) + "]";
+                    using var cmd = new NpgsqlCommand(sql, connection);
+                    cmd.Parameters.AddWithValue("@BronID", bron.ID);
+                    cmd.Parameters.AddWithValue("@Tekst", chunkTexts[i]);
+                    cmd.Parameters.AddWithValue("@TekstVector", vectorString);
+                    cmd.Parameters.AddWithValue("@Status", 1);
+                    await cmd.ExecuteScalarAsync();
+                }
+
+                TempData["Success"] = $"'{title.Trim()}' succesvol verwerkt en opgeslagen.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                if (bron?.ID > 0)
+                {
+                    bron.Status = 2;
+                    await _context.SaveChangesAsync();
+                }
+
+                if (diskPath != null && System.IO.File.Exists(diskPath))
+                    System.IO.File.Delete(diskPath);
+
+                ModelState.AddModelError(string.Empty, $"Fout bij verwerking: {ex.Message}");
+                ViewBag.InputTitle = title;
+                ViewBag.InputText = text;
+                return View();
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {

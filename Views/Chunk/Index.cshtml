@@ -22,9 +22,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Documenten</h1>
-    <a asp-action="Upload" class="btn btn-primary">
-        <i class="bi bi-upload me-1"></i>Document uploaden
-    </a>
+    <div class="btn-group">
+        <a asp-action="Upload" class="btn btn-primary">
+            <i class="bi bi-upload me-1"></i>Document uploaden
+        </a>
+        <a asp-action="TextInput" class="btn btn-outline-primary">
+            <i class="bi bi-keyboard me-1"></i>Tekst invoeren
+        </a>
+    </div>
 </div>
 
 @if (User.IsInRole("Admin") && ViewBag.Projects != null)
@@ -43,10 +48,15 @@
     <div class="text-center py-5">
         <i class="bi bi-file-earmark-text display-1 text-muted"></i>
         <h4 class="mt-3 text-muted">Nog geen documenten geüpload</h4>
-        <p class="text-muted mb-4">Upload een .txt of .docx bestand om te beginnen.</p>
-        <a asp-action="Upload" class="btn btn-primary btn-lg">
-            <i class="bi bi-upload me-2"></i>Eerste document uploaden
-        </a>
+        <p class="text-muted mb-4">Upload een bestand of voer tekst in om te beginnen.</p>
+        <div class="btn-group">
+            <a asp-action="Upload" class="btn btn-primary btn-lg">
+                <i class="bi bi-upload me-2"></i>Document uploaden
+            </a>
+            <a asp-action="TextInput" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-keyboard me-2"></i>Tekst invoeren
+            </a>
+        </div>
     </div>
 }
 else

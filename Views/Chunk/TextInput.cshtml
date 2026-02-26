@@ -1,0 +1,145 @@
+@using VectorRagDemo.BLL
+@using VectorRagDemo.Models.Entities
+
+@{
+    ViewData["Title"] = "Tekst invoeren";
+    var singleProject = ViewBag.SingleProject as Project;
+    var inputTitle = ViewBag.InputTitle as string ?? string.Empty;
+    var inputText = ViewBag.InputText as string ?? string.Empty;
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="mb-0"><i class="bi bi-keyboard me-2"></i>Tekst invoeren</h1>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" asp-action="TextInput" id="textInputForm">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Project</label>
+                        @if (singleProject != null)
+                        {
+                            <input type="hidden" name="projectId" value="@singleProject.ID" />
+                            <p class="form-control-plaintext">@singleProject.Naam</p>
+                        }
+                        else
+                        {
+                            <select name="projectId" id="projectId" class="form-select" required>
+                                <option value="">-- Selecteer een project --</option>
+                                @foreach (SelectListItem item in ViewBag.Projects)
+                                {
+                                    <option value="@item.Value">@item.Text</option>
+                                }
+                            </select>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-semibold">Titel</label>
+                        <input type="text"
+                               name="title"
+                               id="title"
+                               class="form-control"
+                               placeholder="Geef deze tekst een herkenbare naam"
+                               value="@inputTitle"
+                               required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="text" class="form-label fw-semibold">Tekst</label>
+                        <textarea name="text"
+                                  id="text"
+                                  class="form-control"
+                                  rows="14"
+                                  placeholder="Plak of typ hier de tekst die je wilt opslaan…"
+                                  required>@inputText</textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span class="form-text">De tekst wordt automatisch opgesplitst in chunks en verwerkt.</span>
+                            <span id="wordCount" class="form-text text-muted">0 woorden</span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <span id="btnNormal">
+                                <i class="bi bi-check2-circle me-2"></i>Verwerken en opslaan
+                            </span>
+                            <span id="btnSpinner" class="d-none">
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                Bezig met verwerken…
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5 mt-4 mt-lg-0">
+        <div class="card border-0 bg-light">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Verwerkingsinstellingen</h6>
+                <dl class="row small mb-0">
+                    <dt class="col-7 text-muted">Chunk grootte</dt>
+                    <dd class="col-5">@Config.MaxWords woorden</dd>
+
+                    <dt class="col-7 text-muted">Overlap</dt>
+                    <dd class="col-5">@Config.OverlapWords woorden</dd>
+
+                    <dt class="col-7 text-muted">Embedding model</dt>
+                    <dd class="col-5">@Config.EmbeddingModel</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card border-0 bg-light mt-3">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb me-2 text-warning"></i>Tip</h6>
+                <p class="small text-muted mb-0">
+                    Gebruik deze pagina om tekst direct in te voeren zonder een bestand te uploaden — handig voor aantekeningen, fragmenten of geplakte webinhoud.
+                    De opgeslagen tekst is daarna ook downloadbaar als <code>.txt</code> bestand.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Word count
+        const textarea = document.getElementById('text');
+        const wordCountEl = document.getElementById('wordCount');
+        function updateWordCount() {
+            const words = textarea.value.trim().split(/\s+/).filter(w => w.length > 0);
+            wordCountEl.textContent = words.length.toLocaleString('nl-NL') + ' woorden';
+        }
+        textarea.addEventListener('input', updateWordCount);
+        updateWordCount();
+
+        // Spinner on submit
+        document.getElementById('textInputForm').addEventListener('submit', function () {
+            document.getElementById('btnNormal').classList.add('d-none');
+            document.getElementById('btnSpinner').classList.remove('d-none');
+            document.getElementById('submitBtn').disabled = true;
+        });
+    </script>
+}
