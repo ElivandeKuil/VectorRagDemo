@@ -90,6 +90,20 @@
             </nav>
         }
 
+        @if (Model.Any())
+        {
+            <div class="mb-3">
+                <div class="input-group input-group-sm" style="max-width:320px">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" id="docSearch" class="form-control"
+                           placeholder="Zoeken…" autocomplete="off" />
+                    <button class="btn btn-outline-secondary d-none" id="docSearchClear" type="button" title="Wissen">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+        }
+
         @if (!Model.Any())
         {
             <div class="text-center py-5">
@@ -129,7 +143,9 @@
                         <tr class="doc-row"
                             data-bron-id="@doc.BronId"
                             data-file-name="@doc.FileName"
-                            style="cursor:pointer">
+                            data-title="@doc.Title"
+                            draggable="true"
+                            style="cursor:grab">
                             <td>
                                 @if (doc.Extension == ".docx")
                                 {
@@ -141,7 +157,8 @@
                                 }
                             </td>
                             <td>
-                                @doc.FileName
+                                @doc.Title
+                                <div class="text-muted" style="font-size:.75rem">@doc.FileName</div>
                             </td>
                             <td class="text-muted small">
                                 @doc.GemaaktOp.ToString("dd-MM-yyyy")
@@ -156,6 +173,13 @@
                                    title="Downloaden">
                                     <i class="bi bi-download"></i>
                                 </a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary me-1 btn-rename-doc"
+                                        data-bron-id="@doc.BronId"
+                                        data-current-title="@doc.Title"
+                                        title="Hernoemen">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                                 <button type="button"
                                         class="btn btn-sm btn-outline-primary me-1 btn-move"
                                         data-bron-id="@doc.BronId"
@@ -178,6 +202,28 @@
                 </tbody>
             </table>
         }
+    </div>
+</div>
+
+@* Rename document modal *@
+<div class="modal fade" id="renameDocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Document hernoemen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="renameDocForm">
+                <div class="modal-body">
+                    <label class="form-label">Nieuwe titel</label>
+                    <input type="text" id="renameDocInput" class="form-control" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Opslaan</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -335,6 +381,15 @@
     }
     .root-link:hover { background: rgba(0,0,0,.04); }
     .root-link.active { color: var(--bs-primary); font-weight: 600; background: rgba(13,110,253,.06); }
+
+    /* Drag and drop */
+    .doc-row.dragging { opacity: .35; background: #f0f4ff; }
+    .drop-target {
+        background: rgba(13,110,253,.08) !important;
+        outline: 2px dashed var(--bs-primary);
+        outline-offset: -2px;
+        border-radius: .35rem;
+    }
 </style>
 <script>
     // ── Data from server ──────────────────────────────────────────────────────
@@ -428,6 +483,68 @@
     }
 
     renderTree();
+
+    // ── Drag and drop ─────────────────────────────────────────────────────────
+    let draggedBronId = null;
+
+    // Make document rows draggable
+    document.querySelectorAll('.doc-row').forEach(row => {
+        row.addEventListener('dragstart', e => {
+            draggedBronId = row.dataset.bronId;
+            row.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedBronId);
+        });
+        row.addEventListener('dragend', () => {
+            row.classList.remove('dragging');
+        });
+    });
+
+    function makeDropTarget(el, folderId) {
+        el.addEventListener('dragover', e => {
+            if (!draggedBronId) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        el.addEventListener('dragenter', e => {
+            if (!draggedBronId) return;
+            e.preventDefault();
+            el.classList.add('drop-target');
+        });
+        el.addEventListener('dragleave', e => {
+            if (!el.contains(e.relatedTarget)) {
+                el.classList.remove('drop-target');
+            }
+        });
+        el.addEventListener('drop', async e => {
+            e.preventDefault();
+            el.classList.remove('drop-target');
+            if (!draggedBronId) return;
+            const params = { bronId: draggedBronId };
+            if (folderId !== null) params.folderId = folderId;
+            const data = await ajaxPost('/Chunk/MoveDocument', params);
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+    }
+
+    // Wire up drop targets after tree is in the DOM
+    function initDropTargets() {
+        // "Alle documenten" root — drops here remove the folder assignment
+        const rootLink = document.querySelector('.root-link');
+        if (rootLink) makeDropTarget(rootLink, null);
+
+        // Each folder row in the tree — extract folderId from the href
+        document.querySelectorAll('.folder-item').forEach(item => {
+            const link = item.querySelector('.folder-link');
+            if (!link) return;
+            const match = (link.getAttribute('href') || '').match(/folderId=(\d+)/);
+            if (!match) return;
+            makeDropTarget(item, match[1]);
+        });
+    }
+
+    initDropTargets();
 
     // ── Folder CRUD ───────────────────────────────────────────────────────────
     async function ajaxPost(url, params) {
@@ -538,6 +655,66 @@
             loadPreview(this.dataset.bronId, this.dataset.fileName);
         });
     });
+
+    // ── Rename document ───────────────────────────────────────────────────────
+    let renameDocBronId = null;
+
+    document.querySelectorAll('.btn-rename-doc').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            renameDocBronId = this.dataset.bronId;
+            document.getElementById('renameDocInput').value = this.dataset.currentTitle;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('renameDocModal')).show();
+            setTimeout(() => document.getElementById('renameDocInput').select(), 300);
+        });
+    });
+
+    document.getElementById('renameDocForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const title = document.getElementById('renameDocInput').value.trim();
+        if (!title) return;
+        const data = await ajaxPost('/Chunk/RenameDocument', { id: renameDocBronId, title });
+        if (data.success) location.reload();
+        else alert(data.message);
+    });
+
+    // ── Search / filter ───────────────────────────────────────────────────────
+    const searchInput = document.getElementById('docSearch');
+    const searchClear = document.getElementById('docSearchClear');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const term = this.value.toLowerCase().trim();
+            searchClear.classList.toggle('d-none', !term);
+
+            document.querySelectorAll('.doc-row').forEach(row => {
+                const title = (row.dataset.title || '').toLowerCase();
+                const file = (row.dataset.fileName || '').toLowerCase();
+                row.style.display = (!term || title.includes(term) || file.includes(term)) ? '' : 'none';
+            });
+
+            // Show "no results" hint if all rows are hidden
+            const visible = document.querySelectorAll('.doc-row:not([style*="display: none"])').length;
+            let hint = document.getElementById('searchNoResults');
+            if (!visible && term) {
+                if (!hint) {
+                    hint = document.createElement('tr');
+                    hint.id = 'searchNoResults';
+                    hint.innerHTML = '<td colspan="4" class="text-center text-muted py-3">Geen documenten gevonden voor "<span id="searchTerm"></span>"</td>';
+                    document.querySelector('tbody').appendChild(hint);
+                }
+                hint.querySelector('#searchTerm').textContent = this.value;
+            } else if (hint) {
+                hint.remove();
+            }
+        });
+
+        searchClear.addEventListener('click', function () {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus();
+        });
+    }
 
     function loadPreview(bronId, fileName) {
         const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('previewPanel'));

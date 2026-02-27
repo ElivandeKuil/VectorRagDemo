@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using VectorRagDemo.Extensions;
 using VectorRagDemo.Models.ViewModels;
 using VectorRagDemo.Services;
 
@@ -62,6 +63,10 @@ namespace VectorRagDemo.Controllers
                 new Claim("FullName", user.Naam)
             };
 
+            // Prompt user to change their password when the admin has flagged it
+            if (user.WachtwoordWijzigen)
+                claims.Add(new Claim("MustChangePassword", "true"));
+
             foreach (var role in roles)
                 claims.Add(new Claim(ClaimTypes.Role, role));
 
@@ -95,6 +100,35 @@ namespace VectorRagDemo.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Login", "Account");
+        }
+
+        [Authorize]
+        [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var userId = User.GetUserId();
+            var success = await _authService.ChangePasswordAsync(userId, model.HuidigWachtwoord, model.NieuwWachtwoord);
+
+            if (!success)
+            {
+                ModelState.AddModelError(nameof(model.HuidigWachtwoord), "Het huidige wachtwoord is onjuist.");
+                return View(model);
+            }
+
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            TempData["Success"] = "Wachtwoord succesvol gewijzigd. Log opnieuw in om door te gaan.";
             return RedirectToAction("Login", "Account");
         }
 

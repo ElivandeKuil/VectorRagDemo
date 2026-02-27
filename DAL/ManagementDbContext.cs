@@ -37,6 +37,7 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Wachtwoord).HasMaxLength(500).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.WachtwoordWijzigen).IsRequired();
             });
 
             // Rol configuration

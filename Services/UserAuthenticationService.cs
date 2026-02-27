@@ -64,5 +64,20 @@ namespace VectorRagDemo.Services
             var user = new Gebruiker();
             return _passwordHasher.HashPassword(user, password);
         }
+
+        public async Task<bool> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+        {
+            var user = await _context.Gebruikers.FindAsync(userId);
+            if (user == null || user.Status != 1) return false;
+
+            var result = _passwordHasher.VerifyHashedPassword(user, user.Wachtwoord, currentPassword);
+            if (result == PasswordVerificationResult.Failed) return false;
+
+            user.Wachtwoord = _passwordHasher.HashPassword(user, newPassword);
+            user.GewijzigdOp = DateTime.Now;
+            user.WachtwoordWijzigen = false;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

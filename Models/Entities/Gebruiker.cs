@@ -9,6 +9,7 @@ namespace VectorRagDemo.Models.Entities
         public DateTime GemaaktOp { get; set; }
         public DateTime? GewijzigdOp { get; set; }
         public int Status { get; set; }
+        public bool WachtwoordWijzigen { get; set; }
 
         // Navigation property
         public ICollection<GebruikerRol> GebruikerRollen { get; set; } = new List<GebruikerRol>();

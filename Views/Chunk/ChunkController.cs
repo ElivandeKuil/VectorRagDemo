@@ -237,6 +237,28 @@ namespace VectorRagDemo.Controllers
             return Json(new { success = true });
         }
 
+        // ── Document rename ────────────────────────────────────────────────────
+
+        [HttpPost]
+        public async Task<IActionResult> RenameDocument(int id, string title)
+        {
+            var bron = await _context.Bronnen.FindAsync(id);
+            if (bron == null || bron.Status != 1)
+                return Json(new { success = false, message = "Document niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == bron.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            if (string.IsNullOrWhiteSpace(title))
+                return Json(new { success = false, message = "Titel is verplicht." });
+
+            bron.Title = title.Trim();
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
         // ── File upload ────────────────────────────────────────────────────────
 
         [HttpGet]

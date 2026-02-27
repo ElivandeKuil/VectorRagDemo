@@ -83,7 +83,8 @@ namespace VectorRagDemo.Controllers
                 Wachtwoord = _authService.HashPassword(vm.Wachtwoord!),
                 GewijzigdOp = DateTime.Now,
                 GemaaktOp = DateTime.Now,
-                Status = 1
+                Status = 1,
+                WachtwoordWijzigen = true
             };
 
             _context.Gebruikers.Add(gebruiker);
