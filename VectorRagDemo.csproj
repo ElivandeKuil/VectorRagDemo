@@ -36,7 +36,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Protobuf Include="Protos\vectordb.proto" GrpcServices="Server" CompileOutputs="false" />
+		<None Include="Protos\vectordb.proto" />
 	</ItemGroup>
 
 </Project>
