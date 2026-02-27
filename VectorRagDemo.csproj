@@ -37,8 +37,6 @@
 
 	<ItemGroup>
 		<Protobuf Include="Protos\vectordb.proto" GrpcServices="Server" CompileOutputs="false" />
-		<Compile Include="Protos\Vectordb.cs" />
-		<Compile Include="Protos\VectordbGrpc.cs" />
 	</ItemGroup>
 
 </Project>
