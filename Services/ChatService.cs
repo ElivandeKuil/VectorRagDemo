@@ -32,7 +32,8 @@ namespace VectorRagDemo.Services
 
                 var preProcessedQuery = await PreProcessingProcessor.GetPreProcessedQuery(request.Query, request.History);
 
-                var queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery);
+                List<float> queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery);
+                Console.WriteLine($"[DEBUG] Embedding dimensions: {queryEmbedding.Count}");
 
                 if (queryEmbedding == null || !queryEmbedding.Any())
                 {
