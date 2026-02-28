@@ -24,7 +24,7 @@ namespace VectorRagDemo.BLL
 
             var summarisedResult = await _generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse, (string RelevantOutput, string RedirectUrl)>(
                 PromptTypeEnum.Sumarizing,
-                response => (response.RelevantOutput, response.RedirectUrl),
+                response => (response.RelevantOutput, ""),
                 formattedNeighbors,
                 chatHistoryString,
                 currentUserInput
@@ -35,8 +35,7 @@ namespace VectorRagDemo.BLL
                 response => new GenerativeModelResponse
                 {
                     SourceText = summarisedResult.RelevantOutput,
-                    ResponseText = response.Response,
-                    RedirectUrl = summarisedResult.RedirectUrl
+                    ResponseText = response.Response
                 },
                 summarisedResult.RelevantOutput,
                 currentUserInput,

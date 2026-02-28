@@ -81,15 +81,15 @@ namespace VectorRagDemo.Views.Chat
             {
                 Content = response.GenerativeResponse.ResponseText,
                 Context = response.GenerativeResponse.SourceText,
-                RedirectUrl = response.GenerativeResponse.RedirectUrl,
+                RedirectUrl = "",
                 IsResponse = true,
                 Timestamp = DateTime.Now
             };
 
             // Fetch link preview metadata if redirect URL exists
-            if (!string.IsNullOrWhiteSpace(response.GenerativeResponse.RedirectUrl))
+            if (!string.IsNullOrWhiteSpace(""))
             {
-                assistantMessage.LinkPreview = await _linkPreviewService.FetchLinkPreviewAsync(response.GenerativeResponse.RedirectUrl);
+                assistantMessage.LinkPreview = await _linkPreviewService.FetchLinkPreviewAsync("");
             }
 
             viewModel.Messages.Add(assistantMessage);

@@ -85,8 +85,7 @@ namespace VectorRagDemo.Services
                     GenerativeResponse = new GenerativeModelResponse
                     {
                         ResponseText = $"Error: {ex.Message}",
-                        SourceText = "No source text used.",
-                        RedirectUrl = string.Empty
+                        SourceText = "No source text used."
                     },
                     Chunks = new List<RetrievedChunk>()
                 };
