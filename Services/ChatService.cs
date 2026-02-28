@@ -31,14 +31,16 @@ namespace VectorRagDemo.Services
                 }
 
                 var preProcessedQuery = await PreProcessingProcessor.GetPreProcessedQuery(request.Query, request.History);
+                AppLogger.Log($"Pre-processed query: {preProcessedQuery}", source: nameof(ChatService));
 
                 List<float> queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery);
-                Console.WriteLine($"[DEBUG] Embedding dimensions: {queryEmbedding.Count}");
 
                 if (queryEmbedding == null || !queryEmbedding.Any())
                 {
                     throw new InvalidOperationException("Failed to generate query embedding.");
                 }
+
+                AppLogger.Log($"Embedding ready: {queryEmbedding.Count} dimensions — passing to vector search", source: nameof(ChatService));
 
                 var connectionString = Configuration.GetConnectionString("DefaultConnection");
 
@@ -76,6 +78,7 @@ namespace VectorRagDemo.Services
             }
             catch (Exception ex)
             {
+                AppLogger.LogError(ex.Message, source: nameof(ChatService), detail: ex.ToString());
                 // Return error response
                 return new ChatResponse
                 {

@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
 using VectorRagDemo.DAL;
+using VectorRagDemo.Services;
 
 namespace VectorRagDemo.BLL
 {
@@ -52,6 +53,7 @@ namespace VectorRagDemo.BLL
         private async Task<HttpResponseMessage> SendEmbeddingRequestAsync(StringContent content)
         {
             string endpoint = VertexApiEndpointBuilder.BuildEmbeddingEndpoint();
+            AppLogger.Log($"Calling embedding endpoint: {endpoint}", source: nameof(EmbeddingProcessor));
             string accessToken = await ConnectionProcessor.GetAuthenticationToken();
 
             return await _apiClient.PostAsync(endpoint, content, accessToken);
@@ -93,6 +95,7 @@ namespace VectorRagDemo.BLL
             if (!response.IsSuccessStatusCode)
             {
                 string errorContent = await response.Content.ReadAsStringAsync();
+                AppLogger.LogError($"Embedding API failed: {response.StatusCode}", source: nameof(EmbeddingProcessor), detail: errorContent);
                 throw new Exception($"Embedding API request failed with status {response.StatusCode}: {errorContent}");
             }
 
@@ -104,9 +107,12 @@ namespace VectorRagDemo.BLL
 
             if (embeddingValues != null)
             {
-                return embeddingValues.ToObject<List<float>>();
+                var values = embeddingValues.ToObject<List<float>>();
+                AppLogger.Log($"Embedding generated: {values.Count} dimensions", source: nameof(EmbeddingProcessor));
+                return values;
             }
 
+            AppLogger.LogError("API response had no embedding values", source: nameof(EmbeddingProcessor), detail: responseJson);
             throw new Exception("API response did not contain valid embedding values.");
         }
 

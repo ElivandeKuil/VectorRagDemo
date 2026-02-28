@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Services;
+using AppLogger = VectorRagDemo.Services.AppLogger;
 
 // Must be set before any Npgsql connections are opened.
 // Allows DateTime.Now (Kind=Local) to be written to PostgreSQL timestamp columns
@@ -64,6 +65,8 @@ builder.Services.AddHttpClient<LinkPreviewService>();
 builder.Services.AddGrpc();
 
 var app = builder.Build();
+
+AppLogger.Initialize(app.Services.GetRequiredService<IServiceScopeFactory>());
 
 if (!app.Environment.IsDevelopment())
 {

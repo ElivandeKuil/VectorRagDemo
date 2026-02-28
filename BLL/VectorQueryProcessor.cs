@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.JsonContracts.GeminiAPI;
+using VectorRagDemo.Services;
 
 namespace VectorRagDemo.BLL
 {
@@ -25,6 +26,7 @@ namespace VectorRagDemo.BLL
 
                 if (neighbors == null || !neighbors.Any())
                 {
+                    AppLogger.LogWarning("Vector search returned no results", source: nameof(VectorQueryProcessor));
                     return "Geen relevante informatie gevonden";
                 }
 
@@ -55,6 +57,7 @@ namespace VectorRagDemo.BLL
             int projectId = 0)
         {
             var results = new List<Neighbor>();
+            AppLogger.Log($"Vector search: {queryEmbedding.Count} dimensions, projectId={projectId}", source: nameof(VectorQueryProcessor));
             var vectorString = "[" + string.Join(",", queryEmbedding) + "]";
 
             using var connection = new NpgsqlConnection(connectionString);

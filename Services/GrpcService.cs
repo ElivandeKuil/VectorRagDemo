@@ -30,6 +30,7 @@ namespace VectorRagDemo.Services
 
             try
             {
+                AppLogger.Log($"gRPC SearchSimilarChunks: {request.QueryVector.Count} dimensions, projectId={request.ProjectId}", source: nameof(GrpcService));
                 // Convert the query vector to a string format for SQL
                 var vectorString = "[" + string.Join(",", request.QueryVector) + "]";
 
@@ -97,6 +98,7 @@ namespace VectorRagDemo.Services
         {
             try
             {
+                AppLogger.Log($"gRPC AddChunk: inserting vector with {request.TekstVector.Count} dimensions", source: nameof(GrpcService));
                 var vectorString = "[" + string.Join(",", request.TekstVector) + "]";
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
 

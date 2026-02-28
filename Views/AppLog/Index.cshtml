@@ -1,0 +1,288 @@
+@model VectorRagDemo.Models.ViewModels.AppLogViewModel
+
+@{
+    ViewData["Title"] = "App Logs";
+}
+
+<h1>App Logs</h1>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header"><h5>Filters</h5></div>
+    <div class="card-body">
+        <form method="get" asp-action="Index">
+            <div class="row">
+                <div class="col-md-2">
+                    <label class="form-label">Level</label>
+                    <select class="form-control" name="LevelFilter">
+                        <option value="">Alle</option>
+                        <option value="Info"    selected="@(Model.LevelFilter == "Info")">Info</option>
+                        <option value="Warning" selected="@(Model.LevelFilter == "Warning")">Warning</option>
+                        <option value="Error"   selected="@(Model.LevelFilter == "Error")">Error</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Source</label>
+                    <input type="text" class="form-control" name="SourceFilter"
+                           value="@Model.SourceFilter" placeholder="bijv. EmbeddingProcessor" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Zoek in bericht</label>
+                    <input type="text" class="form-control" name="SearchText"
+                           value="@Model.SearchText" placeholder="Zoek in message of detail..." />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Pagina-grootte</label>
+                    <select class="form-control" name="PageSize">
+                        <option value="25"  selected="@(Model.PageSize == 25)">25</option>
+                        <option value="50"  selected="@(Model.PageSize == 50)">50</option>
+                        <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                        <option value="200" selected="@(Model.PageSize == 200)">200</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-3">
+                    <label class="form-label">Van</label>
+                    <input type="datetime-local" class="form-control" name="StartDate"
+                           value="@(Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tot</label>
+                    <input type="datetime-local" class="form-control" name="EndDate"
+                           value="@(Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"))" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filteren</button>
+                    <a asp-action="Index" class="btn btn-secondary">Wissen</a>
+                </div>
+            </div>
+            <input type="hidden" name="SortBy"    value="@Model.SortBy" />
+            <input type="hidden" name="SortOrder" value="@Model.SortOrder" />
+        </form>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">Totaal</h6>
+                <p class="card-text display-6">@Model.TotalRecords</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title text-danger">Errors</h6>
+                <p class="card-text display-6 text-danger">@Model.Logs.Count(l => l.Level == "Error")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title text-warning">Warnings</h6>
+                <p class="card-text display-6 text-warning">@Model.Logs.Count(l => l.Level == "Warning")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-title">Laatste log</h6>
+                <p class="card-text small mt-2">
+                    @(Model.Logs.Any() ? Model.Logs.Max(l => l.GemaaktOp).ToString("HH:mm:ss") : "-")
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>
+                    <a asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
+                    {
+                        ["LevelFilter"] = Model.LevelFilter,
+                        ["SourceFilter"] = Model.SourceFilter,
+                        ["SearchText"] = Model.SearchText,
+                        ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["PageSize"] = Model.PageSize.ToString(),
+                        ["SortBy"] = "GemaaktOp",
+                        ["SortOrder"] = Model.SortBy == "GemaaktOp" && Model.SortOrder == "desc" ? "asc" : "desc"
+                    })">
+                        Tijdstip @(Model.SortBy == "GemaaktOp" ? (Model.SortOrder == "desc" ? "↓" : "↑") : "")
+                    </a>
+                </th>
+                <th>
+                    <a asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
+                    {
+                        ["LevelFilter"] = Model.LevelFilter,
+                        ["SourceFilter"] = Model.SourceFilter,
+                        ["SearchText"] = Model.SearchText,
+                        ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["PageSize"] = Model.PageSize.ToString(),
+                        ["SortBy"] = "Level",
+                        ["SortOrder"] = Model.SortBy == "Level" && Model.SortOrder == "desc" ? "asc" : "desc"
+                    })">
+                        Level @(Model.SortBy == "Level" ? (Model.SortOrder == "desc" ? "↓" : "↑") : "")
+                    </a>
+                </th>
+                <th>
+                    <a asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
+                    {
+                        ["LevelFilter"] = Model.LevelFilter,
+                        ["SourceFilter"] = Model.SourceFilter,
+                        ["SearchText"] = Model.SearchText,
+                        ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["PageSize"] = Model.PageSize.ToString(),
+                        ["SortBy"] = "Source",
+                        ["SortOrder"] = Model.SortBy == "Source" && Model.SortOrder == "desc" ? "asc" : "desc"
+                    })">
+                        Source @(Model.SortBy == "Source" ? (Model.SortOrder == "desc" ? "↓" : "↑") : "")
+                    </a>
+                </th>
+                <th>Bericht</th>
+                <th>Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model.Logs)
+            {
+                <tr class="@(log.Level == "Error" ? "table-danger" : log.Level == "Warning" ? "table-warning" : "")">
+                    <td><small>@log.GemaaktOp.ToString("yyyy-MM-dd HH:mm:ss")</small></td>
+                    <td>
+                        <span class="badge @(log.Level == "Error" ? "bg-danger" : log.Level == "Warning" ? "bg-warning text-dark" : "bg-success")">
+                            @log.Level
+                        </span>
+                    </td>
+                    <td><small class="text-muted">@log.Source</small></td>
+                    <td>@log.Message</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(log.Detail))
+                        {
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#detail-@log.ID">
+                                Toon
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="text-muted">-</span>
+                        }
+                    </td>
+                </tr>
+                @if (!string.IsNullOrEmpty(log.Detail))
+                {
+                    <tr class="collapse" id="detail-@log.ID">
+                        <td colspan="5">
+                            <pre class="p-2 bg-light border rounded small mb-0" style="white-space: pre-wrap;">@log.Detail</pre>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Logs.Any())
+{
+    <p class="text-center text-muted mt-3">Geen logregels gevonden.</p>
+}
+
+<!-- Pagination -->
+@if (Model.TotalPages > 1)
+{
+    <nav>
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
+                {
+                    ["LevelFilter"] = Model.LevelFilter,
+                    ["SourceFilter"] = Model.SourceFilter,
+                    ["SearchText"] = Model.SearchText,
+                    ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+                    ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+                    ["PageSize"] = Model.PageSize.ToString(),
+                    ["CurrentPage"] = (Model.CurrentPage - 1).ToString(),
+                    ["SortBy"] = Model.SortBy,
+                    ["SortOrder"] = Model.SortOrder
+                })">Vorige</a>
+            </li>
+            @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+            {
+                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
+                    {
+                        ["LevelFilter"] = Model.LevelFilter,
+                        ["SourceFilter"] = Model.SourceFilter,
+                        ["SearchText"] = Model.SearchText,
+                        ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+                        ["PageSize"] = Model.PageSize.ToString(),
+                        ["CurrentPage"] = i.ToString(),
+                        ["SortBy"] = Model.SortBy,
+                        ["SortOrder"] = Model.SortOrder
+                    })">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
+                {
+                    ["LevelFilter"] = Model.LevelFilter,
+                    ["SourceFilter"] = Model.SourceFilter,
+                    ["SearchText"] = Model.SearchText,
+                    ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+                    ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+                    ["PageSize"] = Model.PageSize.ToString(),
+                    ["CurrentPage"] = (Model.CurrentPage + 1).ToString(),
+                    ["SortBy"] = Model.SortBy,
+                    ["SortOrder"] = Model.SortOrder
+                })">Volgende</a>
+            </li>
+        </ul>
+    </nav>
+    <p class="text-center text-muted">Pagina @Model.CurrentPage van @Model.TotalPages (@Model.TotalRecords regels)</p>
+}
+
+<!-- Maintenance -->
+<div class="card mt-4">
+    <div class="card-header bg-warning">
+        <h5>Onderhoud</h5>
+    </div>
+    <div class="card-body">
+        <p>Verwijder oude logregels om de database overzichtelijk te houden.</p>
+        <form method="post" asp-action="DeleteOlderThan"
+              onsubmit="return confirm('Weet u zeker dat u oude logregels wilt verwijderen?');">
+            @Html.AntiForgeryToken()
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Verwijder regels ouder dan (dagen)</label>
+                    <input type="number" class="form-control" name="days" value="7" min="1" required />
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-danger">Verwijderen</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
