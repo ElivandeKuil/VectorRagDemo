@@ -32,7 +32,7 @@ namespace VectorRagDemo.Services
             {
                 AppLogger.Log($"gRPC SearchSimilarChunks: {request.QueryVector.Count} dimensions, projectId={request.ProjectId}", source: nameof(GrpcService));
                 // Convert the query vector to a string format for SQL
-                var vectorString = "[" + string.Join(",", request.QueryVector) + "]";
+                var vectorString = "[" + string.Join(",", request.QueryVector.Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
 
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
@@ -99,7 +99,7 @@ namespace VectorRagDemo.Services
             try
             {
                 AppLogger.Log($"gRPC AddChunk: inserting vector with {request.TekstVector.Count} dimensions", source: nameof(GrpcService));
-                var vectorString = "[" + string.Join(",", request.TekstVector) + "]";
+                var vectorString = "[" + string.Join(",", request.TekstVector.Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
                 using var connection = new NpgsqlConnection(connectionString);

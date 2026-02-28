@@ -58,10 +58,18 @@ namespace VectorRagDemo.BLL
         {
             var results = new List<Neighbor>();
             AppLogger.Log($"Vector search: {queryEmbedding.Count} dimensions, projectId={projectId}", source: nameof(VectorQueryProcessor));
-            var vectorString = "[" + string.Join(",", queryEmbedding) + "]";
+            var vectorString = "[" + string.Join(",", queryEmbedding.Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
 
             using var connection = new NpgsqlConnection(connectionString);
             await connection.OpenAsync();
+
+            // Log which database the app is actually connected to
+            using (var dbCmd = new NpgsqlCommand("SELECT current_database(), current_schema()", connection))
+            using (var dbReader = await dbCmd.ExecuteReaderAsync())
+            {
+                if (await dbReader.ReadAsync())
+                    AppLogger.Log($"Connected to database='{dbReader.GetString(0)}' schema='{dbReader.GetString(1)}'", source: nameof(VectorQueryProcessor));
+            }
 
             var sql = @"
                 SELECT

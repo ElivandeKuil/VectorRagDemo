@@ -362,7 +362,7 @@ namespace VectorRagDemo.Controllers
 
                 for (int i = 0; i < chunkTexts.Count; i++)
                 {
-                    var vectorString = "[" + string.Join(",", embeddings[i]) + "]";
+                    var vectorString = "[" + string.Join(",", embeddings[i].Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
                     using var cmd = new NpgsqlCommand(sql, connection);
                     cmd.Parameters.AddWithValue("@BronID", bron.ID);
                     cmd.Parameters.AddWithValue("@Tekst", chunkTexts[i]);
@@ -480,7 +480,7 @@ namespace VectorRagDemo.Controllers
 
                 for (int i = 0; i < chunkTexts.Count; i++)
                 {
-                    var vectorString = "[" + string.Join(",", embeddings[i]) + "]";
+                    var vectorString = "[" + string.Join(",", embeddings[i].Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
                     using var cmd = new NpgsqlCommand(sql, connection);
                     cmd.Parameters.AddWithValue("@BronID", bron.ID);
                     cmd.Parameters.AddWithValue("@Tekst", chunkTexts[i]);

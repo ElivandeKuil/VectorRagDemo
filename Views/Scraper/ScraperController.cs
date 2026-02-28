@@ -329,7 +329,7 @@ namespace VectorRagDemo.Controllers
                                 continue;
                             }
 
-                            var vectorString = "[" + string.Join(",", embedding) + "]";
+                            var vectorString = "[" + string.Join(",", embedding.Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
 
                             using var connection = new NpgsqlConnection(connectionString);
                             await connection.OpenAsync();
