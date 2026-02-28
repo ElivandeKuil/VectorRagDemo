@@ -1,17 +1,13 @@
 ﻿@model VectorRagDemo.Models.DataContracts.ChatMessage
 
 @{
-    var hasSources = !string.IsNullOrWhiteSpace(Model.Context) && Model.Context != "No source text used.";
+    var botName = ViewData["BotName"] as string ?? "Assistant";
 }
 
 <div class="message assistant">
-    <div class="message-header @(hasSources ? "has-sources" : "")" @(hasSources ? "onclick=toggleSources(this)" : "")>
+    <div class="message-header">
         <div class="message-role">
-            <i class="bi bi-robot"></i> Assistant
-            @if (hasSources)
-            {
-                <i class="bi bi-chevron-down toggle-icon"></i>
-            }
+            <i class="bi bi-robot"></i> @botName
         </div>
         <div class="message-timestamp">@Model.Timestamp.ToString("HH:mm")</div>
     </div>
@@ -75,8 +71,4 @@
         </div>
     }
 
-    @if (hasSources)
-    {
-        <div class="sources-content collapsed">@Model.Context</div>
-    }
 </div>

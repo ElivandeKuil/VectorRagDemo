@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Extensions;
 using VectorRagDemo.Models.DataContracts;
+using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.Requests;
 using VectorRagDemo.Models.ViewModels;
 using VectorRagDemo.Services;
@@ -24,51 +26,50 @@ namespace VectorRagDemo.Views.Chat
             _context = context;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(int projectId = 0)
         {
+            var (botName, resolvedProjectId, hasProject) = await GetProjectContextAsync(projectId);
+            ViewData["BotName"] = botName;
+            ViewData["HasProject"] = hasProject;
+            ViewData["SelectedProjectId"] = resolvedProjectId;
+
+            if (User.IsInRole("Admin"))
+            {
+                var projects = await _context.Projects
+                    .Where(p => p.Status == 1)
+                    .OrderBy(p => p.Naam)
+                    .ToListAsync();
+                ViewData["AdminProjects"] = new SelectList(projects, "ID", "Naam", resolvedProjectId);
+            }
+
             return View();
         }
 
         [HttpPost]
         public async Task<IActionResult> Ask([FromBody] ChatRequest request)
         {
-            // Resolve the user's project for chunk filtering.
-            // Admin has no restriction (projectId = 0 = all chunks).
-            int projectId = 0;
-            if (!User.IsInRole("Admin"))
+            var (botName, projectId, _) = await GetProjectContextAsync(request.ProjectId);
+
+            if (!User.IsInRole("Admin") && projectId == 0)
             {
-                var userId = User.GetUserId();
-                var entry = await _context.GebruikerProjecten
-                    .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
-                    .FirstOrDefaultAsync();
-
-                if (entry == null)
+                return PartialView("_ChatPanel", new ChatPanelViewModel
                 {
-                    // No project assigned — block the request rather than leaking all chunks.
-                    return PartialView("_ChatPanel", new ChatPanelViewModel
+                    BotName = botName,
+                    Messages = new List<ChatMessage>
                     {
-                        Messages = new List<ChatMessage>
-                        {
-                            new ChatMessage { Content = request.Query, IsResponse = false, Timestamp = DateTime.Now },
-                            new ChatMessage { Content = "Er is geen project gekoppeld aan uw account. Neem contact op met de beheerder.", IsResponse = true, Timestamp = DateTime.Now }
-                        }
-                    });
-                }
-
-                projectId = entry.Project;
+                        new ChatMessage { Content = request.Query, IsResponse = false, Timestamp = DateTime.Now },
+                        new ChatMessage { Content = "Er is geen project gekoppeld aan uw account. Neem contact op met de beheerder.", IsResponse = true, Timestamp = DateTime.Now }
+                    }
+                });
             }
 
             var response = await _chatService.Ask(request, projectId);
 
-            var viewModel = new ChatPanelViewModel();
+            var viewModel = new ChatPanelViewModel { BotName = botName };
 
-            // Add history
             if (request.History != null && request.History.Any())
-            {
                 viewModel.Messages.AddRange(request.History);
-            }
 
-            // Add user message
             viewModel.Messages.Add(new ChatMessage
             {
                 Content = request.Query,
@@ -76,7 +77,6 @@ namespace VectorRagDemo.Views.Chat
                 Timestamp = DateTime.Now
             });
 
-            // Add assistant response
             var assistantMessage = new ChatMessage
             {
                 Content = response.GenerativeResponse.ResponseText,
@@ -86,15 +86,11 @@ namespace VectorRagDemo.Views.Chat
                 Timestamp = DateTime.Now
             };
 
-            // Fetch link preview metadata if redirect URL exists
             if (!string.IsNullOrWhiteSpace(""))
-            {
                 assistantMessage.LinkPreview = await _linkPreviewService.FetchLinkPreviewAsync("");
-            }
 
             viewModel.Messages.Add(assistantMessage);
 
-            // Serialize retrieved chunks for the view
             var jsonOptions = new JsonSerializerOptions
             {
                 ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
@@ -124,6 +120,67 @@ namespace VectorRagDemo.Views.Chat
             }).ToList();
 
             return PartialView("_ChatPanel", viewModel);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Settings()
+        {
+            if (User.IsInRole("Admin")) return Forbid();
+
+            var userId = User.GetUserId();
+            var entry = await _context.GebruikerProjecten
+                .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
+                .FirstOrDefaultAsync();
+            if (entry == null) return RedirectToAction("Index");
+
+            var project = await _context.Projects.FindAsync(entry.Project);
+            if (project == null) return RedirectToAction("Index");
+
+            return View(project);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Settings(int id, string botName)
+        {
+            if (User.IsInRole("Admin")) return Forbid();
+
+            var userId = User.GetUserId();
+            var entry = await _context.GebruikerProjecten
+                .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
+                .FirstOrDefaultAsync();
+
+            if (entry == null || entry.Project != id) return RedirectToAction("Index");
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return RedirectToAction("Index");
+
+            project.BotName = string.IsNullOrWhiteSpace(botName) ? "Assistant" : botName.Trim();
+            project.GewijzigdOp = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index");
+        }
+
+        private async Task<(string BotName, int ProjectId, bool HasProject)> GetProjectContextAsync(int adminProjectId = 0)
+        {
+            if (User.IsInRole("Admin"))
+            {
+                var botName = "Assistant";
+                if (adminProjectId > 0)
+                {
+                    var project = await _context.Projects.FindAsync(adminProjectId);
+                    botName = project?.BotName ?? "Assistant";
+                }
+                return (botName, adminProjectId, false);
+            }
+
+            var userId = User.GetUserId();
+            var entry = await _context.GebruikerProjecten
+                .Include(gp => gp.ProjectNavigation)
+                .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
+                .FirstOrDefaultAsync();
+
+            return (entry?.ProjectNavigation?.BotName ?? "Assistant", entry?.Project ?? 0, entry != null);
         }
     }
 }

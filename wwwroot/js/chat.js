@@ -85,6 +85,8 @@ async function sendMessage() {
         const chatHistory = getChatHistory();
         const retrievedChunks = getRetrievedChunks();
 
+        const projectId = parseInt(chatContainer.getAttribute('data-project-id') || '0', 10);
+
         // Use the global loadPartialView function to load the updated chat panel
         await loadPartialView(
             askUrl,
@@ -92,7 +94,8 @@ async function sendMessage() {
             {
                 query: query,
                 history: chatHistory,
-                retrievedChunks: retrievedChunks
+                retrievedChunks: retrievedChunks,
+                projectId: projectId
             },
             'POST'
         );

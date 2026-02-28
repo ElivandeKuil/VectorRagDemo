@@ -36,6 +36,20 @@
                 </div>
             </div>
 
+            @* VectorRagDemo project — exactly one, determines chatbot chunk access *@
+            <div class="mb-4">
+                <h6 class="fw-semibold border-bottom pb-2">
+                    <i class="bi bi-cpu me-1"></i>Kennisbank project
+                </h6>
+                <div class="col-md-4">
+                    @Html.DropDownList("GeselecteerdVectorProject",
+                        new SelectList(Model.BeschikbareVectorProjecten, "ID", "Naam", Model.GeselecteerdVectorProject),
+                        "— Geen project —",
+                        new { @class = "form-select" })
+                    <div class="form-text">Bepaalt welke chunks de chatbot doorzoekt voor deze gebruiker.</div>
+                </div>
+            </div>
+
             <div class="row g-4">
                 @* Rollen *@
                 <div class="col-md-4">

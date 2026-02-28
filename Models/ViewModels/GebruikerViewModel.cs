@@ -24,10 +24,14 @@ namespace VectorRagDemo.Models.ViewModels
         public List<int> GeselecteerdeProjecten { get; set; } = new();
         public List<int> GeselecteerdeSubProjecten { get; set; } = new();
 
+        // Single VectorRagDemo project (determines which chunks this user's chatbot searches)
+        public int? GeselecteerdVectorProject { get; set; }
+
         // Available options (populated by controller, not bound from form)
         public List<Rol> BeschikbareRollen { get; set; } = new();
         public List<MgmtProject> BeschikbareProjecten { get; set; } = new();
         public List<MgmtSubProject> BeschikbareSubProjecten { get; set; } = new();
+        public List<Project> BeschikbareVectorProjecten { get; set; } = new();
     }
 
     public class GebruikerListItemViewModel

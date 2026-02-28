@@ -12,11 +12,13 @@ namespace VectorRagDemo.Controllers
     public class GebruikerController : Controller
     {
         private readonly ManagementDbContext _context;
+        private readonly VectorDbContext _vectorContext;
         private readonly UserAuthenticationService _authService;
 
-        public GebruikerController(ManagementDbContext context, UserAuthenticationService authService)
+        public GebruikerController(ManagementDbContext context, VectorDbContext vectorContext, UserAuthenticationService authService)
         {
             _context = context;
+            _vectorContext = vectorContext;
             _authService = authService;
         }
 
@@ -93,6 +95,7 @@ namespace VectorRagDemo.Controllers
             await SaveRollenAsync(gebruiker.ID, vm.GeselecteerdeRollen);
             await SaveProjectenAsync(gebruiker.ID, vm.GeselecteerdeProjecten);
             await SaveSubProjectenAsync(gebruiker.ID, vm.GeselecteerdeSubProjecten);
+            await SaveVectorProjectAsync(gebruiker.ID, vm.GeselecteerdVectorProject);
 
             TempData["Success"] = $"Gebruiker '{gebruiker.Naam}' is aangemaakt.";
             return RedirectToAction(nameof(Index));
@@ -119,6 +122,11 @@ namespace VectorRagDemo.Controllers
                 .Select(gs => gs.SubProject)
                 .ToListAsync();
 
+            var geselecteerdVectorProject = await _vectorContext.GebruikerProjecten
+                .Where(gp => gp.Gebruiker == id && gp.Status == 1)
+                .Select(gp => (int?)gp.Project)
+                .FirstOrDefaultAsync();
+
             var vm = new GebruikerViewModel
             {
                 ID = gebruiker.ID,
@@ -126,7 +134,8 @@ namespace VectorRagDemo.Controllers
                 GebruikersNaam = gebruiker.GebruikersNaam,
                 GeselecteerdeRollen = geselecteerdeRollen,
                 GeselecteerdeProjecten = geselecteerdeProjecten,
-                GeselecteerdeSubProjecten = geselecteerdeSubProjecten
+                GeselecteerdeSubProjecten = geselecteerdeSubProjecten,
+                GeselecteerdVectorProject = geselecteerdVectorProject
             };
 
             await LoadDropdownsAsync(vm);
@@ -166,6 +175,7 @@ namespace VectorRagDemo.Controllers
             await SaveRollenAsync(id, vm.GeselecteerdeRollen);
             await SaveProjectenAsync(id, vm.GeselecteerdeProjecten);
             await SaveSubProjectenAsync(id, vm.GeselecteerdeSubProjecten);
+            await SaveVectorProjectAsync(id, vm.GeselecteerdVectorProject);
 
             TempData["Success"] = $"Gebruiker '{gebruiker.Naam}' is bijgewerkt.";
             return RedirectToAction(nameof(Index));
@@ -206,6 +216,11 @@ namespace VectorRagDemo.Controllers
                 .Include(sp => sp.ProjectNavigation)
                 .OrderBy(sp => sp.ProjectNavigation.Omschrijving)
                 .ThenBy(sp => sp.Omschrijving)
+                .ToListAsync();
+
+            vm.BeschikbareVectorProjecten = await _vectorContext.Projects
+                .Where(p => p.Status == 1)
+                .OrderBy(p => p.Naam)
                 .ToListAsync();
         }
 
@@ -285,6 +300,47 @@ namespace VectorRagDemo.Controllers
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        private async Task SaveVectorProjectAsync(int gebruikerId, int? geselecteerdProjectId)
+        {
+            var bestaande = await _vectorContext.GebruikerProjecten
+                .Where(gp => gp.Gebruiker == gebruikerId)
+                .ToListAsync();
+
+            // Deactivate all existing links
+            foreach (var bestaand in bestaande)
+            {
+                if (geselecteerdProjectId.HasValue && bestaand.Project == geselecteerdProjectId.Value)
+                {
+                    if (bestaand.Status != 1)
+                    {
+                        bestaand.Status = 1;
+                        bestaand.GewijzigdOp = DateTime.Now;
+                    }
+                }
+                else
+                {
+                    bestaand.Status = 0;
+                    bestaand.GewijzigdOp = DateTime.Now;
+                }
+            }
+
+            // Add new link if not already present
+            if (geselecteerdProjectId.HasValue &&
+                !bestaande.Any(gp => gp.Project == geselecteerdProjectId.Value))
+            {
+                _vectorContext.GebruikerProjecten.Add(new GebruikerProject
+                {
+                    Gebruiker = gebruikerId,
+                    Project = geselecteerdProjectId.Value,
+                    GemaaktOp = DateTime.Now,
+                    GewijzigdOp = DateTime.Now,
+                    Status = 1
+                });
+            }
+
+            await _vectorContext.SaveChangesAsync();
         }
 
         private async Task SaveSubProjectenAsync(int gebruikerId, List<int> geselecteerdeSubProjectIds)

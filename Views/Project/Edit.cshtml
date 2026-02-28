@@ -1,0 +1,38 @@
+@model VectorRagDemo.Models.Entities.Project
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Terug
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Project bewerken – @Model.Naam</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" asp-route-id="@Model.ID" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3" style="max-width:480px">
+                <div class="col-12">
+                    <label asp-for="Naam" class="form-label fw-semibold">Naam</label>
+                    <input asp-for="Naam" class="form-control" />
+                    <span asp-validation-for="Naam" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="BotName" class="form-label fw-semibold">Bot naam</label>
+                    <input asp-for="BotName" class="form-control" />
+                    <div class="form-text">De naam die verschijnt in de chatbot header en typindicator.</div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Opslaan
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Annuleren</a>
+            </div>
+        </form>
+    </div>
+</div>

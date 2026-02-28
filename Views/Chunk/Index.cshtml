@@ -431,7 +431,8 @@
                   <i class="bi ${hasChildren ? 'bi-chevron-down' : 'bi-dot'}"></i>
                 </button>
                 <a href="?projectId=${projectId}&folderId=${n.id}"
-                   class="folder-link${active ? ' active' : ''}">
+                   class="folder-link${active ? ' active' : ''}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="${escH(n.naam)}">
                   <i class="bi ${icon}"></i>
                   <span class="flex-grow-1 text-truncate">${escH(n.naam)}</span>
                   ${n.docCount > 0 ? `<span class="badge rounded-pill bg-light text-secondary" style="font-size:.7rem">${n.docCount}</span>` : ''}
@@ -483,6 +484,11 @@
     }
 
     renderTree();
+
+    // Initialise Bootstrap tooltips on folder links
+    document.querySelectorAll('#folderTree [data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el, { trigger: 'hover' });
+    });
 
     // ── Drag and drop ─────────────────────────────────────────────────────────
     let draggedBronId = null;

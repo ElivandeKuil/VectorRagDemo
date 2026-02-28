@@ -7,5 +7,6 @@ namespace VectorRagDemo.Models.Requests
         public string Query { get; set; } = string.Empty;
         public List<ChatMessage>? History { get; set; }
         public List<RetrievedChunk>? RetrievedChunks { get; set; }
+        public int ProjectId { get; set; }
     }
 }

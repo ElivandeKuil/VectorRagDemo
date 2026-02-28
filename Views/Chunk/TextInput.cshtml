@@ -1,4 +1,3 @@
-@using VectorRagDemo.BLL
 @using VectorRagDemo.Models.Entities
 
 @{
@@ -97,27 +96,13 @@
     <div class="col-lg-5 mt-4 mt-lg-0">
         <div class="card border-0 bg-light">
             <div class="card-body p-4">
-                <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Verwerkingsinstellingen</h6>
-                <dl class="row small mb-0">
-                    <dt class="col-7 text-muted">Chunk grootte</dt>
-                    <dd class="col-5">@Config.MaxWords woorden</dd>
-
-                    <dt class="col-7 text-muted">Overlap</dt>
-                    <dd class="col-5">@Config.OverlapWords woorden</dd>
-
-                    <dt class="col-7 text-muted">Embedding model</dt>
-                    <dd class="col-5">@Config.EmbeddingModel</dd>
-                </dl>
-            </div>
-        </div>
-
-        <div class="card border-0 bg-light mt-3">
-            <div class="card-body p-4">
-                <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb me-2 text-warning"></i>Tip</h6>
-                <p class="small text-muted mb-0">
-                    Gebruik deze pagina om tekst direct in te voeren zonder een bestand te uploaden — handig voor aantekeningen, fragmenten of geplakte webinhoud.
-                    De opgeslagen tekst is daarna ook downloadbaar als <code>.txt</code> bestand.
-                </p>
+                <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Tips voor goede resultaten</h6>
+                <ul class="small text-muted mb-0 ps-3">
+                    <li class="mb-2">Voer tekst in over <strong>één onderwerp per keer</strong>. Zo kan de chatbot gerichte antwoorden geven zonder door ongerelateerde informatie heen te zoeken.</li>
+                    <li class="mb-2">Schrijf in <strong>volledige zinnen</strong>. De chatbot begrijpt context veel beter dan een opsomming van losse steekwoorden.</li>
+                    <li class="mb-2">Verklaar <strong>afkortingen en vaktermen</strong> de eerste keer dat je ze gebruikt. Wat voor jou vanzelfsprekend is, hoeft dat voor de chatbot niet te zijn.</li>
+                    <li>Geef de tekst een <strong>duidelijke titel</strong> die het onderwerp omschrijft, zodat je hem later makkelijk terugvindt.</li>
+                </ul>
             </div>
         </div>
     </div>

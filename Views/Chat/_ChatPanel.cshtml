@@ -1,6 +1,8 @@
 ﻿@model VectorRagDemo.Models.ViewModels.ChatPanelViewModel
 @using System.Text.Json
 
+@{ ViewData["BotName"] = Model.BotName; }
+
 @foreach (var message in Model.Messages)
 {
     if (message.IsResponse)

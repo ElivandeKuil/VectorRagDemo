@@ -1,4 +1,3 @@
-@using VectorRagDemo.BLL
 @using VectorRagDemo.Models.Entities
 
 @{
@@ -76,17 +75,13 @@
     <div class="col-lg-5 mt-4 mt-lg-0">
         <div class="card border-0 bg-light">
             <div class="card-body p-4">
-                <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Verwerkingsinstellingen</h6>
-                <dl class="row small mb-0">
-                    <dt class="col-7 text-muted">Chunk grootte</dt>
-                    <dd class="col-5">@Config.MaxWords woorden</dd>
-
-                    <dt class="col-7 text-muted">Overlap</dt>
-                    <dd class="col-5">@Config.OverlapWords woorden</dd>
-
-                    <dt class="col-7 text-muted">Embedding model</dt>
-                    <dd class="col-5">@Config.EmbeddingModel</dd>
-                </dl>
+                <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Tips voor goede resultaten</h6>
+                <ul class="small text-muted mb-0 ps-3">
+                    <li class="mb-2">Upload documenten die over <strong>één onderwerp</strong> gaan. Een document met veel losse onderwerpen levert minder precieze antwoorden op.</li>
+                    <li class="mb-2">Zorg dat de tekst <strong>leesbaar en volledig</strong> is. Gescande afbeeldingen of slecht opgemaakte bestanden worden niet goed herkend.</li>
+                    <li class="mb-2">Hoe <strong>meer context</strong> een document geeft, hoe beter de chatbot vragen kan beantwoorden. Losse trefwoorden of tabellen zonder uitleg werken minder goed.</li>
+                    <li>Gebruik een <strong>duidelijke bestandsnaam</strong> zodat je het document straks makkelijk terugvindt.</li>
+                </ul>
             </div>
         </div>
     </div>

@@ -1,8 +1,29 @@
+@{
+    var botName = ViewData["BotName"] as string ?? "Assistant";
+    var hasProject = ViewData["HasProject"] is true;
+    var selectedProjectId = (int)(ViewData["SelectedProjectId"] ?? 0);
+}
+
 <link rel="stylesheet" href="~/css/chat.css" />
 <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
 <script src="~/js/chat.js"></script>
 
-<div class="chat-container" data-ask-url="@Url.Action("Ask", "Chat")">
+@if (User.IsInRole("Admin") && ViewData["AdminProjects"] != null)
+{
+    <form method="get" asp-action="Index" class="mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 text-muted small">Project:</label>
+            @Html.DropDownList("projectId", (SelectList)ViewData["AdminProjects"],
+                "— Alle chunks —",
+                new { @class = "form-select form-select-sm w-auto", onchange = "this.form.submit()" })
+        </div>
+    </form>
+}
+
+<div class="chat-container"
+     data-ask-url="@Url.Action("Ask", "Chat")"
+     data-bot-name="@botName"
+     data-project-id="@selectedProjectId">
     <h1 class="mb-4">RAG Chatbot</h1>
 
     <div class="chat-messages" id="chatMessages">
@@ -13,9 +34,9 @@
 
     <div class="loading-spinner" id="loadingSpinner">
         <div class="typing-indicator">
-            <div class="typing-avatar">A</div>
+            <div class="typing-avatar">@botName[0]</div>
             <div class="typing-message">
-                <span class="typing-text">Amanda is typing</span>
+                <span class="typing-text">@botName is typing</span>
                 <div class="typing-dots">
                     <span class="dot"></span>
                     <span class="dot"></span>
@@ -32,9 +53,15 @@
         </button>
     </div>
 
-    <div class="mt-2">
+    <div class="mt-2 d-flex gap-2">
         <button class="btn btn-sm btn-outline-secondary" onclick="clearChat()">
             <i class="bi bi-trash"></i> Clear Chat
         </button>
+        @if (hasProject)
+        {
+            <a href="@Url.Action("Settings", "Chat")" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-gear"></i> Bot name
+            </a>
+        }
     </div>
 </div>
