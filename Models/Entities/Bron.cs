@@ -12,6 +12,7 @@
         public string? FileName { get; set; }
         public string? FilePath { get; set; }
         public int? FolderId { get; set; }
+        public string? Link { get; set; }
 
         // Navigation properties
         public Project? ProjectNavigation { get; set; }

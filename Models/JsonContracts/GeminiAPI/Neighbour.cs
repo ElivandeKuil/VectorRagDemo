@@ -8,5 +8,6 @@
         public string BronTitle { get; set; }
         public int ProjectId { get; set; }
         public double Distance { get; set; }
+        public string? BronLink { get; set; }
     }
 }

@@ -78,7 +78,8 @@ namespace VectorRagDemo.BLL
                     c.tekst,
                     b.title as brontitle,
                     b.project as projectid,
-                    c.tekstvector <=> @QueryVector::vector as distance
+                    c.tekstvector <=> @QueryVector::vector as distance,
+                    b.link as bronlink
                 FROM chunk c
                 INNER JOIN bron b ON c.bronid = b.id
                 WHERE c.status = 1";
@@ -106,7 +107,8 @@ namespace VectorRagDemo.BLL
                     Tekst = reader.GetString(2),
                     BronTitle = reader.GetString(3),
                     ProjectId = reader.GetInt32(4),
-                    Distance = reader.GetDouble(5)
+                    Distance = reader.GetDouble(5),
+                    BronLink = reader.IsDBNull(6) ? null : reader.GetString(6)
                 });
             }
 

@@ -5,5 +5,7 @@
         public string ResponseText { get; set; }
 
         public string SourceText { get; set; }
+
+        public List<int> UsedChunkIds { get; set; } = new();
     }
 }

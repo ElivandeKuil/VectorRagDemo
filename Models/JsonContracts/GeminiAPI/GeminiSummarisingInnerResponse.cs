@@ -6,5 +6,8 @@ namespace VectorRagDemo.Models.ApiContracts.GeminiAPI
     {
         [JsonProperty("relevantOutput")]
         public string RelevantOutput { get; set; }
+
+        [JsonProperty("usedChunkIds")]
+        public List<int>? UsedChunkIds { get; set; }
     }
 }

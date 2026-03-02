@@ -56,6 +56,19 @@
                         <div class="form-text">Ondersteunde formaten: .txt en .docx (max. 50 MB)</div>
                     </div>
 
+                    <div class="mb-4">
+                        <label for="folderId" class="form-label fw-semibold">Map <span class="text-muted fw-normal">(optioneel)</span></label>
+                        <select name="folderId" id="folderId" class="form-select">
+                            <option value="">— Geen map —</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="link" class="form-label fw-semibold">Koppeling <span class="text-muted fw-normal">(optioneel)</span></label>
+                        <input type="text" name="link" id="link" class="form-control" placeholder="https://…" />
+                        <div class="form-text">URL die wordt getoond in de chatbot bij antwoorden die dit document gebruiken.</div>
+                    </div>
+
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                             <span id="btnNormal">
@@ -89,6 +102,37 @@
 
 @section Scripts {
     <script>
+        const initialFolderData = @Html.Raw(Json.Serialize(ViewBag.FolderData ?? new object[0]));
+
+        function buildFolderOptions(folderData, select, parentId, depth) {
+            parentId = parentId ?? null;
+            depth = depth ?? 0;
+            const children = folderData
+                .filter(f => f.parentId === parentId)
+                .sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
+            for (const f of children) {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = '\u00a0\u00a0'.repeat(depth * 2) + (depth > 0 ? '└ ' : '') + f.naam;
+                select.appendChild(opt);
+                buildFolderOptions(folderData, select, f.id, depth + 1);
+            }
+        }
+
+        buildFolderOptions(initialFolderData, document.getElementById('folderId'));
+
+        const projectSelect = document.getElementById('projectId');
+        if (projectSelect) {
+            projectSelect.addEventListener('change', async function () {
+                const sel = document.getElementById('folderId');
+                sel.innerHTML = '<option value="">— Geen map —</option>';
+                if (!this.value) return;
+                const resp = await fetch('/Chunk/GetFolders?projectId=' + this.value);
+                const folders = await resp.json();
+                buildFolderOptions(folders, sel);
+            });
+        }
+
         document.getElementById('uploadForm').addEventListener('submit', function () {
             document.getElementById('btnNormal').classList.add('d-none');
             document.getElementById('btnSpinner').classList.remove('d-none');

@@ -137,7 +137,9 @@ namespace VectorRagDemo.Services
                         {
                             Chunk = chunkEntity,
                             Freshness = 0,
-                            InitialSimilirityScore = similarityScore
+                            InitialSimilirityScore = similarityScore,
+                            BronTitle = neighbor.BronTitle,
+                            BronLink = neighbor.BronLink
                         });
                     }
                 }
@@ -194,9 +196,11 @@ namespace VectorRagDemo.Services
             foreach (var retrievedChunk in chunks)
             {
                 var chunkEntity = retrievedChunk.Chunk;
-                var bronTitle = chunkEntity.Bron?.Title ?? "Unknown";
+                var bronTitle = retrievedChunk.BronTitle ?? chunkEntity.Bron?.Title ?? "Unknown";
                 formattedChunks.AppendLine($"=== CHUNK ID: {chunkEntity.ID} (Score: {retrievedChunk.InitialSimilirityScore:F4}) ===");
                 formattedChunks.AppendLine($"BRON: {bronTitle}");
+                if (!string.IsNullOrWhiteSpace(retrievedChunk.BronLink))
+                    formattedChunks.AppendLine($"LINK: {retrievedChunk.BronLink}");
                 formattedChunks.AppendLine($"CONTENT: {chunkEntity.Tekst}");
                 formattedChunks.AppendLine();
             }

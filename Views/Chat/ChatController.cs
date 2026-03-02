@@ -77,17 +77,25 @@ namespace VectorRagDemo.Views.Chat
                 Timestamp = DateTime.Now
             });
 
+            var sourceLinks = response.GenerativeResponse.UsedChunkIds
+                .Select(chunkId => response.Chunks.FirstOrDefault(c => c.Chunk.ID == chunkId))
+                .Where(rc => rc != null && !string.IsNullOrWhiteSpace(rc.BronLink))
+                .Select(rc => new VectorRagDemo.Models.DataContracts.SourceLink
+                {
+                    Title = rc.BronTitle ?? rc.Chunk.Bron?.Title ?? "Document",
+                    Url = rc.BronLink!
+                })
+                .DistinctBy(sl => sl.Url)
+                .ToList();
+
             var assistantMessage = new ChatMessage
             {
                 Content = response.GenerativeResponse.ResponseText,
                 Context = response.GenerativeResponse.SourceText,
-                RedirectUrl = "",
+                SourceLinks = sourceLinks,
                 IsResponse = true,
                 Timestamp = DateTime.Now
             };
-
-            if (!string.IsNullOrWhiteSpace(""))
-                assistantMessage.LinkPreview = await _linkPreviewService.FetchLinkPreviewAsync("");
 
             viewModel.Messages.Add(assistantMessage);
 

@@ -491,6 +491,51 @@
     color: #333;
 }
 
+/* Source Links */
+.source-links {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.source-links-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+
+.source-link-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: rgba(13, 110, 253, 0.06);
+    border: 1px solid rgba(13, 110, 253, 0.15);
+    border-radius: 8px;
+    text-decoration: none;
+    color: #0d6efd;
+    font-size: 0.82rem;
+    transition: background 0.15s, border-color 0.15s;
+    overflow: hidden;
+}
+
+.source-link-item:hover {
+    background: rgba(13, 110, 253, 0.12);
+    border-color: rgba(13, 110, 253, 0.35);
+    color: #0a58ca;
+}
+
+.source-link-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Link Preview Card (WhatsApp-style) */
 .link-preview {
     margin-top: 12px;

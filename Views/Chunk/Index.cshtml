@@ -144,6 +144,7 @@
                             data-bron-id="@doc.BronId"
                             data-file-name="@doc.FileName"
                             data-title="@doc.Title"
+                            data-link="@(doc.Link ?? "")"
                             draggable="true"
                             style="cursor:grab">
                             <td>
@@ -159,6 +160,14 @@
                             <td>
                                 @doc.Title
                                 <div class="text-muted" style="font-size:.75rem">@doc.FileName</div>
+                                @if (!string.IsNullOrWhiteSpace(doc.Link))
+                                {
+                                    <a href="@doc.Link" target="_blank" rel="noopener noreferrer"
+                                       class="text-primary" style="font-size:.72rem" title="@doc.Link"
+                                       onclick="event.stopPropagation()">
+                                        <i class="bi bi-link-45deg"></i>@doc.Link
+                                    </a>
+                                }
                             </td>
                             <td class="text-muted small">
                                 @doc.GemaaktOp.ToString("dd-MM-yyyy")
@@ -179,6 +188,13 @@
                                         data-current-title="@doc.Title"
                                         title="Hernoemen">
                                     <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button"
+                                        class="btn btn-sm @(!string.IsNullOrWhiteSpace(doc.Link) ? "btn-outline-primary" : "btn-outline-secondary") me-1 btn-set-link"
+                                        data-bron-id="@doc.BronId"
+                                        data-current-link="@(doc.Link ?? "")"
+                                        title="Koppeling instellen">
+                                    <i class="bi bi-link-45deg"></i>
                                 </button>
                                 <button type="button"
                                         class="btn btn-sm btn-outline-primary me-1 btn-move"
@@ -202,6 +218,29 @@
                 </tbody>
             </table>
         }
+    </div>
+</div>
+
+@* Set document link modal *@
+<div class="modal fade" id="setLinkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-link-45deg me-2"></i>Koppeling instellen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="setLinkForm">
+                <div class="modal-body">
+                    <label class="form-label">URL <span class="text-muted small">(optioneel)</span></label>
+                    <input type="text" id="setLinkInput" class="form-control" placeholder="https://…" />
+                    <div class="form-text">Laat leeg om de koppeling te verwijderen.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Opslaan</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -721,6 +760,27 @@
             searchInput.focus();
         });
     }
+
+    // ── Set document link ──────────────────────────────────────────────────────
+    let setLinkBronId = null;
+
+    document.querySelectorAll('.btn-set-link').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            setLinkBronId = this.dataset.bronId;
+            document.getElementById('setLinkInput').value = this.dataset.currentLink;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('setLinkModal')).show();
+            setTimeout(() => document.getElementById('setLinkInput').focus(), 300);
+        });
+    });
+
+    document.getElementById('setLinkForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const link = document.getElementById('setLinkInput').value.trim();
+        const data = await ajaxPost('/Chunk/SetDocumentLink', { id: setLinkBronId, link });
+        if (data.success) location.reload();
+        else alert(data.message);
+    });
 
     function loadPreview(bronId, fileName) {
         const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('previewPanel'));

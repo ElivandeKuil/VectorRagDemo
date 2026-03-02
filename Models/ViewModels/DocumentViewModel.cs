@@ -11,6 +11,7 @@ namespace VectorRagDemo.Models.ViewModels
         public DateTime GemaaktOp { get; set; }
         public int? FolderId { get; set; }
         public string? FolderNaam { get; set; }
+        public string? Link { get; set; }
     }
 
     public record FolderCrumb(int Id, string Naam);

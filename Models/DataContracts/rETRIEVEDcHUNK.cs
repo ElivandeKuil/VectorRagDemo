@@ -9,5 +9,9 @@ namespace VectorRagDemo.Models.DataContracts
         public int Freshness { get; set; }
 
         public double InitialSimilirityScore { get; set; }
+
+        public string? BronTitle { get; set; }
+
+        public string? BronLink { get; set; }
     }
 }

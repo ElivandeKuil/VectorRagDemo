@@ -123,7 +123,8 @@ namespace VectorRagDemo.Controllers
                 ProjectId = b.Project,
                 GemaaktOp = b.GemaaktOp,
                 FolderId = b.FolderId,
-                FolderNaam = b.FolderNavigation?.Naam
+                FolderNaam = b.FolderNavigation?.Naam,
+                Link = b.Link
             }).ToList();
 
             return View(viewModels);
@@ -237,6 +238,25 @@ namespace VectorRagDemo.Controllers
             return Json(new { success = true });
         }
 
+        // ── Document link ──────────────────────────────────────────────────────
+
+        [HttpPost]
+        public async Task<IActionResult> SetDocumentLink(int id, string? link)
+        {
+            var bron = await _context.Bronnen.FindAsync(id);
+            if (bron == null || bron.Status != 1)
+                return Json(new { success = false, message = "Document niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == bron.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            bron.Link = string.IsNullOrWhiteSpace(link) ? null : link.Trim();
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true });
+        }
+
         // ── Document rename ────────────────────────────────────────────────────
 
         [HttpPost]
@@ -259,6 +279,35 @@ namespace VectorRagDemo.Controllers
             return Json(new { success = true });
         }
 
+        // ── Folder data (AJAX) ─────────────────────────────────────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> GetFolders(int projectId)
+        {
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == projectId))
+                return Json(Array.Empty<object>());
+
+            var folders = await _context.Folders
+                .Where(f => f.Project == projectId && f.Status == 1)
+                .OrderBy(f => f.Naam)
+                .ToListAsync();
+
+            return Json(folders.Select(f => new { id = f.ID, naam = f.Naam, parentId = f.ParentId }));
+        }
+
+        private async Task<object> GetFolderDataAsync(int projectId)
+        {
+            if (projectId <= 0) return Array.Empty<object>();
+
+            var folders = await _context.Folders
+                .Where(f => f.Project == projectId && f.Status == 1)
+                .OrderBy(f => f.Naam)
+                .ToListAsync();
+
+            return folders.Select(f => new { id = f.ID, naam = f.Naam, parentId = f.ParentId }).ToList();
+        }
+
         // ── File upload ────────────────────────────────────────────────────────
 
         [HttpGet]
@@ -266,22 +315,27 @@ namespace VectorRagDemo.Controllers
         {
             var accessibleProjects = await GetAccessibleProjectsAsync();
             ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam");
-            ViewBag.SingleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
+            var singleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
                 ? accessibleProjects.First()
                 : null;
+            ViewBag.SingleProject = singleProject;
+            var initialProjectId = singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0;
+            ViewBag.FolderData = await GetFolderDataAsync(initialProjectId);
             return View();
         }
 
         [HttpPost]
         [RequestSizeLimit(50 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 50 * 1024 * 1024)]
-        public async Task<IActionResult> Upload(IFormFile? file, int projectId)
+        public async Task<IActionResult> Upload(IFormFile? file, int projectId, string? link = null, int? folderId = null)
         {
             var accessibleProjects = await GetAccessibleProjectsAsync();
             ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam");
-            ViewBag.SingleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
+            var singleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
                 ? accessibleProjects.First()
                 : null;
+            ViewBag.SingleProject = singleProject;
+            ViewBag.FolderData = await GetFolderDataAsync(projectId > 0 ? projectId : singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0);
 
             if (file == null || file.Length == 0)
             {
@@ -336,6 +390,8 @@ namespace VectorRagDemo.Controllers
                     Project = projectId,
                     FileName = file.FileName,
                     FilePath = relPath,
+                    FolderId = folderId,
+                    Link = string.IsNullOrWhiteSpace(link) ? null : link.Trim(),
                     GemaaktOp = DateTime.Now,
                     Status = 1
                 };
@@ -397,20 +453,25 @@ namespace VectorRagDemo.Controllers
         {
             var accessibleProjects = await GetAccessibleProjectsAsync();
             ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam");
-            ViewBag.SingleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
+            var singleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
                 ? accessibleProjects.First()
                 : null;
+            ViewBag.SingleProject = singleProject;
+            var initialProjectId = singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0;
+            ViewBag.FolderData = await GetFolderDataAsync(initialProjectId);
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> TextInput(string title, string text, int projectId)
+        public async Task<IActionResult> TextInput(string title, string text, int projectId, string? link = null, int? folderId = null)
         {
             var accessibleProjects = await GetAccessibleProjectsAsync();
             ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam");
-            ViewBag.SingleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
+            var singleProject = !User.IsInRole("Admin") && accessibleProjects.Count == 1
                 ? accessibleProjects.First()
                 : null;
+            ViewBag.SingleProject = singleProject;
+            ViewBag.FolderData = await GetFolderDataAsync(projectId > 0 ? projectId : singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0);
 
             if (string.IsNullOrWhiteSpace(title))
                 ModelState.AddModelError(string.Empty, "Geef een titel op.");
@@ -454,6 +515,8 @@ namespace VectorRagDemo.Controllers
                     Project = projectId,
                     FileName = fileName,
                     FilePath = relPath,
+                    FolderId = folderId,
+                    Link = string.IsNullOrWhiteSpace(link) ? null : link.Trim(),
                     GemaaktOp = DateTime.Now,
                     Status = 1
                 };
