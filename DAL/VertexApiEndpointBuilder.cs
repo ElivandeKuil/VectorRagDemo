@@ -8,7 +8,7 @@ namespace VectorRagDemo.DAL
         public static string BuildEmbeddingEndpoint()
         {
             string projectId = ConnectionProcessor.GetProjectId();
-            return $"https://{Config.Location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{Config.Location}/publishers/google/models/{Config.EmbeddingModel}:predict";
+            return $"https://aiplatform.googleapis.com/v1/projects/{projectId}/locations/global/publishers/google/models/{Config.EmbeddingModel}:predict";
         }
 
         public static string BuildGeminiEndpoint(string model)
