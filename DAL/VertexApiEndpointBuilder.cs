@@ -14,7 +14,7 @@ namespace VectorRagDemo.DAL
         public static string BuildGeminiEndpoint(string model)
         {
             string projectId = ConnectionProcessor.GetProjectId();
-            return $"https://{GeminiLocationEnum.Netherlands}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{GeminiLocationEnum.Netherlands}/publishers/google/models/{model}:generateContent";
+            return $"https://aiplatform.googleapis.com/v1/projects/{projectId}/locations/global/publishers/google/models/{model}:generateContent";
         }
     }
 }
