@@ -10,6 +10,7 @@
         public DateTime? GewijzigdOp { get; set; }
         public int Status { get; set; }
         public string BotName { get; set; } = "Assistant";
+        public string EmbedKey { get; set; } = string.Empty;
 
         // Navigation property
         public ICollection<Bron> Bronnen { get; set; } = new List<Bron>();

@@ -45,6 +45,7 @@ namespace VectorRagDemo.Controllers
             {
                 Naam = model.Naam.Trim(),
                 BotName = string.IsNullOrWhiteSpace(model.BotName) ? "Assistant" : model.BotName.Trim(),
+                EmbedKey = Guid.NewGuid().ToString("N"),
                 GemaaktOp = DateTime.Now,
                 Status = 1
             };
@@ -88,6 +89,21 @@ namespace VectorRagDemo.Controllers
 
             TempData["Success"] = $"Project '{project.Naam}' is bijgewerkt.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegenerateEmbedKey(int id)
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return NotFound();
+
+            project.EmbedKey = Guid.NewGuid().ToString("N");
+            project.GewijzigdOp = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Embed-sleutel voor '{project.Naam}' is vervangen.";
+            return RedirectToAction(nameof(Edit), new { id });
         }
 
         [HttpPost]

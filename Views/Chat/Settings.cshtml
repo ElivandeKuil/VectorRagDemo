@@ -18,3 +18,59 @@
         </form>
     </div>
 </div>
+
+@if (!string.IsNullOrWhiteSpace(Model.EmbedKey))
+{
+    var embedSnippet = $"<script src=\"{Context.Request.Scheme}://{Context.Request.Host}/js/widget-loader.js?key={Model.EmbedKey}\" defer></script>";
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <h4>Embed your chatbot</h4>
+            <p class="text-muted">Paste this snippet into the <code>&lt;head&gt;</code> or bottom of <code>&lt;body&gt;</code> of any webpage. A chat bubble will appear in the bottom-right corner.</p>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Embed code</label>
+                <div class="input-group">
+                    <input type="text" id="embedSnippet" class="form-control font-monospace small" readonly value="@embedSnippet" />
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyEmbedSnippet()" title="Copy">
+                        <i class="bi bi-clipboard" id="copyIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Embed key</label>
+                <div class="input-group">
+                    <input type="password" id="embedKeyField" class="form-control font-monospace small" readonly value="@Model.EmbedKey" />
+                    <button class="btn btn-outline-secondary" type="button" onclick="toggleEmbedKey()" title="Show/hide">
+                        <i class="bi bi-eye" id="eyeIcon"></i>
+                    </button>
+                </div>
+                <div class="form-text text-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Keep this key secret. Anyone with it can embed your chatbot.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyEmbedSnippet() {
+            var input = document.getElementById('embedSnippet');
+            navigator.clipboard.writeText(input.value).then(function () {
+                var icon = document.getElementById('copyIcon');
+                icon.className = 'bi bi-check2';
+                setTimeout(function () { icon.className = 'bi bi-clipboard'; }, 2000);
+            });
+        }
+        function toggleEmbedKey() {
+            var field = document.getElementById('embedKeyField');
+            var icon = document.getElementById('eyeIcon');
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                field.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+    </script>
+}

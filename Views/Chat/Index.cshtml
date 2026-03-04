@@ -1,12 +1,10 @@
 @{
-    var botName = ViewData["BotName"] as string ?? "Assistant";
     var hasProject = ViewData["HasProject"] is true;
     var selectedProjectId = (int)(ViewData["SelectedProjectId"] ?? 0);
+    var embedKey = ViewData["EmbedKey"] as string;
+    var botName = ViewData["BotName"] as string ?? "Assistant";
+    var hasWidget = !string.IsNullOrWhiteSpace(embedKey);
 }
-
-<link rel="stylesheet" href="~/css/chat.css" />
-<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-<script src="~/js/chat.js"></script>
 
 @if (User.IsInRole("Admin") && ViewData["AdminProjects"] != null)
 {
@@ -14,49 +12,19 @@
         <div class="d-flex align-items-center gap-2">
             <label class="form-label mb-0 text-muted small">Project:</label>
             @Html.DropDownList("projectId", (SelectList)ViewData["AdminProjects"],
-                "— Alle chunks —",
+                "— Select a project —",
                 new { @class = "form-select form-select-sm w-auto", onchange = "this.form.submit()" })
         </div>
     </form>
 }
 
-<div class="chat-container"
-     data-ask-url="@Url.Action("Ask", "Chat")"
-     data-bot-name="@botName"
-     data-project-id="@selectedProjectId">
-    <h1 class="mb-4">RAG Chatbot</h1>
-
-    <div class="chat-messages" id="chatMessages">
-        <div class="message assistant">
-            Welcome! Ask me anything about the knowledge base.
+@if (hasWidget)
+{
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h5 class="mb-0">Widget preview — <span class="text-primary">@botName</span></h5>
+            <p class="text-muted small mb-0">This is exactly how the chatbot will appear on your website. Click the button in the bottom-right corner.</p>
         </div>
-    </div>
-
-    <div class="loading-spinner" id="loadingSpinner">
-        <div class="typing-indicator">
-            <div class="typing-avatar">@botName[0]</div>
-            <div class="typing-message">
-                <span class="typing-text">@botName is typing</span>
-                <div class="typing-dots">
-                    <span class="dot"></span>
-                    <span class="dot"></span>
-                    <span class="dot"></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="chat-input-container">
-        <textarea class="form-control" id="userInput" rows="3" placeholder="Type your question here..." onkeydown="handleKeyPress(event)"></textarea>
-        <button class="btn btn-primary" id="sendButton" onclick="sendMessage()">
-            <i class="bi bi-send"></i>
-        </button>
-    </div>
-
-    <div class="mt-2 d-flex gap-2">
-        <button class="btn btn-sm btn-outline-secondary" onclick="clearChat()">
-            <i class="bi bi-trash"></i> Clear Chat
-        </button>
         @if (hasProject)
         {
             <a href="@Url.Action("Settings", "Chat")" class="btn btn-sm btn-outline-secondary">
@@ -64,4 +32,33 @@
             </a>
         }
     </div>
-</div>
+
+    <div class="mock-page border rounded" style="min-height:500px; background:#f8f9fa; padding:2rem; position:relative; overflow:hidden;">
+        <div style="max-width:640px;">
+            <div class="mb-4" style="height:18px; width:55%; background:#dee2e6; border-radius:4px;"></div>
+            <div class="mb-2" style="height:12px; background:#dee2e6; border-radius:4px;"></div>
+            <div class="mb-2" style="height:12px; width:90%; background:#dee2e6; border-radius:4px;"></div>
+            <div class="mb-2" style="height:12px; width:75%; background:#dee2e6; border-radius:4px;"></div>
+            <div class="mb-4" style="height:12px; width:85%; background:#dee2e6; border-radius:4px;"></div>
+            <div class="mb-2" style="height:12px; background:#dee2e6; border-radius:4px;"></div>
+            <div class="mb-2" style="height:12px; width:80%; background:#dee2e6; border-radius:4px;"></div>
+            <div style="height:12px; width:60%; background:#dee2e6; border-radius:4px;"></div>
+        </div>
+        <p class="text-muted small mt-4" style="font-style:italic;">↑ Your website content</p>
+    </div>
+
+    <script src="~/js/widget-loader.js?key=@embedKey"></script>
+}
+else if (User.IsInRole("Admin"))
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-arrow-up fs-3 d-block mb-2"></i>
+        Select a project above to preview its chat widget.
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        No project is linked to your account yet. Contact an administrator.
+    </div>
+}

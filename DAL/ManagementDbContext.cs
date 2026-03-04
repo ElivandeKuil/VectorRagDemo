@@ -142,6 +142,7 @@ namespace VectorRagDemo.DAL
                     .HasForeignKey(e => e.SubProject)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+
         }
     }
 }

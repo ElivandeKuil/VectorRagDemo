@@ -1,0 +1,47 @@
+@{
+    Layout = "_WidgetLayout";
+    var botName = ViewData["BotName"] as string ?? "Assistant";
+    var projectId = (int)(ViewData["ProjectId"] ?? 0);
+    var embedKey = ViewData["EmbedKey"] as string ?? "";
+}
+
+<div class="chat-container"
+     data-ask-url="@Url.Action("AskEmbed", "Chat")?key=@embedKey"
+     data-bot-name="@botName"
+     data-project-id="@projectId">
+
+    <div class="widget-header d-flex align-items-center px-3 py-2 border-bottom" style="background:#0d6efd; color:#fff; flex-shrink:0;">
+        <i class="bi bi-stars me-2"></i>
+        <span class="fw-semibold">@botName</span>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="message assistant">
+            Hallo! Hoe kan ik u helpen?
+        </div>
+        <div id="chatHistory" style="display:none;">[]</div>
+        <div id="retrievedChunks" style="display:none;">[]</div>
+        <div id="conversationId" style="display:none;">0</div>
+    </div>
+
+    <div class="loading-spinner" id="loadingSpinner" style="display:none;">
+        <div class="typing-indicator">
+            <div class="typing-avatar">@botName[0]</div>
+            <div class="typing-message">
+                <span class="typing-text">@botName is typing</span>
+                <div class="typing-dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-input-container">
+        <textarea class="form-control" id="userInput" rows="2" placeholder="Stel uw vraag..." onkeydown="handleKeyPress(event)"></textarea>
+        <button class="btn btn-primary" id="sendButton" onclick="sendMessage()">
+            <i class="bi bi-send"></i>
+        </button>
+    </div>
+</div>

@@ -87,6 +87,9 @@ async function sendMessage() {
 
         const projectId = parseInt(chatContainer.getAttribute('data-project-id') || '0', 10);
 
+        const conversationIdDiv = document.getElementById('conversationId');
+        const conversationId = conversationIdDiv ? parseInt(conversationIdDiv.textContent || '0', 10) : 0;
+
         // Use the global loadPartialView function to load the updated chat panel
         await loadPartialView(
             askUrl,
@@ -95,7 +98,8 @@ async function sendMessage() {
                 query: query,
                 history: chatHistory,
                 retrievedChunks: retrievedChunks,
-                projectId: projectId
+                projectId: projectId,
+                conversationId: conversationId
             },
             'POST'
         );
@@ -128,7 +132,7 @@ function escapeHtml(text) {
 function clearChat() {
     if (confirm('Are you sure you want to clear the chat history?')) {
         const messagesContainer = document.getElementById('chatMessages');
-        messagesContainer.innerHTML = '<div class="message assistant">Chat cleared. Ask me anything!</div><div id="chatHistory" style="display:none;">[]</div><div id="retrievedChunks" style="display:none;">[]</div>';
+        messagesContainer.innerHTML = '<div class="message assistant">Chat cleared. Ask me anything!</div><div id="chatHistory" style="display:none;">[]</div><div id="retrievedChunks" style="display:none;">[]</div><div id="conversationId" style="display:none;">0</div>';
     }
 }
 

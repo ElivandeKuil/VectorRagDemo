@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Pgvector.EntityFrameworkCore;
 using VectorRagDemo.Models.Entities;
+using Conversation = VectorRagDemo.Models.Entities.Management.Conversation;
+using Message = VectorRagDemo.Models.Entities.Management.Message;
 
 namespace VectorRagDemo.DAL
 {
@@ -20,6 +22,8 @@ namespace VectorRagDemo.DAL
         public DbSet<Prompt> Prompts { get; set; }
         public DbSet<GebruikerProject> GebruikerProjecten { get; set; }
         public DbSet<Folder> Folders { get; set; }
+        public DbSet<Conversation> Conversations { get; set; }
+        public DbSet<Message> Messages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -35,6 +39,7 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Naam).HasMaxLength(200);
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.EmbedKey).HasMaxLength(50);
             });
 
             // Bron configuration
@@ -189,6 +194,27 @@ namespace VectorRagDemo.DAL
                     .WithMany(pt => pt.Prompts)
                     .HasForeignKey(e => e.PromptType)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+            // Conversation configuration
+            modelBuilder.Entity<Conversation>(entity =>
+            {
+                entity.ToTable("conversation");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Gebruiker).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.GewijzigdOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+            });
+
+            // Message configuration
+            modelBuilder.Entity<Message>(entity =>
+            {
+                entity.ToTable("message");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Conversation).IsRequired();
+                entity.Property(e => e.Tekst).HasMaxLength(10000).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.SenderType).IsRequired();
             });
         }
     }
