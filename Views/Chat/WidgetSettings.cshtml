@@ -1,0 +1,412 @@
+@model VectorRagDemo.Models.Entities.WidgetConfig
+@{
+    ViewData["Title"] = "Widget instellingen";
+    var projectId = (int)(ViewData["ProjectId"] ?? 0);
+    var projectName = ViewData["ProjectName"] as string ?? "";
+    var adminProjects = ViewData["AdminProjects"] as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var isAdmin = User.IsInRole("Admin");
+    var successMsg = TempData["Success"] as string;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-sliders me-2 text-primary"></i>Widget instellingen</h2>
+        @if (!string.IsNullOrEmpty(projectName))
+        {
+            <span class="text-muted small">@projectName</span>
+        }
+    </div>
+    <a asp-action="@(isAdmin ? "Index" : "Settings")" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Terug
+    </a>
+</div>
+
+@if (isAdmin && adminProjects != null)
+{
+    <div class="mb-4" style="max-width:320px">
+        <form method="get">
+            <div class="input-group">
+                <select name="projectId" class="form-select" onchange="this.form.submit()">
+                    <option value="">— Kies een project —</option>
+                    @foreach (var item in adminProjects)
+                    {
+                        var isSelected = item.Selected;
+                        <option value="@item.Value" selected="@isSelected">@item.Text</option>
+                    }
+                </select>
+            </div>
+        </form>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(successMsg))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@successMsg
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (projectId > 0)
+{
+    <div class="row g-4">
+        <!-- ── Settings form ── -->
+        <div class="col-lg-5">
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="projectId" value="@projectId" />
+                <input type="hidden" name="config.ID" value="@Model.ID" />
+
+                <!-- Position & size -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-arrows-move me-2"></i>Positie & afmeting</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Positie</label>
+                            @{ var posRight = Model.WidgetPosition == "bottom-right"; }
+                            <select class="form-select" name="config.WidgetPosition" id="cfg_position">
+                                <option value="bottom-right" selected="@posRight">Rechtsonder</option>
+                                <option value="bottom-left"  selected="@(!posRight)">Linksonder</option>
+                            </select>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col">
+                                <label class="form-label">Marge zijkant <span class="text-muted small" id="lbl_offsetx">@Model.OffsetX px</span></label>
+                                <input type="range" class="form-range" name="config.OffsetX" id="cfg_offsetx"
+                                       min="8" max="80" value="@Model.OffsetX" oninput="lbl_offsetx.textContent=this.value+' px';updatePreview()" />
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Marge onderkant <span class="text-muted small" id="lbl_offsety">@Model.OffsetY px</span></label>
+                                <input type="range" class="form-range" name="config.OffsetY" id="cfg_offsety"
+                                       min="8" max="80" value="@Model.OffsetY" oninput="lbl_offsety.textContent=this.value+' px';updatePreview()" />
+                            </div>
+                        </div>
+
+                        <label class="form-label mt-2">Popup breedte <span class="text-muted small" id="lbl_pw">@Model.PopupWidth px</span></label>
+                        <input type="range" class="form-range" name="config.PopupWidth" id="cfg_popupwidth"
+                               min="280" max="640" value="@Model.PopupWidth" oninput="lbl_pw.textContent=this.value+' px';updatePreview()" />
+
+                        <label class="form-label mt-2">Popup hoogte <span class="text-muted small" id="lbl_ph">@Model.PopupHeight px</span></label>
+                        <input type="range" class="form-range" name="config.PopupHeight" id="cfg_popupheight"
+                               min="360" max="760" value="@Model.PopupHeight" oninput="lbl_ph.textContent=this.value+' px';updatePreview()" />
+
+                        <label class="form-label mt-2">Afgeronde hoeken popup <span class="text-muted small" id="lbl_br">@Model.PopupBorderRadius px</span></label>
+                        <input type="range" class="form-range" name="config.PopupBorderRadius" id="cfg_borderradius"
+                               min="0" max="24" value="@Model.PopupBorderRadius" oninput="lbl_br.textContent=this.value+' px';updatePreview()" />
+                    </div>
+                </div>
+
+                <!-- Button -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-circle me-2"></i>Chatknop</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Kleur</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" class="form-control form-control-color" name="config.ButtonColor"
+                                       id="cfg_btncolor" value="@Model.ButtonColor" oninput="updatePreview()" />
+                                <input type="text" class="form-control font-monospace small"
+                                       id="cfg_btncolor_hex" value="@Model.ButtonColor" maxlength="7"
+                                       oninput="syncColorFromHex('cfg_btncolor','cfg_btncolor_hex');updatePreview()" />
+                            </div>
+                        </div>
+                        <label class="form-label">Grootte <span class="text-muted small" id="lbl_bs">@Model.ButtonSize px</span></label>
+                        <input type="range" class="form-range" name="config.ButtonSize" id="cfg_btnsize"
+                               min="36" max="80" value="@Model.ButtonSize" oninput="lbl_bs.textContent=this.value+' px';updatePreview()" />
+                    </div>
+                </div>
+
+                <!-- Header -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-layout-text-window-reverse me-2"></i>Header</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Achtergrondkleur</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" class="form-control form-control-color" name="config.HeaderBgColor"
+                                       id="cfg_headerbg" value="@Model.HeaderBgColor" oninput="updatePreview()" />
+                                <input type="text" class="form-control font-monospace small"
+                                       id="cfg_headerbg_hex" value="@Model.HeaderBgColor" maxlength="7"
+                                       oninput="syncColorFromHex('cfg_headerbg','cfg_headerbg_hex');updatePreview()" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Tekstkleur</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" class="form-control form-control-color" name="config.HeaderTextColor"
+                                       id="cfg_headertxt" value="@Model.HeaderTextColor" oninput="updatePreview()" />
+                                <input type="text" class="form-control font-monospace small"
+                                       id="cfg_headertxt_hex" value="@Model.HeaderTextColor" maxlength="7"
+                                       oninput="syncColorFromHex('cfg_headertxt','cfg_headertxt_hex');updatePreview()" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bubbles -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-chat-left-fill me-2"></i>Chatballonnen</div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">Gebruiker (rechts)</p>
+                        <div class="row g-2 mb-3">
+                            <div class="col">
+                                <label class="form-label small">Achtergrond</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" class="form-control form-control-color" name="config.UserBubbleBgColor"
+                                           id="cfg_userbg" value="@Model.UserBubbleBgColor" oninput="updatePreview()" />
+                                    <input type="text" class="form-control font-monospace small"
+                                           id="cfg_userbg_hex" value="@Model.UserBubbleBgColor" maxlength="7"
+                                           oninput="syncColorFromHex('cfg_userbg','cfg_userbg_hex');updatePreview()" />
+                                </div>
+                            </div>
+                            <div class="col">
+                                <label class="form-label small">Tekst</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" class="form-control form-control-color" name="config.UserBubbleTextColor"
+                                           id="cfg_usertxt" value="@Model.UserBubbleTextColor" oninput="updatePreview()" />
+                                    <input type="text" class="form-control font-monospace small"
+                                           id="cfg_usertxt_hex" value="@Model.UserBubbleTextColor" maxlength="7"
+                                           oninput="syncColorFromHex('cfg_usertxt','cfg_usertxt_hex');updatePreview()" />
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">Bot (links)</p>
+                        <div class="row g-2">
+                            <div class="col">
+                                <label class="form-label small">Achtergrond</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" class="form-control form-control-color" name="config.BotBubbleBgColor"
+                                           id="cfg_botbg" value="@Model.BotBubbleBgColor" oninput="updatePreview()" />
+                                    <input type="text" class="form-control font-monospace small"
+                                           id="cfg_botbg_hex" value="@Model.BotBubbleBgColor" maxlength="7"
+                                           oninput="syncColorFromHex('cfg_botbg','cfg_botbg_hex');updatePreview()" />
+                                </div>
+                            </div>
+                            <div class="col">
+                                <label class="form-label small">Tekst</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" class="form-control form-control-color" name="config.BotBubbleTextColor"
+                                           id="cfg_bottxt" value="@Model.BotBubbleTextColor" oninput="updatePreview()" />
+                                    <input type="text" class="form-control font-monospace small"
+                                           id="cfg_bottxt_hex" value="@Model.BotBubbleTextColor" maxlength="7"
+                                           oninput="syncColorFromHex('cfg_bottxt','cfg_bottxt_hex');updatePreview()" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typography & content -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header fw-semibold"><i class="bi bi-type me-2"></i>Tekst & inhoud</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Lettergrootte</label>
+                            @{ var fs = Model.WidgetFontSize; }
+                            <select class="form-select" name="config.WidgetFontSize" id="cfg_fontsize" onchange="updatePreview()">
+                                <option value="sm" selected="@(fs == "sm")">Klein</option>
+                                <option value="md" selected="@(fs == "md")">Normaal</option>
+                                <option value="lg" selected="@(fs == "lg")">Groot</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Begroetingsbericht</label>
+                            <input type="text" class="form-control" name="config.GreetingMessage" id="cfg_greeting"
+                                   value="@Model.GreetingMessage" maxlength="200" oninput="updatePreview()" />
+                            <div class="form-text">Dit is het eerste bericht dat bezoekers zien.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Opslaan
+                </button>
+            </form>
+        </div>
+
+        <!-- ── Live preview ── -->
+        <div class="col-lg-7">
+            <div class="sticky-top" style="top:80px">
+                <div class="card shadow-sm">
+                    <div class="card-header fw-semibold"><i class="bi bi-eye me-2"></i>Live voorbeeld</div>
+                    <div class="card-body p-0" style="min-height:560px; background:#e9ecef; position:relative; overflow:hidden; border-radius:0 0 .375rem .375rem;">
+
+                        <!-- Simulated web page background -->
+                        <div style="padding:24px 20px; opacity:.35; pointer-events:none; user-select:none;">
+                            <div style="height:18px; background:#adb5bd; border-radius:4px; width:60%; margin-bottom:10px;"></div>
+                            <div style="height:12px; background:#ced4da; border-radius:4px; width:90%; margin-bottom:6px;"></div>
+                            <div style="height:12px; background:#ced4da; border-radius:4px; width:75%; margin-bottom:6px;"></div>
+                            <div style="height:12px; background:#ced4da; border-radius:4px; width:80%;"></div>
+                        </div>
+
+                        <!-- Preview popup -->
+                        <div id="prev_popup" style="position:absolute; background:#fff; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.22);">
+                            <div id="prev_header" style="display:flex; align-items:center; padding:10px 14px; flex-shrink:0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:8px;opacity:.85">
+                                    <path d="M11.671 11c.552 0 1.01.398 1.085.943l.744 5.514A1 1 0 0 1 12.415 18.5L8 16.5l-4.415 2a1 1 0 0 1-1.085-1.043l.744-5.514A1.1 1.1 0 0 1 4.33 11zm-3.684 3.01-3.39 1.533-.55 4.07L8 17.94l3.952 1.673-.55-4.07z"/>
+                                </svg>
+                                <span id="prev_botname" style="font-weight:600; font-size:14px;">Bot</span>
+                            </div>
+                            <div id="prev_messages" style="flex:1; padding:12px; overflow:hidden; display:flex; flex-direction:column; gap:8px;">
+                                <div id="prev_greeting" class="prev-bubble prev-bot"></div>
+                                <div class="prev-bubble prev-user" id="prev_usermsg">Wat zijn jullie openingstijden?</div>
+                                <div class="prev-bubble prev-bot" id="prev_botmsg">Wij zijn open op maandag t/m vrijdag van 9:00 tot 17:00.</div>
+                            </div>
+                            <div style="padding:10px 12px; border-top:1px solid #dee2e6; display:flex; gap:8px; align-items:center;">
+                                <div style="flex:1; height:32px; border:1px solid #ced4da; border-radius:6px; background:#f8f9fa;"></div>
+                                <div id="prev_sendbtn" style="width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview button -->
+                        <div id="prev_btn" style="position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:default; box-shadow:0 4px 16px rgba(0,0,0,.25);">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 16 16">
+                                <path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.088-.243 22 22 0 0 1-.713-.129Z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted small mt-2 text-center">
+                    <i class="bi bi-info-circle me-1"></i>Het voorbeeld is een vereenvoudigde weergave. De live widget ziet er identiek uit.
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .prev-bubble {
+        padding: 8px 12px;
+        border-radius: 12px;
+        max-width: 78%;
+        font-size: 13px;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+    .prev-user { align-self: flex-end; }
+    .prev-bot  { align-self: flex-start; }
+</style>
+
+@section Scripts {
+<script>
+    var PREVIEW_W = document.getElementById('prev_popup')?.closest('.card-body')?.offsetWidth || 500;
+    var PREVIEW_H = document.getElementById('prev_popup')?.closest('.card-body')?.offsetHeight || 560;
+
+    function get(id) { return document.getElementById(id); }
+    function val(id) { return (get(id) || {}).value; }
+
+    function syncColorFromHex(pickerId, hexId) {
+        var hex = val(hexId);
+        if (/^#[0-9a-fA-F]{6}$/.test(hex)) get(pickerId).value = hex;
+    }
+
+    function fontSizePx(fs) {
+        return fs === 'sm' ? '12px' : fs === 'lg' ? '15px' : '13px';
+    }
+
+    function updatePreview() {
+        var position    = val('cfg_position');
+        var offsetX     = parseInt(val('cfg_offsetx')) || 24;
+        var offsetY     = parseInt(val('cfg_offsety')) || 24;
+        var btnColor    = val('cfg_btncolor');
+        var btnSize     = parseInt(val('cfg_btnsize')) || 56;
+        var popupW      = parseInt(val('cfg_popupwidth')) || 380;
+        var popupH      = parseInt(val('cfg_popupheight')) || 560;
+        var borderR     = parseInt(val('cfg_borderradius')) || 12;
+        var headerBg    = val('cfg_headerbg');
+        var headerTxt   = val('cfg_headertxt');
+        var userBg      = val('cfg_userbg');
+        var userTxt     = val('cfg_usertxt');
+        var botBg       = val('cfg_botbg');
+        var botTxt      = val('cfg_bottxt');
+        var fontSize    = val('cfg_fontsize');
+        var greeting    = val('cfg_greeting') || 'Hallo!';
+
+        var container = get('prev_popup').parentElement;
+        var cW = container.offsetWidth;
+        var cH = container.offsetHeight;
+
+        // Scale popup to fit preview area with padding
+        var scaleW = Math.min(1, (cW - offsetX - 16) / popupW);
+        var scaleH = Math.min(1, (cH - btnSize - offsetY - 16) / popupH);
+        var scale  = Math.min(scaleW, scaleH, 0.85);
+        var scaledW = Math.round(popupW * scale);
+        var scaledH = Math.round(popupH * scale);
+        var scaledBtn = Math.round(btnSize * scale);
+        var scaledOffX = Math.round(offsetX * scale);
+        var scaledOffY = Math.round(offsetY * scale);
+
+        var popup = get('prev_popup');
+        popup.style.width  = scaledW + 'px';
+        popup.style.height = scaledH + 'px';
+        popup.style.borderRadius = Math.round(borderR * scale) + 'px';
+        if (position === 'bottom-left') {
+            popup.style.left  = scaledOffX + 'px';
+            popup.style.right = 'auto';
+        } else {
+            popup.style.right = scaledOffX + 'px';
+            popup.style.left  = 'auto';
+        }
+        popup.style.bottom = (scaledBtn + scaledOffY + Math.round(8 * scale)) + 'px';
+
+        var header = get('prev_header');
+        header.style.background = headerBg;
+        header.style.color      = headerTxt;
+
+        get('prev_botname').style.color = headerTxt;
+
+        // Sync hex inputs with color pickers
+        ['btncolor','headerbg','headertxt','userbg','usertxt','botbg','bottxt'].forEach(function(k) {
+            var picker = get('cfg_' + k);
+            var hexBox = get('cfg_' + k + '_hex');
+            if (picker && hexBox && document.activeElement !== hexBox) hexBox.value = picker.value;
+        });
+
+        // Bubbles
+        var fsPx = fontSizePx(fontSize);
+        get('prev_greeting').textContent = greeting;
+        get('prev_greeting').style.cssText += '; background:' + botBg + '; color:' + botTxt + '; font-size:' + fsPx;
+        get('prev_usermsg').style.cssText  += '; background:' + userBg + '; color:' + userTxt + '; font-size:' + fsPx;
+        get('prev_botmsg').style.cssText   += '; background:' + botBg + '; color:' + botTxt + '; font-size:' + fsPx;
+
+        // Send button
+        var sendBtn = get('prev_sendbtn');
+        sendBtn.style.background = userBg;
+        sendBtn.style.color      = userTxt;
+        sendBtn.querySelector('svg').setAttribute('fill', userTxt);
+
+        // Floating button
+        var btn = get('prev_btn');
+        btn.style.width      = scaledBtn + 'px';
+        btn.style.height     = scaledBtn + 'px';
+        btn.style.background = btnColor;
+        if (position === 'bottom-left') {
+            btn.style.left  = scaledOffX + 'px';
+            btn.style.right = 'auto';
+        } else {
+            btn.style.right = scaledOffX + 'px';
+            btn.style.left  = 'auto';
+        }
+        btn.style.bottom = scaledOffY + 'px';
+        var iconSize = Math.round(scaledBtn * 0.42);
+        btn.querySelector('svg').setAttribute('width', iconSize);
+        btn.querySelector('svg').setAttribute('height', iconSize);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Wire position select (no oninput on select)
+        var posEl = get('cfg_position');
+        if (posEl) posEl.addEventListener('change', updatePreview);
+        var fsEl = get('cfg_fontsize');
+        if (fsEl) fsEl.addEventListener('change', updatePreview);
+
+        updatePreview();
+    });
+
+    window.addEventListener('resize', updatePreview);
+</script>
+}

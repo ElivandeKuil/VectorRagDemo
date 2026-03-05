@@ -12,7 +12,8 @@
         public string BotName { get; set; } = "Assistant";
         public string EmbedKey { get; set; } = string.Empty;
 
-        // Navigation property
+        // Navigation properties
+        public WidgetConfig? WidgetConfig { get; set; }
         public ICollection<Bron> Bronnen { get; set; } = new List<Bron>();
         public ICollection<ScrapingElement> ScrapingElements { get; set; } = new List<ScrapingElement>();
         public ICollection<ScrapingUrlBlackList> ScrapingUrlBlackLists { get; set; } = new List<ScrapingUrlBlackList>();

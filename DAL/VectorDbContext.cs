@@ -13,6 +13,7 @@ namespace VectorRagDemo.DAL
         {
         }
 
+        public DbSet<WidgetConfig> WidgetConfigs { get; set; }
         public DbSet<Chunk> Chunks { get; set; }
         public DbSet<Bron> Bronnen { get; set; }
         public DbSet<Project> Projects { get; set; }
@@ -30,6 +31,29 @@ namespace VectorRagDemo.DAL
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.HasPostgresExtension("vector");
+
+            // WidgetConfig configuration
+            modelBuilder.Entity<WidgetConfig>(entity =>
+            {
+                entity.ToTable("widgetconfig");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.ProjectID).IsRequired();
+                entity.Property(e => e.WidgetPosition).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.ButtonColor).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.HeaderBgColor).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.HeaderTextColor).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.UserBubbleBgColor).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.UserBubbleTextColor).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.BotBubbleBgColor).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.BotBubbleTextColor).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.WidgetFontSize).HasMaxLength(5).IsRequired();
+                entity.Property(e => e.GreetingMessage).HasMaxLength(500).IsRequired();
+
+                entity.HasOne(e => e.Project)
+                    .WithOne(p => p.WidgetConfig)
+                    .HasForeignKey<WidgetConfig>(e => e.ProjectID)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
             // Project configuration
             modelBuilder.Entity<Project>(entity =>

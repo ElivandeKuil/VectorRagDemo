@@ -219,6 +219,7 @@ namespace VectorRagDemo.Views.Chat
             if (string.IsNullOrWhiteSpace(key)) return NotFound();
 
             var project = await _context.Projects
+                .Include(p => p.WidgetConfig)
                 .FirstOrDefaultAsync(p => p.EmbedKey == key && p.Status == 1);
 
             if (project == null) return NotFound();
@@ -226,6 +227,7 @@ namespace VectorRagDemo.Views.Chat
             ViewData["BotName"] = project.BotName;
             ViewData["ProjectId"] = project.ID;
             ViewData["EmbedKey"] = key;
+            ViewData["WidgetConfig"] = project.WidgetConfig ?? new Models.Entities.WidgetConfig();
             return View();
         }
 
@@ -339,6 +341,115 @@ namespace VectorRagDemo.Views.Chat
             }).ToList();
 
             return PartialView("_ChatPanel", viewModel);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> WidgetSettings(int projectId = 0)
+        {
+            var project = await ResolveProjectForSettingsAsync(projectId);
+            if (project == null) return RedirectToAction("Index");
+
+            await _context.Entry(project).Reference(p => p.WidgetConfig).LoadAsync();
+            var config = project.WidgetConfig ?? new Models.Entities.WidgetConfig { ProjectID = project.ID };
+
+            ViewData["ProjectId"] = project.ID;
+            ViewData["ProjectName"] = project.Naam;
+
+            if (User.IsInRole("Admin"))
+            {
+                var projects = await _context.Projects
+                    .Where(p => p.Status == 1)
+                    .OrderBy(p => p.Naam)
+                    .ToListAsync();
+                ViewData["AdminProjects"] = new SelectList(projects, "ID", "Naam", project.ID);
+            }
+
+            return View(config);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> WidgetSettings(int projectId, Models.Entities.WidgetConfig config)
+        {
+            var project = await ResolveProjectForSettingsAsync(projectId);
+            if (project == null) return RedirectToAction("Index");
+
+            await _context.Entry(project).Reference(p => p.WidgetConfig).LoadAsync();
+
+            if (project.WidgetConfig == null)
+            {
+                config.ID = 0;
+                config.ProjectID = project.ID;
+                _context.WidgetConfigs.Add(config);
+            }
+            else
+            {
+                var existing = project.WidgetConfig;
+                existing.WidgetPosition = config.WidgetPosition;
+                existing.OffsetX = config.OffsetX;
+                existing.OffsetY = config.OffsetY;
+                existing.ButtonColor = config.ButtonColor;
+                existing.ButtonSize = config.ButtonSize;
+                existing.PopupWidth = config.PopupWidth;
+                existing.PopupHeight = config.PopupHeight;
+                existing.PopupBorderRadius = config.PopupBorderRadius;
+                existing.HeaderBgColor = config.HeaderBgColor;
+                existing.HeaderTextColor = config.HeaderTextColor;
+                existing.UserBubbleBgColor = config.UserBubbleBgColor;
+                existing.UserBubbleTextColor = config.UserBubbleTextColor;
+                existing.BotBubbleBgColor = config.BotBubbleBgColor;
+                existing.BotBubbleTextColor = config.BotBubbleTextColor;
+                existing.WidgetFontSize = config.WidgetFontSize;
+                existing.GreetingMessage = config.GreetingMessage;
+            }
+
+            project.GewijzigdOp = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Widget-instellingen opgeslagen.";
+            return RedirectToAction("WidgetSettings", new { projectId = project.ID });
+        }
+
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> GetWidgetConfig(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return NotFound();
+
+            var project = await _context.Projects
+                .Include(p => p.WidgetConfig)
+                .FirstOrDefaultAsync(p => p.EmbedKey == key && p.Status == 1);
+
+            if (project == null) return NotFound();
+
+            var cfg = project.WidgetConfig ?? new Models.Entities.WidgetConfig();
+            return Json(new
+            {
+                cfg.WidgetPosition,
+                cfg.OffsetX,
+                cfg.OffsetY,
+                cfg.ButtonColor,
+                cfg.ButtonSize,
+                cfg.PopupWidth,
+                cfg.PopupHeight,
+                cfg.PopupBorderRadius
+            });
+        }
+
+        private async Task<Models.Entities.Project?> ResolveProjectForSettingsAsync(int projectId)
+        {
+            if (User.IsInRole("Admin"))
+            {
+                if (projectId <= 0) return null;
+                return await _context.Projects.FindAsync(projectId);
+            }
+
+            var userId = User.GetUserId();
+            var entry = await _context.GebruikerProjecten
+                .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
+                .FirstOrDefaultAsync();
+
+            if (entry == null) return null;
+            return await _context.Projects.FindAsync(entry.Project);
         }
 
         private async Task<(string BotName, int ProjectId, bool HasProject)> GetProjectContextAsync(int adminProjectId = 0)

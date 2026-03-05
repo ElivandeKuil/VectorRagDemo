@@ -1,8 +1,30 @@
+@using VectorRagDemo.Models.Entities
 @{
     Layout = "_WidgetLayout";
     var botName = ViewData["BotName"] as string ?? "Assistant";
     var projectId = (int)(ViewData["ProjectId"] ?? 0);
     var embedKey = ViewData["EmbedKey"] as string ?? "";
+    var cfg = ViewData["WidgetConfig"] as WidgetConfig ?? new WidgetConfig();
+    var fontSizeCss = cfg.WidgetFontSize == "sm" ? "13px" : cfg.WidgetFontSize == "lg" ? "16px" : "14px";
+}
+
+@section Styles {
+<style>
+    body { font-size: @fontSizeCss; }
+    .message.user {
+        background: @cfg.UserBubbleBgColor !important;
+        color: @cfg.UserBubbleTextColor !important;
+    }
+    .message.assistant {
+        background: @cfg.BotBubbleBgColor !important;
+        color: @cfg.BotBubbleTextColor !important;
+    }
+    .btn-primary {
+        background-color: @cfg.UserBubbleBgColor !important;
+        border-color: @cfg.UserBubbleBgColor !important;
+        color: @cfg.UserBubbleTextColor !important;
+    }
+</style>
 }
 
 <div class="chat-container"
@@ -10,14 +32,14 @@
      data-bot-name="@botName"
      data-project-id="@projectId">
 
-    <div class="widget-header d-flex align-items-center px-3 py-2 border-bottom" style="background:#0d6efd; color:#fff; flex-shrink:0;">
+    <div class="widget-header d-flex align-items-center px-3 py-2 border-bottom" style="background:@cfg.HeaderBgColor; color:@cfg.HeaderTextColor; flex-shrink:0;">
         <i class="bi bi-stars me-2"></i>
         <span class="fw-semibold">@botName</span>
     </div>
 
     <div class="chat-messages" id="chatMessages">
         <div class="message assistant">
-            Hallo! Hoe kan ik u helpen?
+            @cfg.GreetingMessage
         </div>
         <div id="chatHistory" style="display:none;">[]</div>
         <div id="retrievedChunks" style="display:none;">[]</div>
