@@ -113,6 +113,12 @@
                         <label class="form-label">Grootte <span class="text-muted small" id="lbl_bs">@Model.ButtonSize px</span></label>
                         <input type="range" class="form-range" name="config.ButtonSize" id="cfg_btnsize"
                                min="36" max="80" value="@Model.ButtonSize" oninput="lbl_bs.textContent=this.value+' px';updatePreview()" />
+                        <div class="mt-3">
+                            <label class="form-label">Logo URL <span class="text-muted small">(optioneel — vervangt het standaard icoon)</span></label>
+                            <input type="url" class="form-control" name="config.ButtonLogoUrl" id="cfg_btnlogo"
+                                   value="@Model.ButtonLogoUrl" maxlength="500" oninput="updatePreview()"
+                                   placeholder="https://..." />
+                        </div>
                     </div>
                 </div>
 
@@ -120,6 +126,18 @@
                 <div class="card shadow-sm mb-3">
                     <div class="card-header fw-semibold"><i class="bi bi-layout-text-window-reverse me-2"></i>Header</div>
                     <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Titel <span class="text-muted small">(leeg = naam van de bot)</span></label>
+                            <input type="text" class="form-control" name="config.HeaderTitle" id="cfg_headertitle"
+                                   value="@Model.HeaderTitle" maxlength="100" oninput="updatePreview()"
+                                   placeholder="@Model.GreetingMessage" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Logo URL <span class="text-muted small">(optioneel — vervangt het standaard icoon)</span></label>
+                            <input type="url" class="form-control" name="config.HeaderLogoUrl" id="cfg_headerlogo"
+                                   value="@Model.HeaderLogoUrl" maxlength="500" oninput="updatePreview()"
+                                   placeholder="https://..." />
+                        </div>
                         <div class="mb-3">
                             <label class="form-label">Achtergrondkleur</label>
                             <div class="d-flex align-items-center gap-2">
@@ -138,6 +156,61 @@
                                 <input type="text" class="form-control font-monospace small"
                                        id="cfg_headertxt_hex" value="@Model.HeaderTextColor" maxlength="7"
                                        oninput="syncColorFromHex('cfg_headertxt','cfg_headertxt_hex');updatePreview()" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat achtergrond -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-chat me-2"></i>Chat achtergrond</div>
+                    <div class="card-body">
+                        <label class="form-label">Achtergrondkleur berichtengebied</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="color" class="form-control form-control-color" name="config.ChatBodyBgColor"
+                                   id="cfg_chatbodybg" value="@Model.ChatBodyBgColor" oninput="updatePreview()" />
+                            <input type="text" class="form-control font-monospace small"
+                                   id="cfg_chatbodybg_hex" value="@Model.ChatBodyBgColor" maxlength="7"
+                                   oninput="syncColorFromHex('cfg_chatbodybg','cfg_chatbodybg_hex');updatePreview()" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input area -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-input-cursor-text me-2"></i>Invoergebied</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Achtergrondkleur balk</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" class="form-control form-control-color" name="config.InputAreaBgColor"
+                                       id="cfg_inputbg" value="@Model.InputAreaBgColor" oninput="updatePreview()" />
+                                <input type="text" class="form-control font-monospace small"
+                                       id="cfg_inputbg_hex" value="@Model.InputAreaBgColor" maxlength="7"
+                                       oninput="syncColorFromHex('cfg_inputbg','cfg_inputbg_hex');updatePreview()" />
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-2">Verzendknop</p>
+                        <div class="row g-2">
+                            <div class="col">
+                                <label class="form-label small">Achtergrond</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" class="form-control form-control-color" name="config.SendButtonColor"
+                                           id="cfg_sendbtnbg" value="@Model.SendButtonColor" oninput="updatePreview()" />
+                                    <input type="text" class="form-control font-monospace small"
+                                           id="cfg_sendbtnbg_hex" value="@Model.SendButtonColor" maxlength="7"
+                                           oninput="syncColorFromHex('cfg_sendbtnbg','cfg_sendbtnbg_hex');updatePreview()" />
+                                </div>
+                            </div>
+                            <div class="col">
+                                <label class="form-label small">Icoonkleur</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="color" class="form-control form-control-color" name="config.SendButtonIconColor"
+                                           id="cfg_sendbtntxt" value="@Model.SendButtonIconColor" oninput="updatePreview()" />
+                                    <input type="text" class="form-control font-monospace small"
+                                           id="cfg_sendbtntxt_hex" value="@Model.SendButtonIconColor" maxlength="7"
+                                           oninput="syncColorFromHex('cfg_sendbtntxt','cfg_sendbtntxt_hex');updatePreview()" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -242,7 +315,8 @@
                         <!-- Preview popup -->
                         <div id="prev_popup" style="position:absolute; background:#fff; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,.22);">
                             <div id="prev_header" style="display:flex; align-items:center; padding:10px 14px; flex-shrink:0;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:8px;opacity:.85">
+                                <img id="prev_headerlogo" src="" alt="" style="height:20px; width:auto; margin-right:6px; border-radius:3px; object-fit:contain; display:none;" />
+                                <svg id="prev_defaulticon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:8px;opacity:.85">
                                     <path d="M11.671 11c.552 0 1.01.398 1.085.943l.744 5.514A1 1 0 0 1 12.415 18.5L8 16.5l-4.415 2a1 1 0 0 1-1.085-1.043l.744-5.514A1.1 1.1 0 0 1 4.33 11zm-3.684 3.01-3.39 1.533-.55 4.07L8 17.94l3.952 1.673-.55-4.07z"/>
                                 </svg>
                                 <span id="prev_botname" style="font-weight:600; font-size:14px;">Bot</span>
@@ -252,9 +326,9 @@
                                 <div class="prev-bubble prev-user" id="prev_usermsg">Wat zijn jullie openingstijden?</div>
                                 <div class="prev-bubble prev-bot" id="prev_botmsg">Wij zijn open op maandag t/m vrijdag van 9:00 tot 17:00.</div>
                             </div>
-                            <div style="padding:10px 12px; border-top:1px solid #dee2e6; display:flex; gap:8px; align-items:center;">
+                            <div id="prev_inputbar" style="padding:10px 12px; border-top:1px solid #dee2e6; display:flex; gap:8px; align-items:center;">
                                 <div style="flex:1; height:32px; border:1px solid #ced4da; border-radius:6px; background:#f8f9fa;"></div>
-                                <div id="prev_sendbtn" style="width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center;">
+                                <div id="prev_sendbtn" style="width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                         <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11z"/>
                                     </svg>
@@ -263,8 +337,9 @@
                         </div>
 
                         <!-- Preview button -->
-                        <div id="prev_btn" style="position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:default; box-shadow:0 4px 16px rgba(0,0,0,.25);">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 16 16">
+                        <div id="prev_btn" style="position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:default; box-shadow:0 4px 16px rgba(0,0,0,.25); overflow:hidden;">
+                            <img id="prev_btnlogo" src="" alt="" style="border-radius:50%; object-fit:cover; display:none;" />
+                            <svg id="prev_btnicon" xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 16 16">
                                 <path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.088-.243 22 22 0 0 1-.713-.129Z"/>
                             </svg>
                         </div>
@@ -314,11 +389,18 @@
         var offsetY     = parseInt(val('cfg_offsety')) || 24;
         var btnColor    = val('cfg_btncolor');
         var btnSize     = parseInt(val('cfg_btnsize')) || 56;
+        var btnLogo     = val('cfg_btnlogo') || '';
         var popupW      = parseInt(val('cfg_popupwidth')) || 380;
         var popupH      = parseInt(val('cfg_popupheight')) || 560;
         var borderR     = parseInt(val('cfg_borderradius')) || 12;
         var headerBg    = val('cfg_headerbg');
         var headerTxt   = val('cfg_headertxt');
+        var headerTitle = val('cfg_headertitle') || '';
+        var headerLogo  = val('cfg_headerlogo') || '';
+        var chatBodyBg  = val('cfg_chatbodybg') || '#ffffff';
+        var inputBg     = val('cfg_inputbg') || '#ffffff';
+        var sendBtnBg   = val('cfg_sendbtnbg') || '#0d6efd';
+        var sendBtnTxt  = val('cfg_sendbtntxt') || '#ffffff';
         var userBg      = val('cfg_userbg');
         var userTxt     = val('cfg_usertxt');
         var botBg       = val('cfg_botbg');
@@ -357,10 +439,30 @@
         header.style.background = headerBg;
         header.style.color      = headerTxt;
 
+        // Header title
+        get('prev_botname').textContent = headerTitle || 'Bot';
         get('prev_botname').style.color = headerTxt;
 
+        // Header logo vs default icon
+        var logoEl = get('prev_headerlogo');
+        var iconEl = get('prev_defaulticon');
+        if (headerLogo) {
+            logoEl.src = headerLogo;
+            logoEl.style.display = 'inline-block';
+            iconEl.style.display = 'none';
+        } else {
+            logoEl.style.display = 'none';
+            iconEl.style.display = 'inline-block';
+        }
+
+        // Chat body background
+        get('prev_messages').style.background = chatBodyBg;
+
+        // Input area
+        get('prev_inputbar').style.background = inputBg;
+
         // Sync hex inputs with color pickers
-        ['btncolor','headerbg','headertxt','userbg','usertxt','botbg','bottxt'].forEach(function(k) {
+        ['btncolor','headerbg','headertxt','chatbodybg','inputbg','sendbtnbg','sendbtntxt','userbg','usertxt','botbg','bottxt'].forEach(function(k) {
             var picker = get('cfg_' + k);
             var hexBox = get('cfg_' + k + '_hex');
             if (picker && hexBox && document.activeElement !== hexBox) hexBox.value = picker.value;
@@ -375,15 +477,15 @@
 
         // Send button
         var sendBtn = get('prev_sendbtn');
-        sendBtn.style.background = userBg;
-        sendBtn.style.color      = userTxt;
-        sendBtn.querySelector('svg').setAttribute('fill', userTxt);
+        sendBtn.style.background = sendBtnBg;
+        sendBtn.style.color      = sendBtnTxt;
+        sendBtn.querySelector('svg').setAttribute('fill', sendBtnTxt);
 
         // Floating button
         var btn = get('prev_btn');
         btn.style.width      = scaledBtn + 'px';
         btn.style.height     = scaledBtn + 'px';
-        btn.style.background = btnColor;
+        btn.style.background = btnLogo ? 'transparent' : btnColor;
         if (position === 'bottom-left') {
             btn.style.left  = scaledOffX + 'px';
             btn.style.right = 'auto';
@@ -392,9 +494,24 @@
             btn.style.left  = 'auto';
         }
         btn.style.bottom = scaledOffY + 'px';
-        var iconSize = Math.round(scaledBtn * 0.42);
-        btn.querySelector('svg').setAttribute('width', iconSize);
-        btn.querySelector('svg').setAttribute('height', iconSize);
+
+        // Button logo vs default icon
+        var btnLogoEl = get('prev_btnlogo');
+        var btnIconEl = get('prev_btnicon');
+        if (btnLogo) {
+            var imgSize = Math.round(scaledBtn * 0.62) + 'px';
+            btnLogoEl.src = btnLogo;
+            btnLogoEl.style.width   = scaledBtn + 'px';
+            btnLogoEl.style.height  = scaledBtn + 'px';
+            btnLogoEl.style.display = 'block';
+            btnIconEl.style.display = 'none';
+        } else {
+            btnLogoEl.style.display = 'none';
+            btnIconEl.style.display = 'block';
+            var iconSize = Math.round(scaledBtn * 0.42);
+            btnIconEl.setAttribute('width', iconSize);
+            btnIconEl.setAttribute('height', iconSize);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {

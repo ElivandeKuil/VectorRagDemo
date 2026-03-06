@@ -35,6 +35,21 @@ namespace VectorRagDemo.Models.Entities
         // Content
         public string GreetingMessage { get; set; } = "Hallo! Hoe kan ik u helpen?";
 
+        // Header extras
+        public string HeaderTitle { get; set; } = "";       // overrides BotName in header when set
+        public string HeaderLogoUrl { get; set; } = "";     // URL of logo image shown in header
+
+        // Chat area
+        public string ChatBodyBgColor { get; set; } = "#ffffff";
+
+        // Input area
+        public string InputAreaBgColor { get; set; } = "#ffffff";
+        public string SendButtonColor { get; set; } = "#0d6efd";
+        public string SendButtonIconColor { get; set; } = "#ffffff";
+
+        // Button extras
+        public string ButtonLogoUrl { get; set; } = "";     // URL of image shown in floating button instead of default icon
+
         // Navigation
         public Project? Project { get; set; }
     }

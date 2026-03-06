@@ -31,6 +31,7 @@
         offsetY: 24,
         buttonColor: '#0d6efd',
         buttonSize: 56,
+        buttonLogoUrl: '',
         popupWidth: 380,
         popupHeight: 560,
         popupBorderRadius: 12
@@ -112,6 +113,7 @@
             offsetY:           cfg.offsetY           != null ? cfg.offsetY           : defaults.offsetY,
             buttonColor:       cfg.buttonColor       || defaults.buttonColor,
             buttonSize:        cfg.buttonSize        != null ? cfg.buttonSize        : defaults.buttonSize,
+            buttonLogoUrl:     cfg.buttonLogoUrl     || defaults.buttonLogoUrl,
             popupWidth:        cfg.popupWidth        != null ? cfg.popupWidth        : defaults.popupWidth,
             popupHeight:       cfg.popupHeight       != null ? cfg.popupHeight       : defaults.popupHeight,
             popupBorderRadius: cfg.popupBorderRadius != null ? cfg.popupBorderRadius : defaults.popupBorderRadius,
@@ -127,8 +129,13 @@
         btn.id = WIDGET_ID + '-btn';
         btn.setAttribute('aria-label', 'Open chat');
         btn.setAttribute('title', 'Open chat');
-        var iconSize = Math.round(c.buttonSize * 0.46);
-        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="' + iconSize + '" height="' + iconSize + '" fill="currentColor" viewBox="0 0 16 16"><path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.088-.243 22 22 0 0 1-.713-.129Z"/></svg>';
+        if (c.buttonLogoUrl) {
+            var imgSize = Math.round(c.buttonSize * 0.62) + 'px';
+            btn.innerHTML = '<img src="' + c.buttonLogoUrl + '" width="' + imgSize + '" height="' + imgSize + '" alt="" style="border-radius:50%; object-fit:cover; display:block;" />';
+        } else {
+            var iconSize = Math.round(c.buttonSize * 0.46);
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="' + iconSize + '" height="' + iconSize + '" fill="currentColor" viewBox="0 0 16 16"><path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.088-.243 22 22 0 0 1-.713-.129Z"/></svg>';
+        }
         document.body.appendChild(btn);
 
         // Iframe popup

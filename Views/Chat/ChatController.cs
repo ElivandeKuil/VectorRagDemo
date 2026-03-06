@@ -375,6 +375,12 @@ namespace VectorRagDemo.Views.Chat
 
             await _context.Entry(project).Reference(p => p.WidgetConfig).LoadAsync();
 
+            // Coerce nullable string fields to empty string (model binder sends null for empty inputs)
+            config.GreetingMessage   = config.GreetingMessage   ?? string.Empty;
+            config.HeaderTitle       = config.HeaderTitle       ?? string.Empty;
+            config.HeaderLogoUrl     = config.HeaderLogoUrl     ?? string.Empty;
+            config.ButtonLogoUrl     = config.ButtonLogoUrl     ?? string.Empty;
+
             if (project.WidgetConfig == null)
             {
                 config.ID = 0;
@@ -400,6 +406,13 @@ namespace VectorRagDemo.Views.Chat
                 existing.BotBubbleTextColor = config.BotBubbleTextColor;
                 existing.WidgetFontSize = config.WidgetFontSize;
                 existing.GreetingMessage = config.GreetingMessage;
+                existing.HeaderTitle = config.HeaderTitle;
+                existing.HeaderLogoUrl = config.HeaderLogoUrl;
+                existing.ChatBodyBgColor = config.ChatBodyBgColor;
+                existing.InputAreaBgColor = config.InputAreaBgColor;
+                existing.SendButtonColor = config.SendButtonColor;
+                existing.SendButtonIconColor = config.SendButtonIconColor;
+                existing.ButtonLogoUrl = config.ButtonLogoUrl;
             }
 
             project.GewijzigdOp = DateTime.Now;
@@ -429,6 +442,7 @@ namespace VectorRagDemo.Views.Chat
                 cfg.OffsetY,
                 cfg.ButtonColor,
                 cfg.ButtonSize,
+                cfg.ButtonLogoUrl,
                 cfg.PopupWidth,
                 cfg.PopupHeight,
                 cfg.PopupBorderRadius

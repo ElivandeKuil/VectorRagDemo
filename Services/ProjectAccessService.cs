@@ -44,11 +44,12 @@ namespace VectorRagDemo.Services
         public static readonly Dictionary<string, SubProjectInfo> SubProjectMap =
             new(StringComparer.OrdinalIgnoreCase)
             {
-                ["Chat"]     = new("Chat",        "Chat",        "Index", "bi-chat-dots"),
-                ["Scraper"]  = new("Scraper",     "Scraper",     "Index", "bi-globe"),
-                ["Chunks"]   = new("Documenten",  "Chunk",       "Index", "bi-file-earmark-text"),
-                ["Prompts"]  = new("Prompts",     "Prompts",     "Index", "bi-chat-square-text"),
-                ["API Logs"] = new("API Logs",    "ApiCallLog",  "Index", "bi-journal-code"),
+                ["Chat"]               = new("Chat",               "Chat",        "Index",          "bi-chat-dots"),
+                ["Scraper"]            = new("Scraper",            "Scraper",     "Index",          "bi-globe"),
+                ["Chunks"]             = new("Documenten",         "Chunk",       "Index",          "bi-file-earmark-text"),
+                ["Prompts"]            = new("Prompts",            "Prompts",     "Index",          "bi-chat-square-text"),
+                ["API Logs"]           = new("API Logs",           "ApiCallLog",  "Index",          "bi-journal-code"),
+                ["Widget instellingen"] = new("Widget instellingen", "Chat",      "WidgetSettings", "bi-sliders"),
             };
 
         public ProjectAccessService(ManagementDbContext context)
