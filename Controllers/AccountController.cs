@@ -13,11 +13,16 @@ namespace VectorRagDemo.Controllers
     {
         private readonly UserAuthenticationService _authService;
         private readonly ProjectAccessService _projectAccessService;
+        private readonly ConsentService _consentService;
 
-        public AccountController(UserAuthenticationService authService, ProjectAccessService projectAccessService)
+        public AccountController(
+            UserAuthenticationService authService,
+            ProjectAccessService projectAccessService,
+            ConsentService consentService)
         {
             _authService = authService;
             _projectAccessService = projectAccessService;
+            _consentService = consentService;
         }
 
         [AllowAnonymous]
@@ -67,6 +72,11 @@ namespace VectorRagDemo.Controllers
             if (user.WachtwoordWijzigen)
                 claims.Add(new Claim("MustChangePassword", "true"));
 
+            // GDPR: controleer of de gebruiker toestemming heeft gegeven voor de huidige beleidsversie
+            var hasConsent = await _consentService.HasActiveConsentAsync(user.ID);
+            if (!hasConsent)
+                claims.Add(new Claim("ConsentRequired", "true"));
+
             foreach (var role in roles)
                 claims.Add(new Claim(ClaimTypes.Role, role));
 
@@ -89,10 +99,104 @@ namespace VectorRagDemo.Controllers
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
 
+            if (!hasConsent)
+                return RedirectToAction("Toestemming", "Account", new { returnUrl });
+
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
 
             return RedirectToAction("Index", "Dashboard");
+        }
+
+        // ── Toestemming ──────────────────────────────────────────────────────────
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Toestemming(string? returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+
+            // Gebruiker die al toestemming heeft kan de pagina bezoeken om geschiedenis te zien
+            var userId = User.GetUserId();
+            ViewBag.ConsentHistory = await _consentService.GetConsentHistoryAsync(userId);
+            ViewBag.HasActiveConsent = await _consentService.HasActiveConsentAsync(userId);
+            return View();
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToestemmingAkkoord(string? returnUrl = null)
+        {
+            var userId = User.GetUserId();
+            var ip = AnonymizeIp(HttpContext.Connection.RemoteIpAddress?.ToString());
+            var userAgent = HttpContext.Request.Headers.UserAgent.ToString();
+            if (userAgent.Length > 500) userAgent = userAgent[..500];
+
+            await _consentService.RecordConsentAsync(userId, ip, userAgent);
+
+            // Vernieuwen van cookie zonder ConsentRequired-claim
+            await RefreshAuthCookieAsync();
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToestemmingWeigeren()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Login", "Account");
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToestemmingIntrekken()
+        {
+            var userId = User.GetUserId();
+            await _consentService.RevokeConsentAsync(userId);
+
+            // Uitloggen na intrekking: sessie bevat geen geldige toestemming meer
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            TempData["Success"] = "Uw toestemming is ingetrokken. U bent uitgelogd.";
+            return RedirectToAction("Login", "Account");
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────────────────
+
+        // Vernieuwt het auth-cookie na het geven van toestemming door de claims opnieuw
+        // op te bouwen zonder de ConsentRequired-claim.
+        private async Task RefreshAuthCookieAsync()
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            if (result?.Principal == null) return;
+
+            var filteredClaims = result.Principal.Claims
+                .Where(c => c.Type != "ConsentRequired")
+                .ToList();
+
+            var identity = new ClaimsIdentity(filteredClaims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var props = result.Properties;
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(identity),
+                props);
+        }
+
+        private static string? AnonymizeIp(string? ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return null;
+            var parts = ip.Split('.');
+            if (parts.Length == 4) return $"{parts[0]}.{parts[1]}.{parts[2]}.0";
+            var groups = ip.Split(':');
+            if (groups.Length >= 3) return string.Join(":", groups.Take(3)) + "::/48";
+            return null;
         }
 
         [HttpPost]

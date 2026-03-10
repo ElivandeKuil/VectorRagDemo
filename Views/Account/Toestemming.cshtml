@@ -1,0 +1,201 @@
+@using VectorRagDemo.BLL
+@using VectorRagDemo.Models.Entities
+@{
+    ViewData["Title"] = "Privacyverklaring &amp; toestemming";
+    bool hasActiveConsent = ViewBag.HasActiveConsent ?? false;
+    bool consentRequired = User.HasClaim("ConsentRequired", "true");
+    var history = ViewBag.ConsentHistory as List<Toestemming> ?? new List<Toestemming>();
+    string? returnUrl = ViewData["ReturnUrl"]?.ToString();
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        @if (consentRequired)
+        {
+            <div class="alert alert-warning d-flex align-items-center gap-2 mb-4" role="alert">
+                <i class="bi bi-shield-exclamation fs-5 flex-shrink-0"></i>
+                <span>Voordat u verder kunt gaan, vragen wij uw toestemming voor de verwerking van uw persoonsgegevens.</span>
+            </div>
+        }
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>Privacyverklaring &amp; gegevensverwerking
+                </h4>
+            </div>
+            <div class="card-body">
+
+                <h5 class="mt-2">Welke gegevens verwerken wij?</h5>
+                <ul>
+                    <li><strong>Accountgegevens:</strong> naam, gebruikersnaam en versleuteld wachtwoord.</li>
+                    <li><strong>Gespreksinhoud:</strong> uw vragen en de gegenereerde antwoorden worden opgeslagen in onze database.</li>
+                    <li><strong>Technische loggegevens:</strong> tijdstip van verzoeken en geanonimiseerd IP-adres (laatste octet gemaskeerd).</li>
+                    <li><strong>Browsertypegegevens:</strong> user-agent string bij het geven van toestemming.</li>
+                </ul>
+
+                <h5 class="mt-3">Waarvoor gebruiken wij uw gegevens?</h5>
+                <ul>
+                    <li>Het bieden van de AI-chat­functionaliteit (RAG — ophalen van relevante informatie en genereren van antwoorden).</li>
+                    <li>Beveiliging en toegangsbeheer van de applicatie.</li>
+                    <li>Technische diagnose en foutopsporing via loggegevens.</li>
+                </ul>
+
+                <h5 class="mt-3">Gegevens gedeeld met derden</h5>
+                <p class="mb-1">Uw vragen en de opgehaalde tekstfragmenten worden verwerkt door:</p>
+                <ul>
+                    <li>
+                        <strong>Google Vertex AI</strong> (text-embedding-004) &mdash; voor het omzetten van tekst naar vectorrepresentaties.
+                        Server­locatie: <em>europe-west4</em> (Nederland).
+                    </li>
+                    <li>
+                        <strong>Google Gemini</strong> (gemini-2.5-flash-lite) &mdash; voor het genereren van antwoorden.
+                        Server­locatie: <em>europe-west4</em> (Nederland).
+                    </li>
+                </ul>
+                <p class="text-muted small">
+                    Google verwerkt gegevens conform haar eigen
+                    <a href="https://cloud.google.com/terms/data-processing-addendum" target="_blank" rel="noopener noreferrer">
+                        Data Processing Addendum
+                    </a>.
+                </p>
+
+                <h5 class="mt-3">Bewaartermijnen</h5>
+                <ul>
+                    <li>Applicatielogs: maximaal <strong>90 dagen</strong>.</li>
+                    <li>API-aanroeployalen: maximaal <strong>30 dagen</strong>.</li>
+                    <li>Gespreksinhoud: gedurende de looptijd van uw account.</li>
+                    <li>Accountgegevens: zolang uw account actief is.</li>
+                </ul>
+
+                <h5 class="mt-3">Uw rechten (AVG/GDPR)</h5>
+                <ul>
+                    <li><strong>Inzagerecht (Art. 15)</strong> &mdash; u kunt opvragen welke gegevens van u zijn opgeslagen.</li>
+                    <li><strong>Recht op correctie (Art. 16)</strong> &mdash; u kunt onjuiste gegevens laten aanpassen.</li>
+                    <li><strong>Recht op verwijdering (Art. 17)</strong> &mdash; u kunt verzoeken uw gegevens te verwijderen.</li>
+                    <li><strong>Recht op intrekking van toestemming (Art. 7 lid 3)</strong> &mdash; u kunt uw toestemming altijd intrekken via de knop hieronder.</li>
+                </ul>
+                <p class="text-muted small">
+                    Voor vragen of verzoeken: <a href="mailto:info@elai.nl">info@elai.nl</a>
+                </p>
+
+                <div class="alert alert-info small mt-3 mb-0" role="alert">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Versie privacyverklaring: <strong>@Config.ConsentVersion</strong>
+                </div>
+            </div>
+        </div>
+
+        @* ── Toestemming geven of weigeren ─────────────────────────────── *@
+        @if (consentRequired)
+        {
+            <div class="card shadow-sm border-warning mb-4">
+                <div class="card-body">
+                    <p class="mb-3">
+                        Gaat u akkoord met de hierboven beschreven verwerking van uw persoonsgegevens?
+                    </p>
+                    <div class="d-flex gap-3">
+                        <form asp-action="ToestemmingAkkoord" asp-route-returnUrl="@returnUrl" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-2"></i>Ja, ik ga akkoord
+                            </button>
+                        </form>
+                        <form asp-action="ToestemmingWeigeren" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Nee, ik ga niet akkoord
+                            </button>
+                        </form>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">
+                        Weigeren betekent dat u niet verder kunt gaan en wordt uitgelogd.
+                    </p>
+                </div>
+            </div>
+        }
+        else
+        {
+            @* ── Toestemmingsbeheer voor al-geautoriseerde gebruikers ─── *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Mijn toestemming</h5>
+                </div>
+                <div class="card-body">
+                    @if (hasActiveConsent)
+                    {
+                        <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>U heeft actieve toestemming gegeven voor versie <strong>@Config.ConsentVersion</strong>.</span>
+                        </div>
+                        <form asp-action="ToestemmingIntrekken" method="post"
+                              onsubmit="return confirm('Weet u zeker dat u uw toestemming wilt intrekken? U wordt uitgelogd en kunt de applicatie niet meer gebruiken totdat u opnieuw toestemming geeft.');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-x-circle me-2"></i>Toestemming intrekken
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>U heeft momenteel geen actieve toestemming.</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (history.Count > 0)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Toestemmingsgeschiedenis</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Versie</th>
+                                    <th>Gegeven op</th>
+                                    <th>Status</th>
+                                    <th>Ingetrokken op</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in history)
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-secondary">@t.Versie</span></td>
+                                        <td>@t.GegeverOp.ToLocalTime().ToString("dd-MM-yyyy HH:mm")</td>
+                                        <td>
+                                            @if (t.Actief)
+                                            {
+                                                <span class="badge bg-success">Actief</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Ingetrokken</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @(t.IngetrokkenOp.HasValue
+                                                ? t.IngetrokkenOp.Value.ToLocalTime().ToString("dd-MM-yyyy HH:mm")
+                                                : "—")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <a asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i>Terug naar dashboard
+            </a>
+        }
+
+    </div>
+</div>

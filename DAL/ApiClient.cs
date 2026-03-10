@@ -50,7 +50,7 @@ namespace VectorRagDemo.DAL
                 RequestMethod = method.Method,
                 RequestUri = requestUri,
                 CorrelationId = correlationId ?? Guid.NewGuid(),
-                ClientIP = clientIP,
+                ClientIP = AnonymizeIp(clientIP),
                 GemaaktOp = DateTime.UtcNow
             };
 
@@ -138,11 +138,27 @@ namespace VectorRagDemo.DAL
         private string? TruncateIfNeeded(string? text, int maxLength)
         {
             if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
-            {
                 return text;
-            }
 
             return text.Substring(0, maxLength) + "... [truncated]";
+        }
+
+        // Anonimiseert een IP-adres conform GDPR:
+        // IPv4: laatste octet vervangen door 0  (bijv. 192.168.1.42 → 192.168.1.0)
+        // IPv6: adres afkappen na de eerste 3 groepen (bijv. 2001:db8:1::1 → 2001:db8:1::/48)
+        private static string? AnonymizeIp(string? ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return null;
+
+            var ipv4Parts = ip.Split('.');
+            if (ipv4Parts.Length == 4)
+                return $"{ipv4Parts[0]}.{ipv4Parts[1]}.{ipv4Parts[2]}.0";
+
+            var ipv6Groups = ip.Split(':');
+            if (ipv6Groups.Length >= 3)
+                return string.Join(":", ipv6Groups.Take(3)) + "::/48";
+
+            return null;
         }
     }
 }

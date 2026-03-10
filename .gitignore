@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Gevoelige configuratiebestanden met credentials - nooit committen
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+**/google-credentials*.json
+**/service-account*.json
+*.env
+.env*

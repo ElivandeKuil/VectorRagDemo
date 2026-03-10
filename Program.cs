@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
+using VectorRagDemo.Filters;
 using VectorRagDemo.Services;
 using AppLogger = VectorRagDemo.Services.AppLogger;
 
@@ -21,6 +22,7 @@ builder.Services.AddControllersWithViews(options =>
         .RequireAuthenticatedUser()
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
+    options.Filters.Add<ConsentRequiredFilter>();
 });
 
 builder.Services.AddDbContext<VectorDbContext>(options =>
@@ -40,6 +42,9 @@ builder.Services.AddScoped<UserAuthenticationService>();
 
 // Register ProjectAccessService
 builder.Services.AddScoped<ProjectAccessService>();
+
+// GDPR toestemmingsbeheer
+builder.Services.AddScoped<ConsentService>();
 
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -62,9 +67,15 @@ builder.Services.AddScoped<ChatService>(provider =>
 // Register LinkPreviewService with HttpClient
 builder.Services.AddHttpClient<LinkPreviewService>();
 
+// Achtergrondservice voor automatisch verwijderen van verlopen logs (GDPR Art. 5 opslagbeperking)
+builder.Services.AddHostedService<LogRetentionService>();
+
 builder.Services.AddGrpc();
 
 var app = builder.Build();
+
+// Geeft ConnectionProcessor toegang tot appsettings.{Environment}.json
+ConnectionProcessor.Configure(builder.Configuration);
 
 AppLogger.Initialize(app.Services.GetRequiredService<IServiceScopeFactory>());
 

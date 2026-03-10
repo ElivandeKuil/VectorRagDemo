@@ -17,6 +17,9 @@ namespace VectorRagDemo.DAL
         public DbSet<Rol> Rollen { get; set; } = null!;
         public DbSet<GebruikerRol> GebruikerRollen { get; set; } = null!;
 
+        // GDPR toestemming
+        public DbSet<Toestemming> Toestemmingen { get; set; } = null!;
+
         // Project access tables
         public DbSet<MgmtProject> MgmtProjects { get; set; } = null!;
         public DbSet<MgmtSubProject> MgmtSubProjects { get; set; } = null!;
@@ -119,6 +122,23 @@ namespace VectorRagDemo.DAL
                     .WithMany(p => p.GebruikerProjecten)
                     .HasForeignKey(e => e.Project)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Toestemming configuration
+            modelBuilder.Entity<Toestemming>(entity =>
+            {
+                entity.ToTable("toestemming");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.GebruikerId).IsRequired();
+                entity.Property(e => e.Versie).HasMaxLength(50).IsRequired();
+                entity.Property(e => e.GegeverOp).IsRequired();
+                entity.Property(e => e.GeanonimiseerdIp).HasMaxLength(50);
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                entity.Property(e => e.Actief).IsRequired();
+                entity.Property(e => e.IngetrokkenOp);
+
+                entity.HasIndex(e => new { e.GebruikerId, e.Versie, e.Actief })
+                    .HasDatabaseName("IX_Toestemming_Gebruiker_Versie");
             });
 
             // GebruikerSubProject configuration

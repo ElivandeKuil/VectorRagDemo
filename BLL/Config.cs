@@ -19,5 +19,9 @@
         //Embedder
         public const int MaxWords = 400;
         public const int OverlapWords = 40;
+
+        // Versie van de privacyverklaring. Verhoog dit als de verklaring wijzigt
+        // zodat gebruikers opnieuw om toestemming wordt gevraagd.
+        public const string ConsentVersion = "v1-2026-03";
     }
 }
