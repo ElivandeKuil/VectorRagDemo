@@ -30,7 +30,7 @@
                     @Html.AntiForgeryToken()
 
                     <div class="mb-4">
-                        <label class="form-label fw-semibold">Project</label>
+                        <label app-label class="fw-semibold">Project</label>
                         @if (singleProject != null)
                         {
                             <input type="hidden" name="projectId" value="@singleProject.ID" />
@@ -38,7 +38,7 @@
                         }
                         else
                         {
-                            <select name="projectId" id="projectId" class="form-select" required>
+                            <select name="projectId" id="projectId" app-field required>
                                 <option value="">-- Selecteer een project --</option>
                                 @foreach (SelectListItem item in ViewBag.Projects)
                                 {
@@ -49,21 +49,21 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="file" class="form-label fw-semibold">Bestand</label>
-                        <input type="file" name="file" id="file" class="form-control" accept=".txt,.docx" required />
+                        <label for="file" app-label class="fw-semibold">Bestand</label>
+                        <input type="file" name="file" id="file" app-field accept=".txt,.docx" required />
                         <div class="form-text">Ondersteunde formaten: .txt en .docx (max. 50 MB)</div>
                     </div>
 
                     <div class="mb-4">
-                        <label for="folderId" class="form-label fw-semibold">Map <span class="text-muted fw-normal">(optioneel)</span></label>
-                        <select name="folderId" id="folderId" class="form-select">
+                        <label for="folderId" app-label class="fw-semibold">Map <span class="text-muted fw-normal">(optioneel)</span></label>
+                        <select name="folderId" id="folderId" app-field>
                             <option value="">— Geen map —</option>
                         </select>
                     </div>
 
                     <div class="mb-4">
-                        <label for="link" class="form-label fw-semibold">Koppeling <span class="text-muted fw-normal">(optioneel)</span></label>
-                        <input type="text" name="link" id="link" class="form-control" placeholder="https://…" />
+                        <label for="link" app-label class="fw-semibold">Koppeling <span class="text-muted fw-normal">(optioneel)</span></label>
+                        <input type="text" name="link" id="link" app-field placeholder="https://…" />
                         <div class="form-text">URL die wordt getoond in de chatbot bij antwoorden die dit document gebruiken.</div>
                     </div>
 

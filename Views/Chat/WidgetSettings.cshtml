@@ -5,7 +5,6 @@
     var projectName = ViewData["ProjectName"] as string ?? "";
     var adminProjects = ViewData["AdminProjects"] as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
     var isAdmin = User.IsInRole("Admin");
-    var successMsg = TempData["Success"] as string;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -24,7 +23,7 @@
     <div class="mb-4" style="max-width:320px">
         <form method="get">
             <div class="input-group">
-                <select name="projectId" class="form-select" onchange="this.form.submit()">
+                <select name="projectId" app-field onchange="this.form.submit()">
                     <option value="">— Kies een project —</option>
                     @foreach (var item in adminProjects)
                     {
@@ -34,14 +33,6 @@
                 </select>
             </div>
         </form>
-    </div>
-}
-
-@if (!string.IsNullOrEmpty(successMsg))
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle me-2"></i>@successMsg
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
 
@@ -60,36 +51,36 @@
                     <div class="card-header fw-semibold"><i class="bi bi-arrows-move me-2"></i>Positie & afmeting</div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Positie</label>
+                            <label app-label>Positie</label>
                             @{ var posRight = Model.WidgetPosition == "bottom-right"; }
-                            <select class="form-select" name="config.WidgetPosition" id="cfg_position">
+                            <select app-field name="config.WidgetPosition" id="cfg_position">
                                 <option value="bottom-right" selected="@posRight">Rechtsonder</option>
                                 <option value="bottom-left"  selected="@(!posRight)">Linksonder</option>
                             </select>
                         </div>
                         <div class="row g-2">
                             <div class="col">
-                                <label class="form-label">Marge zijkant <span class="text-muted small" id="lbl_offsetx">@Model.OffsetX px</span></label>
-                                <input type="range" class="form-range" name="config.OffsetX" id="cfg_offsetx"
+                                <label app-label>Marge zijkant <span class="text-muted small" id="lbl_offsetx">@Model.OffsetX px</span></label>
+                                <input type="range" app-field name="config.OffsetX" id="cfg_offsetx"
                                        min="8" max="80" value="@Model.OffsetX" oninput="lbl_offsetx.textContent=this.value+' px';updatePreview()" />
                             </div>
                             <div class="col">
-                                <label class="form-label">Marge onderkant <span class="text-muted small" id="lbl_offsety">@Model.OffsetY px</span></label>
-                                <input type="range" class="form-range" name="config.OffsetY" id="cfg_offsety"
+                                <label app-label>Marge onderkant <span class="text-muted small" id="lbl_offsety">@Model.OffsetY px</span></label>
+                                <input type="range" app-field name="config.OffsetY" id="cfg_offsety"
                                        min="8" max="80" value="@Model.OffsetY" oninput="lbl_offsety.textContent=this.value+' px';updatePreview()" />
                             </div>
                         </div>
 
-                        <label class="form-label mt-2">Popup breedte <span class="text-muted small" id="lbl_pw">@Model.PopupWidth px</span></label>
-                        <input type="range" class="form-range" name="config.PopupWidth" id="cfg_popupwidth"
+                        <label app-label class="mt-2">Popup breedte <span class="text-muted small" id="lbl_pw">@Model.PopupWidth px</span></label>
+                        <input type="range" app-field name="config.PopupWidth" id="cfg_popupwidth"
                                min="280" max="640" value="@Model.PopupWidth" oninput="lbl_pw.textContent=this.value+' px';updatePreview()" />
 
-                        <label class="form-label mt-2">Popup hoogte <span class="text-muted small" id="lbl_ph">@Model.PopupHeight px</span></label>
-                        <input type="range" class="form-range" name="config.PopupHeight" id="cfg_popupheight"
+                        <label app-label class="mt-2">Popup hoogte <span class="text-muted small" id="lbl_ph">@Model.PopupHeight px</span></label>
+                        <input type="range" app-field name="config.PopupHeight" id="cfg_popupheight"
                                min="360" max="760" value="@Model.PopupHeight" oninput="lbl_ph.textContent=this.value+' px';updatePreview()" />
 
-                        <label class="form-label mt-2">Afgeronde hoeken popup <span class="text-muted small" id="lbl_br">@Model.PopupBorderRadius px</span></label>
-                        <input type="range" class="form-range" name="config.PopupBorderRadius" id="cfg_borderradius"
+                        <label app-label class="mt-2">Afgeronde hoeken popup <span class="text-muted small" id="lbl_br">@Model.PopupBorderRadius px</span></label>
+                        <input type="range" app-field name="config.PopupBorderRadius" id="cfg_borderradius"
                                min="0" max="24" value="@Model.PopupBorderRadius" oninput="lbl_br.textContent=this.value+' px';updatePreview()" />
                     </div>
                 </div>
@@ -99,21 +90,21 @@
                     <div class="card-header fw-semibold"><i class="bi bi-circle me-2"></i>Chatknop</div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Kleur</label>
+                            <label app-label>Kleur</label>
                             <div class="d-flex align-items-center gap-2">
-                                <input type="color" class="form-control form-control-color" name="config.ButtonColor"
+                                <input type="color" app-field name="config.ButtonColor"
                                        id="cfg_btncolor" value="@Model.ButtonColor" oninput="updatePreview()" />
-                                <input type="text" class="form-control font-monospace small"
+                                <input type="text" app-field class="font-monospace small"
                                        id="cfg_btncolor_hex" value="@Model.ButtonColor" maxlength="7"
                                        oninput="syncColorFromHex('cfg_btncolor','cfg_btncolor_hex');updatePreview()" />
                             </div>
                         </div>
-                        <label class="form-label">Grootte <span class="text-muted small" id="lbl_bs">@Model.ButtonSize px</span></label>
-                        <input type="range" class="form-range" name="config.ButtonSize" id="cfg_btnsize"
+                        <label app-label>Grootte <span class="text-muted small" id="lbl_bs">@Model.ButtonSize px</span></label>
+                        <input type="range" app-field name="config.ButtonSize" id="cfg_btnsize"
                                min="36" max="80" value="@Model.ButtonSize" oninput="lbl_bs.textContent=this.value+' px';updatePreview()" />
                         <div class="mt-3">
-                            <label class="form-label">Logo URL <span class="text-muted small">(optioneel — vervangt het standaard icoon)</span></label>
-                            <input type="url" class="form-control" name="config.ButtonLogoUrl" id="cfg_btnlogo"
+                            <label app-label>Logo URL <span class="text-muted small">(optioneel — vervangt het standaard icoon)</span></label>
+                            <input type="url" app-field name="config.ButtonLogoUrl" id="cfg_btnlogo"
                                    value="@Model.ButtonLogoUrl" maxlength="500" oninput="updatePreview()"
                                    placeholder="https://..." />
                         </div>
@@ -125,33 +116,33 @@
                     <div class="card-header fw-semibold"><i class="bi bi-layout-text-window-reverse me-2"></i>Header</div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Titel <span class="text-muted small">(leeg = naam van de bot)</span></label>
-                            <input type="text" class="form-control" name="config.HeaderTitle" id="cfg_headertitle"
+                            <label app-label>Titel <span class="text-muted small">(leeg = naam van de bot)</span></label>
+                            <input type="text" app-field name="config.HeaderTitle" id="cfg_headertitle"
                                    value="@Model.HeaderTitle" maxlength="100" oninput="updatePreview()"
                                    placeholder="@Model.GreetingMessage" />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Logo URL <span class="text-muted small">(optioneel — vervangt het standaard icoon)</span></label>
-                            <input type="url" class="form-control" name="config.HeaderLogoUrl" id="cfg_headerlogo"
+                            <label app-label>Logo URL <span class="text-muted small">(optioneel — vervangt het standaard icoon)</span></label>
+                            <input type="url" app-field name="config.HeaderLogoUrl" id="cfg_headerlogo"
                                    value="@Model.HeaderLogoUrl" maxlength="500" oninput="updatePreview()"
                                    placeholder="https://..." />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Achtergrondkleur</label>
+                            <label app-label>Achtergrondkleur</label>
                             <div class="d-flex align-items-center gap-2">
-                                <input type="color" class="form-control form-control-color" name="config.HeaderBgColor"
+                                <input type="color" app-field name="config.HeaderBgColor"
                                        id="cfg_headerbg" value="@Model.HeaderBgColor" oninput="updatePreview()" />
-                                <input type="text" class="form-control font-monospace small"
+                                <input type="text" app-field class="font-monospace small"
                                        id="cfg_headerbg_hex" value="@Model.HeaderBgColor" maxlength="7"
                                        oninput="syncColorFromHex('cfg_headerbg','cfg_headerbg_hex');updatePreview()" />
                             </div>
                         </div>
                         <div>
-                            <label class="form-label">Tekstkleur</label>
+                            <label app-label>Tekstkleur</label>
                             <div class="d-flex align-items-center gap-2">
-                                <input type="color" class="form-control form-control-color" name="config.HeaderTextColor"
+                                <input type="color" app-field name="config.HeaderTextColor"
                                        id="cfg_headertxt" value="@Model.HeaderTextColor" oninput="updatePreview()" />
-                                <input type="text" class="form-control font-monospace small"
+                                <input type="text" app-field class="font-monospace small"
                                        id="cfg_headertxt_hex" value="@Model.HeaderTextColor" maxlength="7"
                                        oninput="syncColorFromHex('cfg_headertxt','cfg_headertxt_hex');updatePreview()" />
                             </div>
@@ -163,11 +154,11 @@
                 <div class="card shadow-sm mb-3">
                     <div class="card-header fw-semibold"><i class="bi bi-chat me-2"></i>Chat achtergrond</div>
                     <div class="card-body">
-                        <label class="form-label">Achtergrondkleur berichtengebied</label>
+                        <label app-label>Achtergrondkleur berichtengebied</label>
                         <div class="d-flex align-items-center gap-2">
-                            <input type="color" class="form-control form-control-color" name="config.ChatBodyBgColor"
+                            <input type="color" app-field name="config.ChatBodyBgColor"
                                    id="cfg_chatbodybg" value="@Model.ChatBodyBgColor" oninput="updatePreview()" />
-                            <input type="text" class="form-control font-monospace small"
+                            <input type="text" app-field class="font-monospace small"
                                    id="cfg_chatbodybg_hex" value="@Model.ChatBodyBgColor" maxlength="7"
                                    oninput="syncColorFromHex('cfg_chatbodybg','cfg_chatbodybg_hex');updatePreview()" />
                         </div>
@@ -179,11 +170,11 @@
                     <div class="card-header fw-semibold"><i class="bi bi-input-cursor-text me-2"></i>Invoergebied</div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Achtergrondkleur balk</label>
+                            <label app-label>Achtergrondkleur balk</label>
                             <div class="d-flex align-items-center gap-2">
-                                <input type="color" class="form-control form-control-color" name="config.InputAreaBgColor"
+                                <input type="color" app-field name="config.InputAreaBgColor"
                                        id="cfg_inputbg" value="@Model.InputAreaBgColor" oninput="updatePreview()" />
-                                <input type="text" class="form-control font-monospace small"
+                                <input type="text" app-field class="font-monospace small"
                                        id="cfg_inputbg_hex" value="@Model.InputAreaBgColor" maxlength="7"
                                        oninput="syncColorFromHex('cfg_inputbg','cfg_inputbg_hex');updatePreview()" />
                             </div>
@@ -191,21 +182,21 @@
                         <p class="text-muted small mb-2">Verzendknop</p>
                         <div class="row g-2">
                             <div class="col">
-                                <label class="form-label small">Achtergrond</label>
+                                <label app-label class="small">Achtergrond</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color" name="config.SendButtonColor"
+                                    <input type="color" app-field name="config.SendButtonColor"
                                            id="cfg_sendbtnbg" value="@Model.SendButtonColor" oninput="updatePreview()" />
-                                    <input type="text" class="form-control font-monospace small"
+                                    <input type="text" app-field class="font-monospace small"
                                            id="cfg_sendbtnbg_hex" value="@Model.SendButtonColor" maxlength="7"
                                            oninput="syncColorFromHex('cfg_sendbtnbg','cfg_sendbtnbg_hex');updatePreview()" />
                                 </div>
                             </div>
                             <div class="col">
-                                <label class="form-label small">Icoonkleur</label>
+                                <label app-label class="small">Icoonkleur</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color" name="config.SendButtonIconColor"
+                                    <input type="color" app-field name="config.SendButtonIconColor"
                                            id="cfg_sendbtntxt" value="@Model.SendButtonIconColor" oninput="updatePreview()" />
-                                    <input type="text" class="form-control font-monospace small"
+                                    <input type="text" app-field class="font-monospace small"
                                            id="cfg_sendbtntxt_hex" value="@Model.SendButtonIconColor" maxlength="7"
                                            oninput="syncColorFromHex('cfg_sendbtntxt','cfg_sendbtntxt_hex');updatePreview()" />
                                 </div>
@@ -221,21 +212,21 @@
                         <p class="text-muted small mb-3">Gebruiker (rechts)</p>
                         <div class="row g-2 mb-3">
                             <div class="col">
-                                <label class="form-label small">Achtergrond</label>
+                                <label app-label class="small">Achtergrond</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color" name="config.UserBubbleBgColor"
+                                    <input type="color" app-field name="config.UserBubbleBgColor"
                                            id="cfg_userbg" value="@Model.UserBubbleBgColor" oninput="updatePreview()" />
-                                    <input type="text" class="form-control font-monospace small"
+                                    <input type="text" app-field class="font-monospace small"
                                            id="cfg_userbg_hex" value="@Model.UserBubbleBgColor" maxlength="7"
                                            oninput="syncColorFromHex('cfg_userbg','cfg_userbg_hex');updatePreview()" />
                                 </div>
                             </div>
                             <div class="col">
-                                <label class="form-label small">Tekst</label>
+                                <label app-label class="small">Tekst</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color" name="config.UserBubbleTextColor"
+                                    <input type="color" app-field name="config.UserBubbleTextColor"
                                            id="cfg_usertxt" value="@Model.UserBubbleTextColor" oninput="updatePreview()" />
-                                    <input type="text" class="form-control font-monospace small"
+                                    <input type="text" app-field class="font-monospace small"
                                            id="cfg_usertxt_hex" value="@Model.UserBubbleTextColor" maxlength="7"
                                            oninput="syncColorFromHex('cfg_usertxt','cfg_usertxt_hex');updatePreview()" />
                                 </div>
@@ -244,21 +235,21 @@
                         <p class="text-muted small mb-3">Bot (links)</p>
                         <div class="row g-2">
                             <div class="col">
-                                <label class="form-label small">Achtergrond</label>
+                                <label app-label class="small">Achtergrond</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color" name="config.BotBubbleBgColor"
+                                    <input type="color" app-field name="config.BotBubbleBgColor"
                                            id="cfg_botbg" value="@Model.BotBubbleBgColor" oninput="updatePreview()" />
-                                    <input type="text" class="form-control font-monospace small"
+                                    <input type="text" app-field class="font-monospace small"
                                            id="cfg_botbg_hex" value="@Model.BotBubbleBgColor" maxlength="7"
                                            oninput="syncColorFromHex('cfg_botbg','cfg_botbg_hex');updatePreview()" />
                                 </div>
                             </div>
                             <div class="col">
-                                <label class="form-label small">Tekst</label>
+                                <label app-label class="small">Tekst</label>
                                 <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color" name="config.BotBubbleTextColor"
+                                    <input type="color" app-field name="config.BotBubbleTextColor"
                                            id="cfg_bottxt" value="@Model.BotBubbleTextColor" oninput="updatePreview()" />
-                                    <input type="text" class="form-control font-monospace small"
+                                    <input type="text" app-field class="font-monospace small"
                                            id="cfg_bottxt_hex" value="@Model.BotBubbleTextColor" maxlength="7"
                                            oninput="syncColorFromHex('cfg_bottxt','cfg_bottxt_hex');updatePreview()" />
                                 </div>
@@ -272,17 +263,17 @@
                     <div class="card-header fw-semibold"><i class="bi bi-type me-2"></i>Tekst & inhoud</div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Lettergrootte</label>
+                            <label app-label>Lettergrootte</label>
                             @{ var fs = Model.WidgetFontSize; }
-                            <select class="form-select" name="config.WidgetFontSize" id="cfg_fontsize" onchange="updatePreview()">
+                            <select app-field name="config.WidgetFontSize" id="cfg_fontsize" onchange="updatePreview()">
                                 <option value="sm" selected="@(fs == "sm")">Klein</option>
                                 <option value="md" selected="@(fs == "md")">Normaal</option>
                                 <option value="lg" selected="@(fs == "lg")">Groot</option>
                             </select>
                         </div>
                         <div>
-                            <label class="form-label">Begroetingsbericht</label>
-                            <input type="text" class="form-control" name="config.GreetingMessage" id="cfg_greeting"
+                            <label app-label>Begroetingsbericht</label>
+                            <input type="text" app-field name="config.GreetingMessage" id="cfg_greeting"
                                    value="@Model.GreetingMessage" maxlength="200" oninput="updatePreview()" />
                             <div class="form-text">Dit is het eerste bericht dat bezoekers zien.</div>
                         </div>

@@ -7,8 +7,8 @@
         <form method="post">
             <input type="hidden" name="id" value="@Model.ID" />
             <div class="mb-3">
-                <label class="form-label">Bot name</label>
-                <input type="text" class="form-control" name="botName" value="@Model.BotName" maxlength="50" required />
+                <label app-label>Bot name</label>
+                <input type="text" app-field name="botName" value="@Model.BotName" maxlength="50" required />
                 <div class="form-text">This name appears in the chat header and typing indicator.</div>
             </div>
             <div class="d-flex gap-2">
@@ -33,9 +33,9 @@
             <p class="text-muted">Paste this snippet into the <code>&lt;head&gt;</code> or bottom of <code>&lt;body&gt;</code> of any webpage. A chat bubble will appear in the bottom-right corner.</p>
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Embed code</label>
+                <label app-label class="fw-semibold">Embed code</label>
                 <div class="input-group">
-                    <input type="text" id="embedSnippet" class="form-control font-monospace small" readonly value="@embedSnippet" />
+                    <input type="text" id="embedSnippet" app-field class="font-monospace small" readonly value="@embedSnippet" />
                     <button btn-variant="outline-secondary" type="button" onclick="copyEmbedSnippet()" title="Copy">
                         <i class="bi bi-clipboard" id="copyIcon"></i>
                     </button>
@@ -43,9 +43,9 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Embed key</label>
+                <label app-label class="fw-semibold">Embed key</label>
                 <div class="input-group">
-                    <input type="password" id="embedKeyField" class="form-control font-monospace small" readonly value="@Model.EmbedKey" />
+                    <input type="password" id="embedKeyField" app-field class="font-monospace small" readonly value="@Model.EmbedKey" />
                     <button btn-variant="outline-secondary" type="button" onclick="toggleEmbedKey()" title="Show/hide">
                         <i class="bi bi-eye" id="eyeIcon"></i>
                     </button>

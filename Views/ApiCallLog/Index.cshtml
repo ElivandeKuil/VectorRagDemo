@@ -6,14 +6,6 @@
 
 <h1>API Call Logs</h1>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
 <!-- Filter Section -->
 <div class="card mb-4">
     <div class="card-header">
@@ -23,18 +15,18 @@
         <form method="get" asp-action="Index">
             <div class="row">
                 <div class="col-md-3">
-                    <label for="StartDate" class="form-label">Start Date</label>
-                    <input type="datetime-local" class="form-control" id="StartDate" name="StartDate"
+                    <label for="StartDate" app-label>Start Date</label>
+                    <input type="datetime-local" app-field id="StartDate" name="StartDate"
                            value="@(Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"))" />
                 </div>
                 <div class="col-md-3">
-                    <label for="EndDate" class="form-label">End Date</label>
-                    <input type="datetime-local" class="form-control" id="EndDate" name="EndDate"
+                    <label for="EndDate" app-label>End Date</label>
+                    <input type="datetime-local" app-field id="EndDate" name="EndDate"
                            value="@(Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"))" />
                 </div>
                 <div class="col-md-2">
-                    <label for="RequestMethodFilter" class="form-label">Method</label>
-                    <select class="form-control" id="RequestMethodFilter" name="RequestMethodFilter">
+                    <label for="RequestMethodFilter" app-label>Method</label>
+                    <select app-field id="RequestMethodFilter" name="RequestMethodFilter">
                         <option value="">All</option>
                         <option value="GET" selected="@(Model.RequestMethodFilter == "GET")">GET</option>
                         <option value="POST" selected="@(Model.RequestMethodFilter == "POST")">POST</option>
@@ -43,13 +35,13 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label for="StatusCodeFilter" class="form-label">Status Code</label>
-                    <input type="number" class="form-control" id="StatusCodeFilter" name="StatusCodeFilter"
+                    <label for="StatusCodeFilter" app-label>Status Code</label>
+                    <input type="number" app-field id="StatusCodeFilter" name="StatusCodeFilter"
                            value="@Model.StatusCodeFilter" placeholder="e.g. 200, 500" />
                 </div>
                 <div class="col-md-2">
-                    <label for="HasError" class="form-label">Has Error</label>
-                    <select class="form-control" id="HasError" name="HasError">
+                    <label for="HasError" app-label>Has Error</label>
+                    <select app-field id="HasError" name="HasError">
                         <option value="">All</option>
                         <option value="true" selected="@(Model.HasError == true)">Yes</option>
                         <option value="false" selected="@(Model.HasError == false)">No</option>
@@ -58,13 +50,13 @@
             </div>
             <div class="row mt-3">
                 <div class="col-md-6">
-                    <label for="RequestUriFilter" class="form-label">Request URI Contains</label>
-                    <input type="text" class="form-control" id="RequestUriFilter" name="RequestUriFilter"
+                    <label for="RequestUriFilter" app-label>Request URI Contains</label>
+                    <input type="text" app-field id="RequestUriFilter" name="RequestUriFilter"
                            value="@Model.RequestUriFilter" placeholder="e.g. gemini, embedding" />
                 </div>
                 <div class="col-md-2">
-                    <label for="PageSize" class="form-label">Page Size</label>
-                    <select class="form-control" id="PageSize" name="PageSize">
+                    <label for="PageSize" app-label>Page Size</label>
+                    <select app-field id="PageSize" name="PageSize">
                         <option value="25" selected="@(Model.PageSize == 25)">25</option>
                         <option value="50" selected="@(Model.PageSize == 50)">50</option>
                         <option value="100" selected="@(Model.PageSize == 100)">100</option>
@@ -249,66 +241,28 @@
 </div>
 
 <!-- Pagination -->
-@if (Model.TotalPages > 1)
+@await Html.PartialAsync("_Pagination", new VectorRagDemo.Models.ViewModels.PaginationViewModel
 {
-    <nav>
-        <ul class="pagination justify-content-center">
-            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-                <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
-                {
-                    ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["RequestUriFilter"] = Model.RequestUriFilter,
-                    ["StatusCodeFilter"] = Model.StatusCodeFilter?.ToString(),
-                    ["HasError"] = Model.HasError?.ToString(),
-                    ["RequestMethodFilter"] = Model.RequestMethodFilter,
-                    ["PageSize"] = Model.PageSize.ToString(),
-                    ["CurrentPage"] = (Model.CurrentPage - 1).ToString(),
-                    ["SortBy"] = Model.SortBy,
-                    ["SortOrder"] = Model.SortOrder
-                })">Previous</a>
-            </li>
-
-            @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
-            {
-                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                    <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
-                    {
-                        ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
-                        ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
-                        ["RequestUriFilter"] = Model.RequestUriFilter,
-                        ["StatusCodeFilter"] = Model.StatusCodeFilter?.ToString(),
-                        ["HasError"] = Model.HasError?.ToString(),
-                        ["RequestMethodFilter"] = Model.RequestMethodFilter,
-                        ["PageSize"] = Model.PageSize.ToString(),
-                        ["CurrentPage"] = i.ToString(),
-                        ["SortBy"] = Model.SortBy,
-                        ["SortOrder"] = Model.SortOrder
-                    })">@i</a>
-                </li>
-            }
-
-            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
-                {
-                    ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["RequestUriFilter"] = Model.RequestUriFilter,
-                    ["StatusCodeFilter"] = Model.StatusCodeFilter?.ToString(),
-                    ["HasError"] = Model.HasError?.ToString(),
-                    ["RequestMethodFilter"] = Model.RequestMethodFilter,
-                    ["PageSize"] = Model.PageSize.ToString(),
-                    ["CurrentPage"] = (Model.CurrentPage + 1).ToString(),
-                    ["SortBy"] = Model.SortBy,
-                    ["SortOrder"] = Model.SortOrder
-                })">Next</a>
-            </li>
-        </ul>
-    </nav>
-    <p class="text-center text-muted">
-        Page @Model.CurrentPage of @Model.TotalPages (Total: @Model.TotalRecords records)
-    </p>
-}
+    CurrentPage  = Model.CurrentPage,
+    TotalPages   = Model.TotalPages,
+    TotalRecords = Model.TotalRecords,
+    ActionName   = "Index",
+    PreviousLabel = "Previous",
+    NextLabel     = "Next",
+    SummaryFormat = "Page {0} of {1} (Total: {2} records)",
+    RouteValues  = new Dictionary<string, string?>
+    {
+        ["StartDate"]           = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+        ["EndDate"]             = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+        ["RequestUriFilter"]    = Model.RequestUriFilter,
+        ["StatusCodeFilter"]    = Model.StatusCodeFilter?.ToString(),
+        ["HasError"]            = Model.HasError?.ToString(),
+        ["RequestMethodFilter"] = Model.RequestMethodFilter,
+        ["PageSize"]            = Model.PageSize.ToString(),
+        ["SortBy"]              = Model.SortBy,
+        ["SortOrder"]           = Model.SortOrder,
+    }
+})
 
 <!-- Maintenance Section -->
 <div class="card mt-4">
@@ -320,8 +274,8 @@
         <form method="post" asp-action="DeleteOlderThan" onsubmit="return confirm('Are you sure you want to delete old logs? This action cannot be undone.');">
             <div class="row">
                 <div class="col-md-3">
-                    <label for="days" class="form-label">Delete logs older than (days)</label>
-                    <input type="number" class="form-control" id="days" name="days" value="30" min="1" required />
+                    <label for="days" app-label>Delete logs older than (days)</label>
+                    <input type="number" app-field id="days" name="days" value="30" min="1" required />
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" btn-variant="danger">Delete Old Logs</button>

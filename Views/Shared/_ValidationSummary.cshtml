@@ -1,0 +1,6 @@
+@* Renders a ModelOnly validation summary as a dismissible Bootstrap danger alert.
+   Usage: @await Html.PartialAsync("_ValidationSummary")
+*@
+<div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Sluiten"></button>
+</div>

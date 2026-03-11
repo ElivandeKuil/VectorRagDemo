@@ -6,14 +6,6 @@
 
 <h1>App Logs</h1>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
 <!-- Filters -->
 <div class="card mb-4">
     <div class="card-header"><h5>Filters</h5></div>
@@ -21,8 +13,8 @@
         <form method="get" asp-action="Index">
             <div class="row">
                 <div class="col-md-2">
-                    <label class="form-label">Level</label>
-                    <select class="form-control" name="LevelFilter">
+                    <label app-label>Level</label>
+                    <select app-field name="LevelFilter">
                         <option value="">Alle</option>
                         <option value="Info"    selected="@(Model.LevelFilter == "Info")">Info</option>
                         <option value="Warning" selected="@(Model.LevelFilter == "Warning")">Warning</option>
@@ -30,18 +22,18 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Source</label>
-                    <input type="text" class="form-control" name="SourceFilter"
+                    <label app-label>Source</label>
+                    <input type="text" app-field name="SourceFilter"
                            value="@Model.SourceFilter" placeholder="bijv. EmbeddingProcessor" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Zoek in bericht</label>
-                    <input type="text" class="form-control" name="SearchText"
+                    <label app-label>Zoek in bericht</label>
+                    <input type="text" app-field name="SearchText"
                            value="@Model.SearchText" placeholder="Zoek in message of detail..." />
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Pagina-grootte</label>
-                    <select class="form-control" name="PageSize">
+                    <label app-label>Pagina-grootte</label>
+                    <select app-field name="PageSize">
                         <option value="25"  selected="@(Model.PageSize == 25)">25</option>
                         <option value="50"  selected="@(Model.PageSize == 50)">50</option>
                         <option value="100" selected="@(Model.PageSize == 100)">100</option>
@@ -51,13 +43,13 @@
             </div>
             <div class="row mt-2">
                 <div class="col-md-3">
-                    <label class="form-label">Van</label>
-                    <input type="datetime-local" class="form-control" name="StartDate"
+                    <label app-label>Van</label>
+                    <input type="datetime-local" app-field name="StartDate"
                            value="@(Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"))" />
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Tot</label>
-                    <input type="datetime-local" class="form-control" name="EndDate"
+                    <label app-label>Tot</label>
+                    <input type="datetime-local" app-field name="EndDate"
                            value="@(Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"))" />
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
@@ -210,59 +202,24 @@
 }
 
 <!-- Pagination -->
-@if (Model.TotalPages > 1)
+@await Html.PartialAsync("_Pagination", new VectorRagDemo.Models.ViewModels.PaginationViewModel
 {
-    <nav>
-        <ul class="pagination justify-content-center">
-            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-                <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
-                {
-                    ["LevelFilter"] = Model.LevelFilter,
-                    ["SourceFilter"] = Model.SourceFilter,
-                    ["SearchText"] = Model.SearchText,
-                    ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["PageSize"] = Model.PageSize.ToString(),
-                    ["CurrentPage"] = (Model.CurrentPage - 1).ToString(),
-                    ["SortBy"] = Model.SortBy,
-                    ["SortOrder"] = Model.SortOrder
-                })">Vorige</a>
-            </li>
-            @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
-            {
-                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                    <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
-                    {
-                        ["LevelFilter"] = Model.LevelFilter,
-                        ["SourceFilter"] = Model.SourceFilter,
-                        ["SearchText"] = Model.SearchText,
-                        ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
-                        ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
-                        ["PageSize"] = Model.PageSize.ToString(),
-                        ["CurrentPage"] = i.ToString(),
-                        ["SortBy"] = Model.SortBy,
-                        ["SortOrder"] = Model.SortOrder
-                    })">@i</a>
-                </li>
-            }
-            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" asp-action="Index" asp-all-route-data="@(new Dictionary<string, string>
-                {
-                    ["LevelFilter"] = Model.LevelFilter,
-                    ["SourceFilter"] = Model.SourceFilter,
-                    ["SearchText"] = Model.SearchText,
-                    ["StartDate"] = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["EndDate"] = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
-                    ["PageSize"] = Model.PageSize.ToString(),
-                    ["CurrentPage"] = (Model.CurrentPage + 1).ToString(),
-                    ["SortBy"] = Model.SortBy,
-                    ["SortOrder"] = Model.SortOrder
-                })">Volgende</a>
-            </li>
-        </ul>
-    </nav>
-    <p class="text-center text-muted">Pagina @Model.CurrentPage van @Model.TotalPages (@Model.TotalRecords regels)</p>
-}
+    CurrentPage  = Model.CurrentPage,
+    TotalPages   = Model.TotalPages,
+    TotalRecords = Model.TotalRecords,
+    ActionName   = "Index",
+    RouteValues  = new Dictionary<string, string?>
+    {
+        ["LevelFilter"]  = Model.LevelFilter,
+        ["SourceFilter"] = Model.SourceFilter,
+        ["SearchText"]   = Model.SearchText,
+        ["StartDate"]    = Model.StartDate?.ToString("yyyy-MM-ddTHH:mm"),
+        ["EndDate"]      = Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"),
+        ["PageSize"]     = Model.PageSize.ToString(),
+        ["SortBy"]       = Model.SortBy,
+        ["SortOrder"]    = Model.SortOrder,
+    }
+})
 
 <!-- Maintenance -->
 <div class="card mt-4">
@@ -276,8 +233,8 @@
             @Html.AntiForgeryToken()
             <div class="row">
                 <div class="col-md-3">
-                    <label class="form-label">Verwijder regels ouder dan (dagen)</label>
-                    <input type="number" class="form-control" name="days" value="7" min="1" required />
+                    <label app-label>Verwijder regels ouder dan (dagen)</label>
+                    <input type="number" app-field name="days" value="7" min="1" required />
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" btn-variant="danger">Verwijderen</button>

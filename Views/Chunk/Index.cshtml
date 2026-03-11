@@ -9,22 +9,6 @@
     var breadcrumb = ViewBag.Breadcrumb as List<FolderCrumb>;
 }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Documenten</h1>
     <div class="btn-group">
@@ -37,7 +21,7 @@
 {
     <form method="get" asp-action="Index" class="mb-3">
         <div class="d-flex align-items-center gap-2">
-            <label class="form-label mb-0 text-muted small">Project:</label>
+            <label app-label class="mb-0 text-muted small">Project:</label>
             @Html.DropDownList("projectId", (SelectList)ViewBag.Projects,
                 new { @class = "form-select form-select-sm w-auto", onchange = "this.form.submit()" })
         </div>
@@ -91,7 +75,7 @@
             <div class="mb-3">
                 <div class="input-group input-group-sm" style="max-width:320px">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" id="docSearch" class="form-control"
+                    <input type="text" id="docSearch" app-field
                            placeholder="Zoeken…" autocomplete="off" />
                     <button btn-variant="outline-secondary" btn-icon="x" class="d-none" id="docSearchClear" type="button" title="Wissen"></button>
                 </div>
@@ -213,8 +197,8 @@
             </div>
             <form id="setLinkForm">
                 <div class="modal-body">
-                    <label class="form-label">URL <span class="text-muted small">(optioneel)</span></label>
-                    <input type="text" id="setLinkInput" class="form-control" placeholder="https://…" />
+                    <label app-label>URL <span class="text-muted small">(optioneel)</span></label>
+                    <input type="text" id="setLinkInput" app-field placeholder="https://…" />
                     <div class="form-text">Laat leeg om de koppeling te verwijderen.</div>
                 </div>
                 <div class="modal-footer">
@@ -236,8 +220,8 @@
             </div>
             <form id="renameDocForm">
                 <div class="modal-body">
-                    <label class="form-label">Nieuwe titel</label>
-                    <input type="text" id="renameDocInput" class="form-control" required />
+                    <label app-label>Nieuwe titel</label>
+                    <input type="text" id="renameDocInput" app-field required />
                 </div>
                 <div class="modal-footer">
                     <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
@@ -279,8 +263,8 @@
             </div>
             <form id="createFolderForm">
                 <div class="modal-body">
-                    <label class="form-label">Naam</label>
-                    <input type="text" id="createFolderInput" class="form-control" placeholder="Mapnaam…" required />
+                    <label app-label>Naam</label>
+                    <input type="text" id="createFolderInput" app-field placeholder="Mapnaam…" required />
                 </div>
                 <div class="modal-footer">
                     <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
@@ -301,8 +285,8 @@
             </div>
             <form id="renameFolderForm">
                 <div class="modal-body">
-                    <label class="form-label">Nieuwe naam</label>
-                    <input type="text" id="renameFolderInput" class="form-control" required />
+                    <label app-label>Nieuwe naam</label>
+                    <input type="text" id="renameFolderInput" app-field required />
                 </div>
                 <div class="modal-footer">
                     <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
@@ -323,8 +307,8 @@
             </div>
             <form id="moveFolderForm">
                 <div class="modal-body">
-                    <label class="form-label">Bestemming</label>
-                    <select id="moveFolderSelect" class="form-select"></select>
+                    <label app-label>Bestemming</label>
+                    <select id="moveFolderSelect" app-field></select>
                 </div>
                 <div class="modal-footer">
                     <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>

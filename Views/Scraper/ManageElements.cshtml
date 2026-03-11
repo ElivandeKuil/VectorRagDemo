@@ -18,10 +18,10 @@
         <div class="card-body">
             <div class="row align-items-end">
                 <div class="col-md-8">
-                    <label for="projectSelect" class="form-label">
+                    <label for="projectSelect" app-label>
                         <strong>Select Project</strong>
                     </label>
-                    <select class="form-select" id="projectSelect" onchange="loadElements()">
+                    <select app-field id="projectSelect" onchange="loadElements()">
                         <option value="">-- Select a Project --</option>
                         @foreach (var project in ViewBag.Projects)
                         {
@@ -65,30 +65,30 @@
                     <input type="hidden" id="elementProjectId" value="0">
 
                     <div class="mb-3">
-                        <label for="elementName" class="form-label">
+                        <label for="elementName" app-label>
                             Element Name <span class="text-danger">*</span>
                         </label>
-                        <input type="text" class="form-control" id="elementName" required
-                               placeholder="e.g., ProductTitle, ProductDescription, ProductPrice">
+                        <input type="text" app-field id="elementName" required
+                               placeholder="e.g., ProductTitle, ProductDescription, ProductPrice" />
                         <div class="form-text">A descriptive name for this element (will appear in chunk output)</div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="selector" class="form-label">
+                        <label for="selector" app-label>
                             Selector (CSS or XPath) <span class="text-danger">*</span>
                         </label>
-                        <input type="text" class="form-control selector-input" id="selector" required
-                               placeholder="e.g., .product-title, //h1[@@class='title']">
+                        <input type="text" app-field class="selector-input" id="selector" required
+                               placeholder="e.g., .product-title, //h1[@@class='title']" />
                         <div class="form-text">
                             Use CSS selectors (e.g., <code>.class-name</code>, <code>#id</code>) or XPath (e.g., <code>//div[@@class='content']</code>)
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="attributeName" class="form-label">
+                        <label for="attributeName" app-label>
                             Attribute Name <span class="text-danger">*</span>
                         </label>
-                        <select class="form-select" id="attributeName">
+                        <select app-field id="attributeName">
                             <option value="text">text (extract text content)</option>
                             <option value="href">href (extract link URL)</option>
                             <option value="src">src (extract image/resource URL)</option>
@@ -100,26 +100,26 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="defaultValue" class="form-label">
+                        <label for="defaultValue" app-label>
                             Default Value (optional)
                         </label>
-                        <input type="text" class="form-control" id="defaultValue"
-                               placeholder="Value to use if element is not found">
+                        <input type="text" app-field id="defaultValue"
+                               placeholder="Value to use if element is not found" />
                         <div class="form-text">Leave empty if no default value needed</div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="sortOrder" class="form-label">
+                        <label for="sortOrder" app-label>
                             Sort Order <span class="text-danger">*</span>
                         </label>
-                        <input type="number" class="form-control" id="sortOrder" value="1" min="1" required>
+                        <input type="number" app-field id="sortOrder" value="1" min="1" required />
                         <div class="form-text">Determines the order elements appear in the output (lower numbers first)</div>
                     </div>
 
                     <div class="mb-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="isRequired">
-                            <label class="form-check-label" for="isRequired">
+                            <input app-field type="checkbox" id="isRequired"/>
+                            <label app-label="check" for="isRequired">
                                 Required Element
                             </label>
                         </div>

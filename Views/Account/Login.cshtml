@@ -3,14 +3,6 @@
     ViewData["Title"] = "Inloggen";
 }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
 <div class="row justify-content-center">
     <div class="col-md-5">
         <div class="card shadow-sm">
@@ -21,33 +13,33 @@
             </div>
             <div class="card-body">
                 <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    @await Html.PartialAsync("_ValidationSummary")
 
                     <div class="mb-3">
-                        <label asp-for="GebruikersNaam" class="form-label"></label>
+                        <label asp-for="GebruikersNaam" app-label></label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-person"></i>
                             </span>
-                            <input asp-for="GebruikersNaam" class="form-control" autofocus />
+                            <input asp-for="GebruikersNaam" app-field autofocus />
                         </div>
                         <span asp-validation-for="GebruikersNaam" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Wachtwoord" class="form-label"></label>
+                        <label asp-for="Wachtwoord" app-label></label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-lock"></i>
                             </span>
-                            <input asp-for="Wachtwoord" class="form-control" />
+                            <input asp-for="Wachtwoord" app-field />
                         </div>
                         <span asp-validation-for="Wachtwoord" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3 form-check">
-                        <input asp-for="RememberMe" class="form-check-input" />
-                        <label asp-for="RememberMe" class="form-check-label"></label>
+                        <input asp-for="RememberMe" app-field />
+                        <label asp-for="RememberMe" app-label="check"></label>
                     </div>
 
                     <div class="d-grid">

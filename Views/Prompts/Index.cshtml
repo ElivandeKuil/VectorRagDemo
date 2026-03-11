@@ -9,22 +9,6 @@
     <a asp-action="Create" btn-variant="primary" btn-icon="plus-circle"> Create New Prompt</a>
 </div>
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
 <div class="card">
     <div class="card-body">
         <table class="table table-striped table-hover">
@@ -94,9 +78,15 @@
 
         @if (!Model.Any())
         {
-            <div class="alert alert-info" role="alert">
-                No prompts found. <a asp-action="Create">Create your first prompt</a>.
-            </div>
+            @await Html.PartialAsync("_EmptyState", new VectorRagDemo.Models.ViewModels.EmptyStateViewModel
+            {
+                Icon        = "chat-square-text",
+                Title       = "Geen prompts gevonden",
+                Subtitle    = "Maak je eerste prompt aan om te beginnen.",
+                ActionUrl   = Url.Action("Create"),
+                ActionLabel = "Nieuwe prompt",
+                ActionIcon  = "plus-circle",
+            })
         }
     </div>
 </div>

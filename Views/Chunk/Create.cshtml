@@ -4,28 +4,12 @@
 
 <h1>Create New Chunk</h1>
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
 <div class="card">
     <div class="card-body">
         <form asp-action="Create" method="post">
             <div class="mb-3">
-                <label for="bronId" class="form-label">Select Bron (Source)</label>
-                <select class="form-select" id="bronId" name="bronId" required>
+                <label for="bronId" app-label>Select Bron (Source)</label>
+                <select app-field id="bronId" name="bronId" required>
                     <option value="">-- Select a Bron --</option>
                     @foreach (var item in ViewBag.Bronnen as SelectList)
                     {
@@ -36,8 +20,8 @@
             </div>
 
             <div class="mb-3">
-                <label for="tekst" class="form-label">Chunk Text</label>
-                <textarea class="form-control" id="tekst" name="tekst" rows="8" required placeholder="Enter the text content for this chunk..."></textarea>
+                <label for="tekst" app-label>Chunk Text</label>
+                <textarea app-field id="tekst" name="tekst" rows="8" required placeholder="Enter the text content for this chunk..."></textarea>
                 <div class="form-text">
                     The text will be automatically embedded using Google's text-embedding-004 model (768 dimensions).
                 </div>

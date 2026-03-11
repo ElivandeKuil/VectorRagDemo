@@ -14,13 +14,13 @@
 
             <div class="row g-3" style="max-width:480px">
                 <div class="col-12">
-                    <label asp-for="Naam" class="form-label fw-semibold">Naam</label>
-                    <input asp-for="Naam" class="form-control" />
+                    <label asp-for="Naam" app-label class="fw-semibold">Naam</label>
+                    <input asp-for="Naam" app-field />
                     <span asp-validation-for="Naam" class="text-danger small"></span>
                 </div>
                 <div class="col-12">
-                    <label asp-for="BotName" class="form-label fw-semibold">Bot naam</label>
-                    <input asp-for="BotName" class="form-control" />
+                    <label asp-for="BotName" app-label class="fw-semibold">Bot naam</label>
+                    <input asp-for="BotName" app-field />
                     <div class="form-text">De naam die verschijnt in de chatbot header en typindicator.</div>
                 </div>
             </div>
@@ -48,9 +48,9 @@
             </p>
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Embed-code</label>
+                <label app-label class="fw-semibold">Embed-code</label>
                 <div class="input-group">
-                    <input type="text" id="embedSnippet" class="form-control font-monospace small" readonly
+                    <input type="text" id="embedSnippet" app-field class="font-monospace small" readonly
                            value="@embedSnippet" />
                     <button btn-variant="outline-secondary" type="button" onclick="copyEmbedSnippet()" title="Kopiëren">
                         <i class="bi bi-clipboard" id="copyIcon"></i>
@@ -59,9 +59,9 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Embed-sleutel</label>
+                <label app-label class="fw-semibold">Embed-sleutel</label>
                 <div class="input-group">
-                    <input type="password" id="embedKeyField" class="form-control font-monospace small" readonly
+                    <input type="password" id="embedKeyField" app-field class="font-monospace small" readonly
                            value="@Model.EmbedKey" />
                     <button btn-variant="outline-secondary" type="button" onclick="toggleEmbedKey()" title="Tonen/verbergen">
                         <i class="bi bi-eye" id="eyeIcon"></i>

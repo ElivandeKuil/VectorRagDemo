@@ -14,22 +14,22 @@
     <div class="card-body">
         <form asp-action="Edit" asp-route-id="@Model.ID" method="post">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            @await Html.PartialAsync("_ValidationSummary")
 
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
-                    <label asp-for="Naam" class="form-label fw-semibold"></label>
-                    <input asp-for="Naam" class="form-control" />
+                    <label asp-for="Naam" app-label class="fw-semibold"></label>
+                    <input asp-for="Naam" app-field />
                     <span asp-validation-for="Naam" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="GebruikersNaam" class="form-label fw-semibold"></label>
-                    <input asp-for="GebruikersNaam" class="form-control" />
+                    <label asp-for="GebruikersNaam" app-label class="fw-semibold"></label>
+                    <input asp-for="GebruikersNaam" app-field />
                     <span asp-validation-for="GebruikersNaam" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="Wachtwoord" class="form-label fw-semibold"></label>
-                    <input asp-for="Wachtwoord" type="password" class="form-control" placeholder="Leeglaten om wachtwoord ongewijzigd te laten" />
+                    <label asp-for="Wachtwoord" app-label class="fw-semibold"></label>
+                    <input asp-for="Wachtwoord" type="password" app-field placeholder="Leeglaten om wachtwoord ongewijzigd te laten" />
                     <div class="form-text">Laat leeg om het wachtwoord niet te wijzigen.</div>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                                        name="GeselecteerdeRollen" value="@rol.ID"
                                        id="rol_@rol.ID"
                                        @(Model.GeselecteerdeRollen.Contains(rol.ID) ? "checked" : "") />
-                                <label class="form-check-label" for="rol_@rol.ID">@rol.Omschrijving</label>
+                                <label app-label="check" for="rol_@rol.ID">@rol.Omschrijving</label>
                             </div>
                         }
                     }
@@ -87,7 +87,7 @@
                                        name="GeselecteerdeProjecten" value="@project.ID"
                                        id="project_@project.ID"
                                        @(Model.GeselecteerdeProjecten.Contains(project.ID) ? "checked" : "") />
-                                <label class="form-check-label" for="project_@project.ID">@project.Omschrijving</label>
+                                <label app-label="check" for="project_@project.ID">@project.Omschrijving</label>
                             </div>
                         }
                     }
@@ -117,7 +117,7 @@
                                            name="GeselecteerdeSubProjecten" value="@sp.ID"
                                            id="sp_@sp.ID"
                                            @(Model.GeselecteerdeSubProjecten.Contains(sp.ID) ? "checked" : "") />
-                                    <label class="form-check-label" for="sp_@sp.ID">@sp.Omschrijving</label>
+                                    <label app-label="check" for="sp_@sp.ID">@sp.Omschrijving</label>
                                 </div>
                             }
                         }
