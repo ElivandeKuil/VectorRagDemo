@@ -1,0 +1,48 @@
+@model VectorRagDemo.Models.Entities.Gebruiker
+@{
+    ViewData["Title"] = "Gebruiker permanent verwijderen";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-x me-2"></i>Gebruiker permanent verwijderen
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Let op: deze actie kan niet ongedaan worden gemaakt.</strong>
+                </div>
+
+                <p>U staat op het punt de volgende gebruiker <strong>permanent</strong> te verwijderen:</p>
+                <ul>
+                    <li><strong>Naam:</strong> @Model.Naam</li>
+                    <li><strong>Gebruikersnaam:</strong> @Model.GebruikersNaam</li>
+                </ul>
+
+                <p>De volgende gegevens worden <strong>volledig en onomkeerbaar</strong> verwijderd:</p>
+                <ul>
+                    <li>Accountgegevens (naam, gebruikersnaam, wachtwoord)</li>
+                    <li>Rollen en projecttoegang</li>
+                    <li>Toestemmingsgeschiedenis</li>
+                    <li>Alle gesprekken en berichten</li>
+                </ul>
+
+                <div class="d-flex gap-2 mt-4">
+                    <form asp-action="Verwijder" asp-route-id="@Model.ID" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-2"></i>Ja, permanent verwijderen
+                        </button>
+                    </form>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Annuleren
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

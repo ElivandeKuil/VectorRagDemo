@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = "Privacyverklaring";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="mb-3">
+            <a asp-controller="Account" asp-action="Login" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Terug naar inloggen
+            </a>
+        </div>
+
+        @await Html.PartialAsync("_PrivacyVerklaringInhoud")
+    </div>
+</div>

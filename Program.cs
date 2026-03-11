@@ -45,6 +45,8 @@ builder.Services.AddScoped<ProjectAccessService>();
 
 // GDPR toestemmingsbeheer
 builder.Services.AddScoped<ConsentService>();
+builder.Services.AddScoped<UserDeletionService>();
+builder.Services.AddScoped<DataExportService>();
 
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -19,73 +19,7 @@
             </div>
         }
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="bi bi-shield-check me-2"></i>Privacyverklaring &amp; gegevensverwerking
-                </h4>
-            </div>
-            <div class="card-body">
-
-                <h5 class="mt-2">Welke gegevens verwerken wij?</h5>
-                <ul>
-                    <li><strong>Accountgegevens:</strong> naam, gebruikersnaam en versleuteld wachtwoord.</li>
-                    <li><strong>Gespreksinhoud:</strong> uw vragen en de gegenereerde antwoorden worden opgeslagen in onze database.</li>
-                    <li><strong>Technische loggegevens:</strong> tijdstip van verzoeken en geanonimiseerd IP-adres (laatste octet gemaskeerd).</li>
-                    <li><strong>Browsertypegegevens:</strong> user-agent string bij het geven van toestemming.</li>
-                </ul>
-
-                <h5 class="mt-3">Waarvoor gebruiken wij uw gegevens?</h5>
-                <ul>
-                    <li>Het bieden van de AI-chat­functionaliteit (RAG — ophalen van relevante informatie en genereren van antwoorden).</li>
-                    <li>Beveiliging en toegangsbeheer van de applicatie.</li>
-                    <li>Technische diagnose en foutopsporing via loggegevens.</li>
-                </ul>
-
-                <h5 class="mt-3">Gegevens gedeeld met derden</h5>
-                <p class="mb-1">Uw vragen en de opgehaalde tekstfragmenten worden verwerkt door:</p>
-                <ul>
-                    <li>
-                        <strong>Google Vertex AI</strong> (text-embedding-004) &mdash; voor het omzetten van tekst naar vectorrepresentaties.
-                        Server­locatie: <em>europe-west4</em> (Nederland).
-                    </li>
-                    <li>
-                        <strong>Google Gemini</strong> (gemini-2.5-flash-lite) &mdash; voor het genereren van antwoorden.
-                        Server­locatie: <em>europe-west4</em> (Nederland).
-                    </li>
-                </ul>
-                <p class="text-muted small">
-                    Google verwerkt gegevens conform haar eigen
-                    <a href="https://cloud.google.com/terms/data-processing-addendum" target="_blank" rel="noopener noreferrer">
-                        Data Processing Addendum
-                    </a>.
-                </p>
-
-                <h5 class="mt-3">Bewaartermijnen</h5>
-                <ul>
-                    <li>Applicatielogs: maximaal <strong>90 dagen</strong>.</li>
-                    <li>API-aanroeployalen: maximaal <strong>30 dagen</strong>.</li>
-                    <li>Gespreksinhoud: gedurende de looptijd van uw account.</li>
-                    <li>Accountgegevens: zolang uw account actief is.</li>
-                </ul>
-
-                <h5 class="mt-3">Uw rechten (AVG/GDPR)</h5>
-                <ul>
-                    <li><strong>Inzagerecht (Art. 15)</strong> &mdash; u kunt opvragen welke gegevens van u zijn opgeslagen.</li>
-                    <li><strong>Recht op correctie (Art. 16)</strong> &mdash; u kunt onjuiste gegevens laten aanpassen.</li>
-                    <li><strong>Recht op verwijdering (Art. 17)</strong> &mdash; u kunt verzoeken uw gegevens te verwijderen.</li>
-                    <li><strong>Recht op intrekking van toestemming (Art. 7 lid 3)</strong> &mdash; u kunt uw toestemming altijd intrekken via de knop hieronder.</li>
-                </ul>
-                <p class="text-muted small">
-                    Voor vragen of verzoeken: <a href="mailto:info@elai.nl">info@elai.nl</a>
-                </p>
-
-                <div class="alert alert-info small mt-3 mb-0" role="alert">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Versie privacyverklaring: <strong>@Config.ConsentVersion</strong>
-                </div>
-            </div>
-        </div>
+        @await Html.PartialAsync("_PrivacyVerklaringInhoud")
 
         @* ── Toestemming geven of weigeren ─────────────────────────────── *@
         @if (consentRequired)

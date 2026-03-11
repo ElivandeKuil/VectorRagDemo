@@ -224,10 +224,17 @@ namespace VectorRagDemo.DAL
             {
                 entity.ToTable("conversation");
                 entity.HasKey(e => e.ID);
-                entity.Property(e => e.Gebruiker).IsRequired();
+                entity.Property(e => e.Gebruiker);                   // nullable: null = widget
+                entity.Property(e => e.SessionToken).HasMaxLength(100); // null = studio
+                entity.Property(e => e.BronType).HasMaxLength(10).IsRequired().HasDefaultValue("studio");
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.GewijzigdOp).IsRequired();
                 entity.Property(e => e.Status).IsRequired();
+
+                entity.HasIndex(e => e.SessionToken)
+                    .HasDatabaseName("IX_Conversation_SessionToken")
+                    .IsUnique()
+                    .HasFilter("sessiontoken IS NOT NULL");
             });
 
             // Message configuration

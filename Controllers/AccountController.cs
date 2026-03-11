@@ -14,15 +14,18 @@ namespace VectorRagDemo.Controllers
         private readonly UserAuthenticationService _authService;
         private readonly ProjectAccessService _projectAccessService;
         private readonly ConsentService _consentService;
+        private readonly DataExportService _exportService;
 
         public AccountController(
             UserAuthenticationService authService,
             ProjectAccessService projectAccessService,
-            ConsentService consentService)
+            ConsentService consentService,
+            DataExportService exportService)
         {
             _authService = authService;
             _projectAccessService = projectAccessService;
             _consentService = consentService;
+            _exportService = exportService;
         }
 
         [AllowAnonymous]
@@ -234,6 +237,25 @@ namespace VectorRagDemo.Controllers
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             TempData["Success"] = "Wachtwoord succesvol gewijzigd. Log opnieuw in om door te gaan.";
             return RedirectToAction("Login", "Account");
+        }
+
+        // Publiek toegankelijk — geen login vereist (Art. 13/14 GDPR)
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult Privacyverklaring() => View();
+
+        // DSAR: gebruiker downloadt zijn eigen gegevens (Art. 15 GDPR)
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> MijnGegevens()
+        {
+            var userId = User.GetUserId();
+            var export = await _exportService.BuildExportAsync(userId);
+            var json = System.Text.Json.JsonSerializer.Serialize(export,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var filename = $"mijn-gegevens-{DateTime.UtcNow:yyyy-MM-dd}.json";
+            return File(bytes, "application/json", filename);
         }
 
         [AllowAnonymous]

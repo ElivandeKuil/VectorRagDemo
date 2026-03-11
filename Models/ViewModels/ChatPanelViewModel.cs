@@ -8,5 +8,8 @@ namespace VectorRagDemo.Models.ViewModels
         public List<string> RetrievedChunks { get; set; } = new List<string>();
         public string BotName { get; set; } = "Assistant";
         public int ConversationId { get; set; }
+
+        // Alleen gevuld voor widget-gesprekken; JS slaat dit op in localStorage
+        public string? SessionToken { get; set; }
     }
 }

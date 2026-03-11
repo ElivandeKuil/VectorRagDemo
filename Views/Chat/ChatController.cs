@@ -81,6 +81,7 @@ namespace VectorRagDemo.Views.Chat
                 var conversation = new Conversation
                 {
                     Gebruiker = userId,
+                    BronType = "studio",
                     GemaaktOp = DateTime.Now,
                     GewijzigdOp = DateTime.Now,
                     Status = 1
@@ -246,21 +247,35 @@ namespace VectorRagDemo.Views.Chat
 
             var projectId = project.ID;
             var botName = project.BotName;
-            var conversationId = request.ConversationId;
 
-            if (conversationId == 0)
+            // Zoek of maak een conversatie op basis van het session token.
+            // Gebruiker blijft altijd null voor widget-gesprekken — geen persoonsgebonden ID.
+            var sessionToken = request.SessionToken?.Trim();
+            Conversation? existingConversation = null;
+
+            if (!string.IsNullOrEmpty(sessionToken))
             {
-                var conversation = new Conversation
+                existingConversation = await _context.Conversations
+                    .FirstOrDefaultAsync(c => c.SessionToken == sessionToken && c.BronType == "widget");
+            }
+
+            if (existingConversation == null)
+            {
+                sessionToken = Guid.NewGuid().ToString("N");
+                existingConversation = new Conversation
                 {
-                    Gebruiker = 0,
+                    Gebruiker = null,
+                    SessionToken = sessionToken,
+                    BronType = "widget",
                     GemaaktOp = DateTime.Now,
                     GewijzigdOp = DateTime.Now,
                     Status = 1
                 };
-                _context.Conversations.Add(conversation);
+                _context.Conversations.Add(existingConversation);
                 await _context.SaveChangesAsync();
-                conversationId = conversation.ID;
             }
+
+            var conversationId = existingConversation.ID;
 
             var response = await _chatService.Ask(request, projectId);
 
@@ -280,7 +295,12 @@ namespace VectorRagDemo.Views.Chat
             });
             await _context.SaveChangesAsync();
 
-            var viewModel = new ChatPanelViewModel { BotName = botName, ConversationId = conversationId };
+            var viewModel = new ChatPanelViewModel
+            {
+                BotName = botName,
+                ConversationId = conversationId,
+                SessionToken = sessionToken   // widget-JS slaat dit op in localStorage
+            };
 
             if (request.History != null && request.History.Any())
                 viewModel.Messages.AddRange(request.History);
@@ -341,6 +361,38 @@ namespace VectorRagDemo.Views.Chat
             }).ToList();
 
             return PartialView("_ChatPanel", viewModel);
+        }
+
+        // Verwijdert een widget-gesprek op basis van session token (GDPR Art. 17).
+        // Aanroepbaar zonder login — de token IS de autorisatie.
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> DeleteWidgetConversation([FromQuery] string key, [FromQuery] string token)
+        {
+            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(token))
+                return BadRequest("Ongeldige aanvraag.");
+
+            // Valideer embed key zodat willekeurige tokens niet verwijderd kunnen worden
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.EmbedKey == key && p.Status == 1);
+
+            if (project == null)
+                return BadRequest("Onbekende widget.");
+
+            var conversation = await _context.Conversations
+                .FirstOrDefaultAsync(c => c.SessionToken == token && c.BronType == "widget");
+
+            if (conversation == null)
+                return NotFound();
+
+            await _context.Messages
+                .Where(m => m.Conversation == conversation.ID)
+                .ExecuteDeleteAsync();
+
+            _context.Conversations.Remove(conversation);
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
 
         [HttpGet]

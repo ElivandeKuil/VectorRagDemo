@@ -14,12 +14,21 @@ namespace VectorRagDemo.Controllers
         private readonly ManagementDbContext _context;
         private readonly VectorDbContext _vectorContext;
         private readonly UserAuthenticationService _authService;
+        private readonly UserDeletionService _deletionService;
+        private readonly DataExportService _exportService;
 
-        public GebruikerController(ManagementDbContext context, VectorDbContext vectorContext, UserAuthenticationService authService)
+        public GebruikerController(
+            ManagementDbContext context,
+            VectorDbContext vectorContext,
+            UserAuthenticationService authService,
+            UserDeletionService deletionService,
+            DataExportService exportService)
         {
             _context = context;
             _vectorContext = vectorContext;
             _authService = authService;
+            _deletionService = deletionService;
+            _exportService = exportService;
         }
 
         // GET: /Gebruiker
@@ -195,6 +204,40 @@ namespace VectorRagDemo.Controllers
 
             TempData["Success"] = $"Gebruiker '{gebruiker.Naam}' is {(gebruiker.Status == 1 ? "geactiveerd" : "gedeactiveerd")}.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Gebruiker/VerwijderBevestiging/5
+        public async Task<IActionResult> VerwijderBevestiging(int id)
+        {
+            var gebruiker = await _context.Gebruikers.FindAsync(id);
+            if (gebruiker == null) return NotFound();
+            return View(gebruiker);
+        }
+
+        // POST: /Gebruiker/Verwijder/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Verwijder(int id)
+        {
+            var gebruiker = await _context.Gebruikers.FindAsync(id);
+            if (gebruiker == null) return NotFound();
+
+            var naam = gebruiker.Naam;
+            await _deletionService.DeleteUserAsync(id);
+
+            TempData["Success"] = $"Gebruiker '{naam}' en alle bijbehorende gegevens zijn permanent verwijderd (GDPR Art. 17).";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Gebruiker/ExportGegevens/5  (admin downloadt DSAR-export voor elke gebruiker)
+        public async Task<IActionResult> ExportGegevens(int id)
+        {
+            var export = await _exportService.BuildExportAsync(id);
+            var json = System.Text.Json.JsonSerializer.Serialize(export,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var filename = $"gebruiker-{id}-gegevens-{DateTime.UtcNow:yyyy-MM-dd}.json";
+            return File(bytes, "application/json", filename);
         }
 
         // ---- Private helpers ----
