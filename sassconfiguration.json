@@ -1,0 +1,8 @@
+{
+  "SassCompiler": {
+    "SourceFolder": "wwwroot/scss",
+    "TargetFolder": "wwwroot/css",
+    "Arguments": "--style=expanded",
+    "GenerateSourceMap": false
+  }
+}

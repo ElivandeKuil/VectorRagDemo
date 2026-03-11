@@ -1,0 +1,44 @@
+// Widget layout overrides — compiled to wwwroot/css/widget-layout.css
+// Loaded after chat.css in _WidgetLayout.cshtml so these rules take precedence
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.widget-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 0;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
+    box-shadow: none;
+    height: 100%;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    border-radius: 0;
+    margin-bottom: 0;
+    box-shadow: none;
+}
+
+.chat-input-container {
+    border-radius: 0;
+    box-shadow: none;
+}
