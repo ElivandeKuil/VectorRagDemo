@@ -72,8 +72,8 @@
                     </select>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
-                    <a asp-action="Index" class="btn btn-secondary">Clear Filters</a>
+                    <button type="submit" btn-variant="primary" class="me-2">Apply Filters</button>
+                    <a asp-action="Index" btn-variant="secondary">Clear Filters</a>
                 </div>
             </div>
             <input type="hidden" name="SortBy" value="@Model.SortBy" />
@@ -240,7 +240,7 @@
                         }
                     </td>
                     <td>
-                        <a asp-action="Details" asp-route-id="@log.ID" class="btn btn-sm btn-info">Details</a>
+                        <a asp-action="Details" asp-route-id="@log.ID" btn-variant="info" btn-size="sm">Details</a>
                     </td>
                 </tr>
             }
@@ -324,7 +324,7 @@
                     <input type="number" class="form-control" id="days" name="days" value="30" min="1" required />
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-danger">Delete Old Logs</button>
+                    <button type="submit" btn-variant="danger">Delete Old Logs</button>
                 </div>
             </div>
         </form>

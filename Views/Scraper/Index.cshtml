@@ -123,17 +123,11 @@
                 <!-- Action Buttons -->
                 <div class="d-grid gap-2 d-md-flex justify-content-md-between">
                     <div>
-                        <button type="submit" class="btn btn-primary btn-lg" id="startButton">
-                            <i class="bi bi-play-circle"></i> Start Scraping
-                        </button>
+                        <button type="submit" btn-variant="primary" btn-size="lg" btn-icon="play-circle" id="startButton"> Start Scraping</button>
                     </div>
                     <div class="btn-group">
-                        <a href="@Url.Action("ManageElements")" class="btn btn-outline-secondary">
-                            <i class="bi bi-gear"></i> Manage Elements
-                        </a>
-                        <a href="@Url.Action("Index", "Chunk")" class="btn btn-outline-secondary">
-                            <i class="bi bi-list"></i> View Chunks
-                        </a>
+                        <a href="@Url.Action("ManageElements")" btn-variant="outline-secondary" btn-icon="gear"> Manage Elements</a>
+                        <a href="@Url.Action("Index", "Chunk")" btn-variant="outline-secondary" btn-icon="list"> View Chunks</a>
                     </div>
                 </div>
             </form>

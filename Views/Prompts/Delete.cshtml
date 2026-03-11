@@ -73,12 +73,8 @@
     <form asp-action="Delete" method="post">
         <input type="hidden" asp-for="ID" />
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-danger">
-                <i class="bi bi-trash"></i> Confirm Delete
-            </button>
-            <a asp-action="Index" class="btn btn-secondary">
-                <i class="bi bi-x-circle"></i> Cancel
-            </a>
+            <button type="submit" btn-variant="danger" btn-icon="trash"> Confirm Delete</button>
+            <a asp-action="Index" btn-variant="secondary" btn-icon="x-circle"> Cancel</a>
         </div>
     </form>
 </div>

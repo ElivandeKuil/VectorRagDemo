@@ -1,9 +1,7 @@
 @model VectorRagDemo.Models.Entities.Project
 
 <div class="mb-3">
-    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Terug
-    </a>
+    <a asp-action="Index" btn-variant="outline-secondary" btn-size="sm" btn-icon="arrow-left" class="me-1">Terug</a>
 </div>
 
 <div class="card shadow-sm">
@@ -28,13 +26,9 @@
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>Opslaan
-                </button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Annuleren</a>
-                <a asp-controller="Chat" asp-action="WidgetSettings" asp-route-projectId="@Model.ID" class="btn btn-outline-primary">
-                    <i class="bi bi-sliders me-1"></i>Widget instellingen
-                </a>
+                <button type="submit" btn-variant="primary" btn-icon="check-lg" class="me-1">Opslaan</button>
+                <a asp-action="Index" btn-variant="outline-secondary">Annuleren</a>
+                <a asp-controller="Chat" asp-action="WidgetSettings" asp-route-projectId="@Model.ID" btn-variant="outline-primary" btn-icon="sliders" class="me-1">Widget instellingen</a>
             </div>
         </form>
     </div>
@@ -58,7 +52,7 @@
                 <div class="input-group">
                     <input type="text" id="embedSnippet" class="form-control font-monospace small" readonly
                            value="@embedSnippet" />
-                    <button class="btn btn-outline-secondary" type="button" onclick="copyEmbedSnippet()" title="Kopiëren">
+                    <button btn-variant="outline-secondary" type="button" onclick="copyEmbedSnippet()" title="Kopiëren">
                         <i class="bi bi-clipboard" id="copyIcon"></i>
                     </button>
                 </div>
@@ -69,7 +63,7 @@
                 <div class="input-group">
                     <input type="password" id="embedKeyField" class="form-control font-monospace small" readonly
                            value="@Model.EmbedKey" />
-                    <button class="btn btn-outline-secondary" type="button" onclick="toggleEmbedKey()" title="Tonen/verbergen">
+                    <button btn-variant="outline-secondary" type="button" onclick="toggleEmbedKey()" title="Tonen/verbergen">
                         <i class="bi bi-eye" id="eyeIcon"></i>
                     </button>
                 </div>
@@ -81,9 +75,7 @@
             <form asp-action="RegenerateEmbedKey" asp-route-id="@Model.ID" method="post"
                   onsubmit="return confirm('Weet u zeker dat u de embed-sleutel wilt vervangen? De huidige embed-code op externe websites werkt dan niet meer.');">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-outline-danger btn-sm">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Sleutel vervangen
-                </button>
+                <button type="submit" btn-variant="outline-danger" btn-size="sm" btn-icon="arrow-clockwise" class="me-1">Sleutel vervangen</button>
             </form>
         </div>
     </div>

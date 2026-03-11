@@ -61,8 +61,8 @@
                            value="@(Model.EndDate?.ToString("yyyy-MM-ddTHH:mm"))" />
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">Filteren</button>
-                    <a asp-action="Index" class="btn btn-secondary">Wissen</a>
+                    <button type="submit" btn-variant="primary" class="me-2">Filteren</button>
+                    <a asp-action="Index" btn-variant="secondary">Wissen</a>
                 </div>
             </div>
             <input type="hidden" name="SortBy"    value="@Model.SortBy" />
@@ -178,7 +178,7 @@
                     <td>
                         @if (!string.IsNullOrEmpty(log.Detail))
                         {
-                            <button class="btn btn-sm btn-outline-secondary"
+                            <button btn-variant="outline-secondary" btn-size="sm"
                                     type="button"
                                     data-bs-toggle="collapse"
                                     data-bs-target="#detail-@log.ID">
@@ -280,7 +280,7 @@
                     <input type="number" class="form-control" name="days" value="7" min="1" required />
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-danger">Verwijderen</button>
+                    <button type="submit" btn-variant="danger">Verwijderen</button>
                 </div>
             </div>
         </form>

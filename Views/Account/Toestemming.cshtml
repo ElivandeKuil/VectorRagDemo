@@ -32,15 +32,11 @@
                     <div class="d-flex gap-3">
                         <form asp-action="ToestemmingAkkoord" asp-route-returnUrl="@returnUrl" method="post">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle me-2"></i>Ja, ik ga akkoord
-                            </button>
+                            <button type="submit" btn-variant="success" btn-icon="check-circle">Ja, ik ga akkoord</button>
                         </form>
                         <form asp-action="ToestemmingWeigeren" method="post">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle me-2"></i>Nee, ik ga niet akkoord
-                            </button>
+                            <button type="submit" btn-variant="outline-secondary" btn-icon="x-circle">Nee, ik ga niet akkoord</button>
                         </form>
                     </div>
                     <p class="text-muted small mt-2 mb-0">
@@ -66,9 +62,7 @@
                         <form asp-action="ToestemmingIntrekken" method="post"
                               onsubmit="return confirm('Weet u zeker dat u uw toestemming wilt intrekken? U wordt uitgelogd en kunt de applicatie niet meer gebruiken totdat u opnieuw toestemming geeft.');">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                <i class="bi bi-x-circle me-2"></i>Toestemming intrekken
-                            </button>
+                            <button type="submit" btn-variant="outline-danger" btn-size="sm" btn-icon="x-circle">Toestemming intrekken</button>
                         </form>
                     }
                     else
@@ -126,9 +120,7 @@
                 </div>
             }
 
-            <a asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-left me-1"></i>Terug naar dashboard
-            </a>
+            <a asp-controller="Dashboard" asp-action="Index" btn-variant="outline-primary" btn-icon="arrow-left">Terug naar dashboard</a>
         }
 
     </div>

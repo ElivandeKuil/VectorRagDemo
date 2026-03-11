@@ -34,13 +34,9 @@
                 <div class="d-flex gap-2 mt-4">
                     <form asp-action="Verwijder" asp-route-id="@Model.ID" method="post">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash me-2"></i>Ja, permanent verwijderen
-                        </button>
+                        <button type="submit" btn-variant="danger" btn-icon="trash" class="me-2">Ja, permanent verwijderen</button>
                     </form>
-                    <a asp-action="Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Annuleren
-                    </a>
+                    <a asp-action="Index" btn-variant="outline-secondary" btn-icon="arrow-left" class="me-1">Annuleren</a>
                 </div>
             </div>
         </div>

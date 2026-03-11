@@ -28,12 +28,8 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Documenten</h1>
     <div class="btn-group">
-        <a asp-action="Upload" class="btn btn-primary">
-            <i class="bi bi-upload me-1"></i>Document uploaden
-        </a>
-        <a asp-action="TextInput" class="btn btn-outline-primary">
-            <i class="bi bi-keyboard me-1"></i>Tekst invoeren
-        </a>
+        <a asp-action="Upload" btn-variant="primary" btn-icon="upload" class="me-1">Document uploaden</a>
+        <a asp-action="TextInput" btn-variant="outline-primary" btn-icon="keyboard" class="me-1">Tekst invoeren</a>
     </div>
 </div>
 
@@ -97,9 +93,7 @@
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text" id="docSearch" class="form-control"
                            placeholder="Zoeken…" autocomplete="off" />
-                    <button class="btn btn-outline-secondary d-none" id="docSearchClear" type="button" title="Wissen">
-                        <i class="bi bi-x"></i>
-                    </button>
+                    <button btn-variant="outline-secondary" btn-icon="x" class="d-none" id="docSearchClear" type="button" title="Wissen"></button>
                 </div>
             </div>
         }
@@ -115,12 +109,8 @@
                 {
                     <p class="text-muted mb-4">Upload een bestand of voer tekst in om te beginnen.</p>
                     <div class="btn-group">
-                        <a asp-action="Upload" class="btn btn-primary btn-lg">
-                            <i class="bi bi-upload me-2"></i>Document uploaden
-                        </a>
-                        <a asp-action="TextInput" class="btn btn-outline-primary btn-lg">
-                            <i class="bi bi-keyboard me-2"></i>Tekst invoeren
-                        </a>
+                        <a asp-action="Upload" btn-variant="primary" btn-size="lg" btn-icon="upload" class="me-2">Document uploaden</a>
+                        <a asp-action="TextInput" btn-variant="outline-primary" btn-size="lg" btn-icon="keyboard" class="me-2">Tekst invoeren</a>
                     </div>
                 }
             </div>
@@ -178,17 +168,13 @@
                             </td>
                             <td class="text-end doc-actions">
                                 <a asp-action="Download" asp-route-id="@doc.BronId"
-                                   class="btn btn-sm btn-outline-secondary me-1"
-                                   title="Downloaden">
-                                    <i class="bi bi-download"></i>
-                                </a>
+                                   btn-variant="outline-secondary" btn-size="sm" btn-icon="download" class="me-1"
+                                   title="Downloaden"></a>
                                 <button type="button"
-                                        class="btn btn-sm btn-outline-secondary me-1 btn-rename-doc"
+                                        btn-variant="outline-secondary" btn-size="sm" btn-icon="pencil" class="me-1 btn-rename-doc"
                                         data-bron-id="@doc.BronId"
                                         data-current-title="@doc.Title"
-                                        title="Hernoemen">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
+                                        title="Hernoemen"></button>
                                 <button type="button"
                                         class="btn btn-sm @(!string.IsNullOrWhiteSpace(doc.Link) ? "btn-outline-primary" : "btn-outline-secondary") me-1 btn-set-link"
                                         data-bron-id="@doc.BronId"
@@ -197,21 +183,17 @@
                                     <i class="bi bi-link-45deg"></i>
                                 </button>
                                 <button type="button"
-                                        class="btn btn-sm btn-outline-primary me-1 btn-move"
+                                        btn-variant="outline-primary" btn-size="sm" btn-icon="folder-symlink" class="me-1 btn-move"
                                         data-bron-id="@doc.BronId"
                                         data-current-folder="@(doc.FolderId?.ToString() ?? "")"
-                                        title="Verplaatsen">
-                                    <i class="bi bi-folder-symlink"></i>
-                                </button>
+                                        title="Verplaatsen"></button>
                                 <button type="button"
-                                        class="btn btn-sm btn-outline-danger btn-delete"
+                                        btn-variant="outline-danger" btn-size="sm" btn-icon="trash" class="btn-delete"
                                         data-bron-id="@doc.BronId"
                                         data-bron-name="@doc.FileName"
                                         data-bs-toggle="modal"
                                         data-bs-target="#deleteModal"
-                                        title="Verwijderen">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                        title="Verwijderen"></button>
                             </td>
                         </tr>
                     }
@@ -236,8 +218,8 @@
                     <div class="form-text">Laat leeg om de koppeling te verwijderen.</div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Opslaan</button>
+                    <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" btn-variant="primary" btn-size="sm">Opslaan</button>
                 </div>
             </form>
         </div>
@@ -258,8 +240,8 @@
                     <input type="text" id="renameDocInput" class="form-control" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Opslaan</button>
+                    <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" btn-variant="primary" btn-size="sm">Opslaan</button>
                 </div>
             </form>
         </div>
@@ -276,11 +258,11 @@
             </div>
             <div class="modal-body">Weet je zeker dat je <strong id="deleteFileName"></strong> wilt verwijderen?</div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" btn-variant="secondary" data-bs-dismiss="modal">Annuleren</button>
                 <form id="deleteForm" method="post" asp-action="Delete">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" id="deleteId" />
-                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Verwijderen</button>
+                    <button type="submit" btn-variant="danger" btn-icon="trash" class="me-1">Verwijderen</button>
                 </form>
             </div>
         </div>
@@ -301,8 +283,8 @@
                     <input type="text" id="createFolderInput" class="form-control" placeholder="Mapnaam…" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Aanmaken</button>
+                    <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" btn-variant="primary" btn-size="sm">Aanmaken</button>
                 </div>
             </form>
         </div>
@@ -323,8 +305,8 @@
                     <input type="text" id="renameFolderInput" class="form-control" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Opslaan</button>
+                    <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" btn-variant="primary" btn-size="sm">Opslaan</button>
                 </div>
             </form>
         </div>
@@ -345,8 +327,8 @@
                     <select id="moveFolderSelect" class="form-select"></select>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Verplaatsen</button>
+                    <button type="button" btn-variant="secondary" btn-size="sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" btn-variant="primary" btn-size="sm">Verplaatsen</button>
                 </div>
             </form>
         </div>

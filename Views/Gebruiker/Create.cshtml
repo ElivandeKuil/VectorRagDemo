@@ -4,9 +4,7 @@
 }
 
 <div class="mb-3">
-    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Terug
-    </a>
+    <a asp-action="Index" btn-variant="outline-secondary" btn-size="sm" btn-icon="arrow-left" class="me-1">Terug</a>
 </div>
 
 <div class="card shadow-sm">
@@ -132,10 +130,8 @@
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>Aanmaken
-                </button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Annuleren</a>
+                <button type="submit" btn-variant="primary" btn-icon="check-lg" class="me-1">Aanmaken</button>
+                <a asp-action="Index" btn-variant="outline-secondary">Annuleren</a>
             </div>
         </form>
     </div>
