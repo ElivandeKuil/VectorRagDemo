@@ -50,6 +50,28 @@ namespace VectorRagDemo.Models.Entities
         // Button extras
         public string ButtonLogoUrl { get; set; } = "";     // URL of image shown in floating button instead of default icon
 
+        // Extra communication (escalation buttons)
+        /// <summary>
+        /// Admin-only master switch. When false the bot never shows any escalation button,
+        /// regardless of the individual channel settings below.
+        /// </summary>
+        public bool ExtraCommunicationEnabled { get; set; } = false;
+
+        // WhatsApp channel
+        public bool WhatsAppEnabled { get; set; } = false;
+        /// <summary>International number without leading + or spaces, e.g. "31612345678".</summary>
+        public string WhatsAppNumber { get; set; } = string.Empty;
+        public string WhatsAppButtonText { get; set; } = "Chat via WhatsApp";
+        public string WhatsAppCtaText { get; set; } = "Neem gelijk contact op met mijn collega";
+
+        // Email channel
+        public bool EmailEnabled { get; set; } = false;
+        public string EmailAddress { get; set; } = string.Empty;
+        /// <summary>Optional subject line pre-filled in the mailto: link.</summary>
+        public string EmailSubject { get; set; } = "Vraag via chat";
+        public string EmailButtonText { get; set; } = "Stuur een e-mail";
+        public string EmailCtaText { get; set; } = "Neem gelijk contact op met mijn collega";
+
         // Navigation
         public Project? Project { get; set; }
     }

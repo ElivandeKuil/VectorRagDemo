@@ -91,7 +91,15 @@ namespace VectorRagDemo.Views.Chat
                 conversationId = conversation.ID;
             }
 
-            var response = await _chatService.Ask(request, projectId);
+            var studioWidgetConfig = projectId > 0
+                ? await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId)
+                : null;
+
+            var response = await _chatService.Ask(request, projectId,
+                extraCommunicationEnabled: HasActiveEscalationChannel(studioWidgetConfig));
+
+            var (studioWhatsAppUrl, studioEmailUrl) = BuildEscalationUrls(
+                studioWidgetConfig, response.GenerativeResponse.TransferToWhatsApp);
 
             _context.Messages.Add(new Message
             {
@@ -137,6 +145,12 @@ namespace VectorRagDemo.Views.Chat
                 Content = response.GenerativeResponse.ResponseText,
                 Context = response.GenerativeResponse.SourceText,
                 SourceLinks = sourceLinks,
+                WhatsAppUrl = studioWhatsAppUrl,
+                WhatsAppCtaText = studioWidgetConfig?.WhatsAppCtaText,
+                WhatsAppButtonText = studioWidgetConfig?.WhatsAppButtonText,
+                EmailUrl = studioEmailUrl,
+                EmailCtaText = studioWidgetConfig?.EmailCtaText,
+                EmailButtonText = studioWidgetConfig?.EmailButtonText,
                 IsResponse = true,
                 Timestamp = DateTime.Now
             };
@@ -277,7 +291,13 @@ namespace VectorRagDemo.Views.Chat
 
             var conversationId = existingConversation.ID;
 
-            var response = await _chatService.Ask(request, projectId);
+            var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId);
+
+            var response = await _chatService.Ask(request, projectId,
+                extraCommunicationEnabled: HasActiveEscalationChannel(widgetConfig));
+
+            var (whatsAppUrl, emailUrl) = BuildEscalationUrls(
+                widgetConfig, response.GenerativeResponse.TransferToWhatsApp);
 
             _context.Messages.Add(new Message
             {
@@ -328,6 +348,12 @@ namespace VectorRagDemo.Views.Chat
                 Content = response.GenerativeResponse.ResponseText,
                 Context = response.GenerativeResponse.SourceText,
                 SourceLinks = sourceLinks,
+                WhatsAppUrl = whatsAppUrl,
+                WhatsAppCtaText = widgetConfig?.WhatsAppCtaText,
+                WhatsAppButtonText = widgetConfig?.WhatsAppButtonText,
+                EmailUrl = emailUrl,
+                EmailCtaText = widgetConfig?.EmailCtaText,
+                EmailButtonText = widgetConfig?.EmailButtonText,
                 IsResponse = true,
                 Timestamp = DateTime.Now
             });
@@ -427,44 +453,68 @@ namespace VectorRagDemo.Views.Chat
 
             await _context.Entry(project).Reference(p => p.WidgetConfig).LoadAsync();
 
-            // Coerce nullable string fields to empty string (model binder sends null for empty inputs)
-            config.GreetingMessage   = config.GreetingMessage   ?? string.Empty;
-            config.HeaderTitle       = config.HeaderTitle       ?? string.Empty;
-            config.HeaderLogoUrl     = config.HeaderLogoUrl     ?? string.Empty;
-            config.ButtonLogoUrl     = config.ButtonLogoUrl     ?? string.Empty;
+            // Coerce nullable string fields to empty string
+            config.GreetingMessage    = config.GreetingMessage    ?? string.Empty;
+            config.HeaderTitle        = config.HeaderTitle        ?? string.Empty;
+            config.HeaderLogoUrl      = config.HeaderLogoUrl      ?? string.Empty;
+            config.ButtonLogoUrl      = config.ButtonLogoUrl      ?? string.Empty;
+            config.WhatsAppNumber     = config.WhatsAppNumber     ?? string.Empty;
+            config.WhatsAppButtonText = config.WhatsAppButtonText ?? "Chat via WhatsApp";
+            config.WhatsAppCtaText    = config.WhatsAppCtaText    ?? "Neem gelijk contact op met mijn collega";
+            config.EmailAddress       = config.EmailAddress       ?? string.Empty;
+            config.EmailSubject       = config.EmailSubject       ?? "Vraag via chat";
+            config.EmailButtonText    = config.EmailButtonText    ?? "Stuur een e-mail";
+            config.EmailCtaText       = config.EmailCtaText       ?? "Neem gelijk contact op met mijn collega";
 
             if (project.WidgetConfig == null)
             {
                 config.ID = 0;
                 config.ProjectID = project.ID;
+                // Non-admins cannot create a record with ExtraCommunicationEnabled = true
+                if (!User.IsInRole("Admin")) config.ExtraCommunicationEnabled = false;
                 _context.WidgetConfigs.Add(config);
             }
             else
             {
                 var existing = project.WidgetConfig;
-                existing.WidgetPosition = config.WidgetPosition;
-                existing.OffsetX = config.OffsetX;
-                existing.OffsetY = config.OffsetY;
-                existing.ButtonColor = config.ButtonColor;
-                existing.ButtonSize = config.ButtonSize;
-                existing.PopupWidth = config.PopupWidth;
-                existing.PopupHeight = config.PopupHeight;
+                existing.WidgetPosition    = config.WidgetPosition;
+                existing.OffsetX           = config.OffsetX;
+                existing.OffsetY           = config.OffsetY;
+                existing.ButtonColor       = config.ButtonColor;
+                existing.ButtonSize        = config.ButtonSize;
+                existing.PopupWidth        = config.PopupWidth;
+                existing.PopupHeight       = config.PopupHeight;
                 existing.PopupBorderRadius = config.PopupBorderRadius;
-                existing.HeaderBgColor = config.HeaderBgColor;
-                existing.HeaderTextColor = config.HeaderTextColor;
-                existing.UserBubbleBgColor = config.UserBubbleBgColor;
+                existing.HeaderBgColor     = config.HeaderBgColor;
+                existing.HeaderTextColor   = config.HeaderTextColor;
+                existing.UserBubbleBgColor   = config.UserBubbleBgColor;
                 existing.UserBubbleTextColor = config.UserBubbleTextColor;
-                existing.BotBubbleBgColor = config.BotBubbleBgColor;
-                existing.BotBubbleTextColor = config.BotBubbleTextColor;
-                existing.WidgetFontSize = config.WidgetFontSize;
-                existing.GreetingMessage = config.GreetingMessage;
-                existing.HeaderTitle = config.HeaderTitle;
-                existing.HeaderLogoUrl = config.HeaderLogoUrl;
-                existing.ChatBodyBgColor = config.ChatBodyBgColor;
-                existing.InputAreaBgColor = config.InputAreaBgColor;
-                existing.SendButtonColor = config.SendButtonColor;
+                existing.BotBubbleBgColor    = config.BotBubbleBgColor;
+                existing.BotBubbleTextColor  = config.BotBubbleTextColor;
+                existing.WidgetFontSize    = config.WidgetFontSize;
+                existing.GreetingMessage   = config.GreetingMessage;
+                existing.HeaderTitle       = config.HeaderTitle;
+                existing.HeaderLogoUrl     = config.HeaderLogoUrl;
+                existing.ChatBodyBgColor   = config.ChatBodyBgColor;
+                existing.InputAreaBgColor  = config.InputAreaBgColor;
+                existing.SendButtonColor   = config.SendButtonColor;
                 existing.SendButtonIconColor = config.SendButtonIconColor;
-                existing.ButtonLogoUrl = config.ButtonLogoUrl;
+                existing.ButtonLogoUrl     = config.ButtonLogoUrl;
+
+                // Admin-only: master escalation switch
+                if (User.IsInRole("Admin"))
+                    existing.ExtraCommunicationEnabled = config.ExtraCommunicationEnabled;
+
+                // Channel settings (editable by all, but only active when admin enables them)
+                existing.WhatsAppEnabled   = config.WhatsAppEnabled;
+                existing.WhatsAppNumber    = config.WhatsAppNumber;
+                existing.WhatsAppButtonText = config.WhatsAppButtonText;
+                existing.WhatsAppCtaText   = config.WhatsAppCtaText;
+                existing.EmailEnabled      = config.EmailEnabled;
+                existing.EmailAddress      = config.EmailAddress;
+                existing.EmailSubject      = config.EmailSubject;
+                existing.EmailButtonText   = config.EmailButtonText;
+                existing.EmailCtaText      = config.EmailCtaText;
             }
 
             project.GewijzigdOp = DateTime.Now;
@@ -517,6 +567,40 @@ namespace VectorRagDemo.Views.Chat
             if (entry == null) return null;
             return await _context.Projects.FindAsync(entry.Project);
         }
+
+        /// <summary>
+        /// Resolves whichever escalation channels are active for the project.
+        /// Returns (whatsAppUrl, emailUrl) — each is null when that channel is not configured.
+        /// Both are null when the bot did not signal escalation or ExtraCommunicationEnabled is off.
+        /// </summary>
+        private static (string? WhatsAppUrl, string? EmailUrl) BuildEscalationUrls(
+            Models.Entities.WidgetConfig? cfg, bool botSignalled)
+        {
+            if (!botSignalled || cfg == null || !cfg.ExtraCommunicationEnabled)
+                return (null, null);
+
+            string? whatsAppUrl = null;
+            if (cfg.WhatsAppEnabled && !string.IsNullOrWhiteSpace(cfg.WhatsAppNumber))
+            {
+                var number = cfg.WhatsAppNumber.TrimStart('+').Replace(" ", "");
+                whatsAppUrl = $"https://wa.me/{number}";
+            }
+
+            string? emailUrl = null;
+            if (cfg.EmailEnabled && !string.IsNullOrWhiteSpace(cfg.EmailAddress))
+            {
+                var subject = string.IsNullOrWhiteSpace(cfg.EmailSubject) ? "" : $"?subject={Uri.EscapeDataString(cfg.EmailSubject)}";
+                emailUrl = $"mailto:{cfg.EmailAddress}{subject}";
+            }
+
+            return (whatsAppUrl, emailUrl);
+        }
+
+        /// <summary>True when ExtraCommunicationEnabled and at least one channel has valid settings.</summary>
+        private static bool HasActiveEscalationChannel(Models.Entities.WidgetConfig? cfg) =>
+            cfg != null && cfg.ExtraCommunicationEnabled &&
+            ((cfg.WhatsAppEnabled && !string.IsNullOrWhiteSpace(cfg.WhatsAppNumber)) ||
+             (cfg.EmailEnabled   && !string.IsNullOrWhiteSpace(cfg.EmailAddress)));
 
         private async Task<(string BotName, int ProjectId, bool HasProject)> GetProjectContextAsync(int adminProjectId = 0)
         {

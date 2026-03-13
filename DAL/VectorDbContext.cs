@@ -17,8 +17,7 @@ namespace VectorRagDemo.DAL
         public DbSet<Chunk> Chunks { get; set; }
         public DbSet<Bron> Bronnen { get; set; }
         public DbSet<Project> Projects { get; set; }
-        public DbSet<ScrapingElement> ScrapingElement { get; set; }
-        public DbSet<ScrapingUrlBlackList> ScrapingUrlBlackList { get; set; }
+
         public DbSet<PromptType> PromptTypes { get; set; }
         public DbSet<Prompt> Prompts { get; set; }
         public DbSet<GebruikerProject> GebruikerProjecten { get; set; }
@@ -87,38 +86,6 @@ namespace VectorRagDemo.DAL
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            modelBuilder.Entity<ScrapingElement>(entity =>
-            {
-                entity.ToTable("scrapingelement");
-                entity.HasKey(e => e.ID);
-                entity.Property(e => e.Project).IsRequired();
-                entity.Property(e => e.ElementName).HasMaxLength(50).IsRequired();
-                entity.Property(e => e.Selector).HasMaxLength(500).IsRequired();
-                entity.Property(e => e.IsRequired).IsRequired();
-                entity.Property(e => e.SortOrder).IsRequired();
-                entity.Property(e => e.GemaaktOp).IsRequired();
-                entity.Property(e => e.Status).IsRequired();
-
-                entity.HasOne(e => e.ProjectNavigation)
-                    .WithMany(p => p.ScrapingElements)
-                    .HasForeignKey(e => e.Project)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            modelBuilder.Entity<ScrapingUrlBlackList>(entity =>
-            {
-                entity.ToTable("scrapingurlblacklist");
-                entity.HasKey(e => e.ID);
-                entity.Property(e => e.Project).IsRequired();
-                entity.Property(e => e.BlackListElement).HasMaxLength(200).IsRequired();
-                entity.Property(e => e.GemaaktOp).IsRequired();
-                entity.Property(e => e.Status).IsRequired();
-
-                entity.HasOne(e => e.ProjectNavigation)
-                    .WithMany(p => p.ScrapingUrlBlackLists)
-                    .HasForeignKey(e => e.Project)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
 
             // Chunk configuration
             modelBuilder.Entity<Chunk>(entity =>

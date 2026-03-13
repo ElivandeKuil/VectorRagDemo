@@ -10,7 +10,7 @@ service VectorDbService {
   rpc AddBron (AddBronRequest) returns (AddBronResponse);
   rpc AddProject (AddProjectRequest) returns (AddProjectResponse);
   rpc GetChunkById (GetChunkRequest) returns (ChunkResponse);
-  rpc GetScrapingElementsByProject (GetScrapingElementsRequest) returns (GetScrapingElementsResponse);
+
   rpc GetProjectForUser (GetProjectForUserRequest) returns (GetProjectForUserResponse);
 }
 
@@ -76,13 +76,6 @@ message ChunkResponse {
   int32 status = 4;
 }
 
-message GetScrapingElementsRequest {
-  int32 project_id = 1;
-}
-
-message GetScrapingElementsResponse {
-  repeated ScrapingElementMessage elements = 1;
-}
 
 message GetProjectForUserRequest {
   int32 gebruiker_id = 1;
@@ -93,14 +86,3 @@ message GetProjectForUserResponse {
   bool found = 2;
 }
 
-message ScrapingElementMessage {
-  int32 id = 1;
-  int32 project = 2;
-  string element_name = 3;
-  string selector = 4;
-  string attribute_name = 5;
-  bool is_required = 6;
-  string default_value = 7;
-  int32 sort_order = 8;
-  int32 status = 9;
-}

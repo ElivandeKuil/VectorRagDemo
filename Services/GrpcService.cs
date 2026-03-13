@@ -229,42 +229,5 @@ namespace VectorRagDemo.Services
             }
         }
 
-        public override async Task<GetScrapingElementsResponse> GetScrapingElementsByProject(
-            GetScrapingElementsRequest request,
-            ServerCallContext context)
-        {
-            var response = new GetScrapingElementsResponse();
-
-            try
-            {
-                var elements = await _context.ScrapingElement
-                    .Where(e => e.Project == request.ProjectId && e.Status == 1)
-                    .OrderBy(e => e.SortOrder)
-                    .ToListAsync();
-
-                foreach (var element in elements)
-                {
-                    response.Elements.Add(new ScrapingElementMessage
-                    {
-                        Id = element.ID,
-                        Project = element.Project,
-                        ElementName = element.ElementName ?? string.Empty,
-                        Selector = element.Selector ?? string.Empty,
-                        AttributeName = element.AttributeName ?? string.Empty,
-                        IsRequired = element.IsRequired,
-                        DefaultValue = element.DefaultValue ?? string.Empty,
-                        SortOrder = element.SortOrder,
-                        Status = element.Status
-                    });
-                }
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting scraping elements");
-                throw new RpcException(new Status(StatusCode.Internal, ex.Message));
-            }
-        }
     }
 }

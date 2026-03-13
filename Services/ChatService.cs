@@ -21,7 +21,7 @@ namespace VectorRagDemo.Services
 
         }
 
-        public async Task<ChatResponse> Ask(ChatRequest request, int projectId = 0)
+        public async Task<ChatResponse> Ask(ChatRequest request, int projectId = 0, bool extraCommunicationEnabled = false)
         {
             try
             {
@@ -67,7 +67,8 @@ namespace VectorRagDemo.Services
                 var geminiResponse = await GeminiProcessor.GenerateContent(
                     chatHistory,
                     preProcessedQuery,
-                    formattedNeighbors
+                    formattedNeighbors,
+                    extraCommunicationEnabled
                 );
 
                 return new ChatResponse

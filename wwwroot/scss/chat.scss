@@ -1,5 +1,85 @@
 // Chat stylesheet — compiled to wwwroot/css/chat.css
 
+/* Escalation section (WhatsApp / email) */
+.escalation-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(13, 110, 253, 0.05);
+    border: 1px solid rgba(13, 110, 253, 0.15);
+    border-radius: 10px;
+}
+
+.escalation-cta-text {
+    margin: 0;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #333;
+}
+
+.escalation-cta-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+// Shared base for both buttons
+%cta-btn-base {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+
+    &:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+.whatsapp-cta-btn {
+    @extend %cta-btn-base;
+    background-color: #25D366;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 211, 102, 0.35);
+
+    &:hover {
+        background-color: #1da851;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.45);
+    }
+}
+
+.email-cta-btn {
+    @extend %cta-btn-base;
+    background-color: #0d6efd;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+
+    &:hover {
+        background-color: #0b5ed7;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+    }
+}
+
+.cta-btn-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    font-size: 18px; // for <i> icon elements
+}
+
 /* Main Container */
 .chat-container {
     max-width: 1000px;
@@ -316,6 +396,7 @@
 .loading-spinner {
     display: none;
     padding: 12px 24px;
+    background: transparent;
     animation: fadeIn 0.3s ease-in;
 }
 

@@ -280,6 +280,104 @@
                     </div>
                 </div>
 
+                <!-- ── Extra communicatie ── -->
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="card shadow-sm mb-3 border-warning">
+                        <div class="card-header fw-semibold bg-warning bg-opacity-10">
+                            <i class="bi bi-shield-lock me-2"></i>Extra communicatie <span class="badge bg-warning text-dark ms-1 fw-normal" style="font-size:.7em">Admin</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="config.ExtraCommunicationEnabled" id="cfg_extra_enabled"
+                                       value="true" @(Model.ExtraCommunicationEnabled ? "checked" : "") />
+                                <label class="form-check-label fw-semibold" for="cfg_extra_enabled">Doorverwijzingsknop(pen) inschakelen</label>
+                            </div>
+                            <div class="form-text mt-1">
+                                Wanneer ingeschakeld, toont de bot een knop zodra hij een lead detecteert of vastloopt.
+                                De klant configureert zelf welke kanalen actief zijn.
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.ExtraCommunicationEnabled)
+                {
+                    <!-- WhatsApp kanaal -->
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header fw-semibold">
+                            <svg style="width:15px;height:15px;vertical-align:-2px;margin-right:6px;" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.558 4.17 1.535 5.943L.055 23.454a.75.75 0 0 0 .918.918l5.538-1.475A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.853 0-3.628-.497-5.163-1.367l-.37-.214-3.835 1.022 1.032-3.764-.228-.376A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                            WhatsApp
+                        </div>
+                        <div class="card-body d-grid gap-3">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="config.WhatsAppEnabled" id="cfg_wa_enabled"
+                                       value="true" @(Model.WhatsAppEnabled ? "checked" : "") />
+                                <label class="form-check-label" for="cfg_wa_enabled">WhatsApp inschakelen</label>
+                            </div>
+                            <div>
+                                <label app-label for="cfg_wa_number">Nummer</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">wa.me/</span>
+                                    <input type="text" app-field name="config.WhatsAppNumber" id="cfg_wa_number"
+                                           value="@Model.WhatsAppNumber" placeholder="31612345678"
+                                           pattern="[0-9]+" title="Alleen cijfers, zonder + of spaties" />
+                                </div>
+                                <div class="form-text">Internationaal formaat zonder + of spaties, bijv. <code>31612345678</code>.</div>
+                            </div>
+                            <div>
+                                <label app-label for="cfg_wa_ctatext">Introtekst</label>
+                                <input type="text" app-field name="config.WhatsAppCtaText" id="cfg_wa_ctatext"
+                                       value="@Model.WhatsAppCtaText" maxlength="120"
+                                       placeholder="Neem gelijk contact op met mijn collega" />
+                            </div>
+                            <div>
+                                <label app-label for="cfg_wa_btntext">Knoptekst</label>
+                                <input type="text" app-field name="config.WhatsAppButtonText" id="cfg_wa_btntext"
+                                       value="@Model.WhatsAppButtonText" maxlength="60"
+                                       placeholder="Chat via WhatsApp" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- E-mail kanaal -->
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header fw-semibold">
+                            <i class="bi bi-envelope-fill me-2" style="color:#0d6efd;"></i>E-mail
+                        </div>
+                        <div class="card-body d-grid gap-3">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="config.EmailEnabled" id="cfg_email_enabled"
+                                       value="true" @(Model.EmailEnabled ? "checked" : "") />
+                                <label class="form-check-label" for="cfg_email_enabled">E-mail inschakelen</label>
+                            </div>
+                            <div>
+                                <label app-label for="cfg_email_address">E-mailadres</label>
+                                <input type="email" app-field name="config.EmailAddress" id="cfg_email_address"
+                                       value="@Model.EmailAddress" placeholder="info@bedrijf.nl" />
+                            </div>
+                            <div>
+                                <label app-label for="cfg_email_subject">Standaard onderwerp</label>
+                                <input type="text" app-field name="config.EmailSubject" id="cfg_email_subject"
+                                       value="@Model.EmailSubject" maxlength="100"
+                                       placeholder="Vraag via chat" />
+                            </div>
+                            <div>
+                                <label app-label for="cfg_email_ctatext">Introtekst</label>
+                                <input type="text" app-field name="config.EmailCtaText" id="cfg_email_ctatext"
+                                       value="@Model.EmailCtaText" maxlength="120"
+                                       placeholder="Neem gelijk contact op met mijn collega" />
+                            </div>
+                            <div>
+                                <label app-label for="cfg_email_btntext">Knoptekst</label>
+                                <input type="text" app-field name="config.EmailButtonText" id="cfg_email_btntext"
+                                       value="@Model.EmailButtonText" maxlength="60"
+                                       placeholder="Stuur een e-mail" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
                 <button type="submit" btn-variant="primary" btn-icon="check-lg" class="me-1">Opslaan</button>
             </form>
         </div>

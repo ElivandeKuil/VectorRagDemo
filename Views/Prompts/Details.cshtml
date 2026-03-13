@@ -22,11 +22,6 @@
             <dt class="col-sm-3">Project</dt>
             <dd class="col-sm-9">
                 <strong>@Model.ProjectNavigation?.Naam</strong>
-                @if (!string.IsNullOrEmpty(Model.ProjectNavigation?.BaseUrl))
-                {
-                    <br />
-                    <small class="text-muted">@Model.ProjectNavigation.BaseUrl</small>
-                }
             </dd>
 
             <dt class="col-sm-3">Prompt Type</dt>
