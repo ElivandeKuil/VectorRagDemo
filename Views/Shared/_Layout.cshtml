@@ -1,4 +1,5 @@
 @inject VectorRagDemo.Services.ProjectAccessService ProjectAccessService
+@inject VectorRagDemo.DAL.VectorDbContext VectorDbContext
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -92,6 +93,30 @@
                                         </a>
                                     </li>
                                 }
+                            }
+
+                            @* Toon "Prompt instellingen" automatisch als het project custom prompts gebruikt. *@
+                            var navUserId = int.TryParse(
+                                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                                out var navUid) ? navUid : 0;
+
+                            var navProject = navUserId > 0
+                                ? VectorDbContext.GebruikerProjecten
+                                    .Where(gp => gp.Gebruiker == navUserId && gp.Status == 1)
+                                    .Join(VectorDbContext.Projects,
+                                          gp => gp.Project,
+                                          p => p.ID,
+                                          (gp, p) => p)
+                                    .FirstOrDefault()
+                                : null;
+
+                            if (navProject != null && !navProject.GebruikPromptTabel)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="PromptInstelling" asp-action="Edit">
+                                        <i class="bi bi-pencil-square me-1"></i>Prompt instellingen
+                                    </a>
+                                </li>
                             }
                         }
                     </ul>

@@ -1,0 +1,109 @@
+@model VectorRagDemo.Models.Entities.PromptInstelling
+
+@{
+    var projectId = ViewBag.ProjectID as int? ?? 0;
+    var projectNaam = ViewBag.ProjectNaam as string ?? "";
+}
+
+<div class="d-flex align-items-center gap-2 mb-1">
+    <a asp-controller="Chat" asp-action="Settings" class="text-muted text-decoration-none small">
+        <i class="bi bi-chevron-left"></i> Instellingen
+    </a>
+</div>
+
+<h2 class="mb-0">Prompt instellingen</h2>
+<p class="text-muted mb-4">@projectNaam</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="post" asp-action="Edit" asp-route-projectId="@projectId">
+    @Html.AntiForgeryToken()
+
+    <div class="row">
+        <div class="col-lg-8">
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>Persona</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        Beschrijf wie de assistent is. Bijvoorbeeld: naam, rol, toon en stijl.
+                    </p>
+                    <textarea name="Persona" class="form-control font-monospace" rows="4"
+                              placeholder="Je bent een behulpzame medewerker van Acme BV. Je communiceert vriendelijk en professioneel.">@Model.Persona</textarea>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>Instructies</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        Wat moet de assistent doen? Geef algemene taken en doelen mee.
+                    </p>
+                    <textarea name="Instructies" class="form-control font-monospace" rows="5"
+                              placeholder="Beantwoord vragen op basis van de beschikbare informatie. Als je het antwoord niet weet, geef dat dan eerlijk aan.">@Model.Instructies</textarea>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <strong>Regels</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        Grenzen en beperkingen. Wat mag de assistent <em>niet</em> doen of zeggen?
+                    </p>
+                    <textarea name="Regels" class="form-control font-monospace" rows="5"
+                              placeholder="- Geef nooit persoonlijk advies op juridisch of medisch vlak.&#10;- Noem geen namen van concurrenten.&#10;- Gebruik geen informele taal.">@Model.Regels</textarea>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Voorbeelden</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        Geef een of meer voorbeelden van gewenste vraag-en-antwoord-interacties.
+                    </p>
+                    <textarea name="Voorbeelden" class="form-control font-monospace" rows="6"
+                              placeholder="Gebruiker: Wat zijn jullie openingstijden?&#10;Assistent: Wij zijn open van maandag t/m vrijdag, van 9:00 tot 17:30 uur.">@Model.Voorbeelden</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" btn-variant="primary">Opslaan</button>
+                <a asp-controller="Chat" asp-action="Settings" btn-variant="secondary">Annuleren</a>
+            </div>
+
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-info">
+                <div class="card-header bg-info bg-opacity-10 text-info-emphasis">
+                    <i class="bi bi-info-circle me-1"></i> Hoe werkt dit?
+                </div>
+                <div class="card-body small text-muted">
+                    <p>
+                        Deze velden worden vóór de technische systeemprompt geplakt en sturen het gedrag van de assistent bij.
+                    </p>
+                    <p>
+                        Lege velden worden overgeslagen — je hoeft niet alles in te vullen.
+                    </p>
+                    <p class="mb-0">
+                        Wijzigingen gaan meteen in bij het volgende gesprek.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

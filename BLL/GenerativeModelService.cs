@@ -90,16 +90,29 @@ namespace VectorRagDemo.BLL
         }
 
         /// <summary>
-        /// Retrieves a prompt from the database by type.
+        /// Retrieves prompts from the database by type.
+        /// Falls back to project 1 (generic prompts) when none are found for the current project.
         /// </summary>
         public List<Prompt> GetPrompt(PromptTypeEnum promptType)
         {
-            return _context.Prompts
+            var prompts = _context.Prompts
                 .Where(o => o.Project == _project
                     && o.PromptType == (int)promptType
                     && o.Status == 1)
                 .OrderBy(o => o.Volgorde)
                 .ToList();
+
+            if (prompts.Count == 0 && _project != 1)
+            {
+                prompts = _context.Prompts
+                    .Where(o => o.Project == 1
+                        && o.PromptType == (int)promptType
+                        && o.Status == 1)
+                    .OrderBy(o => o.Volgorde)
+                    .ToList();
+            }
+
+            return prompts;
         }
 
         /// <summary>
@@ -114,6 +127,46 @@ namespace VectorRagDemo.BLL
         }
 
         /// <summary>
+        /// Builds the system instruction for GenerateResponse prompts.
+        /// When GebruikPromptTabel is true, the prompt table's SystemInstruction is used as-is.
+        /// When false, the instruction is built entirely from the user's PromptInstelling fields.
+        /// </summary>
+        private string BuildSystemInstruction(Prompt prompt)
+        {
+            if (prompt.PromptType != (int)PromptTypeEnum.GenerateResponse)
+                return prompt.SystemInstruction;
+
+            var project = _context.Projects.Find(_project);
+
+            if (project == null || project.GebruikPromptTabel)
+                return prompt.SystemInstruction;
+
+            var instelling = _context.PromptInstellingen
+                .FirstOrDefault(p => p.ProjectID == _project);
+
+            if (instelling == null)
+                return prompt.SystemInstruction;
+
+            var parts = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(instelling.Persona))
+                parts.Add($"## Persona\n{instelling.Persona.Trim()}");
+
+            if (!string.IsNullOrWhiteSpace(instelling.Instructies))
+                parts.Add($"## Instructies\n{instelling.Instructies.Trim()}");
+
+            if (!string.IsNullOrWhiteSpace(instelling.Regels))
+                parts.Add($"## Regels\n{instelling.Regels.Trim()}");
+
+            if (!string.IsNullOrWhiteSpace(instelling.Voorbeelden))
+                parts.Add($"## Voorbeelden\n{instelling.Voorbeelden.Trim()}");
+
+            return parts.Count == 0
+                ? prompt.SystemInstruction
+                : string.Join("\n\n", parts);
+        }
+
+        /// <summary>
         /// Builds the request content for a Gemini API call.
         /// </summary>
         private StringContent BuildRequestContent(Prompt prompt, params string[] formatArgs)
@@ -124,7 +177,7 @@ namespace VectorRagDemo.BLL
             {
                 systemInstruction = new GeminiContent
                 {
-                    Parts = new List<GeminiPart> { new GeminiPart { Text = prompt.SystemInstruction } }
+                    Parts = new List<GeminiPart> { new GeminiPart { Text = BuildSystemInstruction(prompt) } }
                 },
                 contents = new List<GeminiContent>
                 {

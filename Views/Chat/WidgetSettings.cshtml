@@ -280,27 +280,6 @@
                     </div>
                 </div>
 
-                <!-- ── Extra communicatie ── -->
-                @if (User.IsInRole("Admin"))
-                {
-                    <div class="card shadow-sm mb-3 border-warning">
-                        <div class="card-header fw-semibold bg-warning bg-opacity-10">
-                            <i class="bi bi-shield-lock me-2"></i>Extra communicatie <span class="badge bg-warning text-dark ms-1 fw-normal" style="font-size:.7em">Admin</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" class="form-check-input" name="config.ExtraCommunicationEnabled" id="cfg_extra_enabled"
-                                       value="true" @(Model.ExtraCommunicationEnabled ? "checked" : "") />
-                                <label class="form-check-label fw-semibold" for="cfg_extra_enabled">Doorverwijzingsknop(pen) inschakelen</label>
-                            </div>
-                            <div class="form-text mt-1">
-                                Wanneer ingeschakeld, toont de bot een knop zodra hij een lead detecteert of vastloopt.
-                                De klant configureert zelf welke kanalen actief zijn.
-                            </div>
-                        </div>
-                    </div>
-                }
-
                 @if (Model.ExtraCommunicationEnabled)
                 {
                     <!-- WhatsApp kanaal -->

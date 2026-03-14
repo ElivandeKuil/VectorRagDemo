@@ -11,10 +11,16 @@
         public string BotName { get; set; } = "Assistant";
         public string EmbedKey { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Wanneer true wordt de prompt tabel gebruikt (beheerder-geconfigureerde prompts).
+        /// Wanneer false wordt de promptinstelling van de gebruiker gebruikt.
+        /// Alleen zichtbaar/wijzigbaar voor admins.
+        /// </summary>
+        public bool GebruikPromptTabel { get; set; } = true;
+
         // Navigation properties
         public WidgetConfig? WidgetConfig { get; set; }
         public ICollection<Bron> Bronnen { get; set; } = new List<Bron>();
-
         public ICollection<Prompt> Prompts { get; set; } = new List<Prompt>();
     }
 }

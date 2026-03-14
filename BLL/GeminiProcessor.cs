@@ -10,22 +10,28 @@ namespace VectorRagDemo.BLL
 {
     public class GeminiProcessor
     {
-        private readonly GenerativeModelService _generativeModelService;
+        private readonly VectorDbContext _context;
+        private readonly HttpClient _client;
+        private readonly LogboekDbContext _logboekContext;
 
         public GeminiProcessor(VectorDbContext context, HttpClient client, LogboekDbContext logboekContext)
         {
-            _generativeModelService = new GenerativeModelService(context, client, logboekContext);
+            _context = context;
+            _client = client;
+            _logboekContext = logboekContext;
         }
 
         public async Task<GenerativeModelResponse> GenerateContent(
             List<ChatMessage> chatHistory,
             string currentUserInput,
             string formattedNeighbors,
-            bool extraCommunicationEnabled = false)
+            bool extraCommunicationEnabled = false,
+            int projectId = 0)
         {
+            var generativeModelService = new GenerativeModelService(_context, _client, _logboekContext, projectId);
             var chatHistoryString = FormatChatHistory(chatHistory);
 
-            var summarisedResult = await _generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse, (string RelevantOutput, List<int> UsedChunkIds)>(
+            var summarisedResult = await generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse, (string RelevantOutput, List<int> UsedChunkIds)>(
                 PromptTypeEnum.Sumarizing,
                 response => (response.RelevantOutput, response.UsedChunkIds ?? new List<int>()),
                 formattedNeighbors,
@@ -37,14 +43,14 @@ namespace VectorRagDemo.BLL
             // The base prompt in the DB has no knowledge of extra communication channels —
             // the instruction and schema field are only added at runtime when at least one
             // channel (WhatsApp / email) is active for this project.
-            var basePrompt = _generativeModelService.GetPrompt(PromptTypeEnum.GenerateResponse).FirstOrDefault()
+            var basePrompt = generativeModelService.GetPrompt(PromptTypeEnum.GenerateResponse).FirstOrDefault()
                 ?? throw new Exception($"No active prompt found for type {PromptTypeEnum.GenerateResponse}");
 
             var generatePrompt = extraCommunicationEnabled
                 ? WithEscalationInjected(basePrompt)
                 : basePrompt;
 
-            var result = await _generativeModelService.ExecutePipelineStep<GeminiAnswerGenerationInnerResponse, GenerativeModelResponse>(
+            var result = await generativeModelService.ExecutePipelineStep<GeminiAnswerGenerationInnerResponse, GenerativeModelResponse>(
                 generatePrompt,
                 response => new GenerativeModelResponse
                 {

@@ -60,14 +60,17 @@ namespace VectorRagDemo.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var project = await _context.Projects.FindAsync(id);
+            var project = await _context.Projects
+                .Include(p => p.WidgetConfig)
+                .FirstOrDefaultAsync(p => p.ID == id);
+
             if (project == null) return NotFound();
             return View(project);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Project model)
+        public async Task<IActionResult> Edit(int id, Project model, bool extraCommunicationEnabled)
         {
             if (string.IsNullOrWhiteSpace(model.Naam))
                 ModelState.AddModelError(nameof(model.Naam), "Naam is verplicht.");
@@ -75,15 +78,25 @@ namespace VectorRagDemo.Controllers
             if (!ModelState.IsValid)
             {
                 model.ID = id;
+                await _context.Entry(model).Reference(p => p.WidgetConfig).LoadAsync();
                 return View(model);
             }
 
-            var project = await _context.Projects.FindAsync(id);
+            var project = await _context.Projects
+                .Include(p => p.WidgetConfig)
+                .FirstOrDefaultAsync(p => p.ID == id);
+
             if (project == null) return NotFound();
 
             project.Naam = model.Naam.Trim();
             project.BotName = string.IsNullOrWhiteSpace(model.BotName) ? "Assistant" : model.BotName.Trim();
+            project.GebruikPromptTabel = model.GebruikPromptTabel;
             project.GewijzigdOp = DateTime.Now;
+
+            if (project.WidgetConfig != null)
+            {
+                project.WidgetConfig.ExtraCommunicationEnabled = extraCommunicationEnabled;
+            }
 
             await _context.SaveChangesAsync();
 

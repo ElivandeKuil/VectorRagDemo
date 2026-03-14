@@ -68,7 +68,8 @@ namespace VectorRagDemo.Services
                     chatHistory,
                     preProcessedQuery,
                     formattedNeighbors,
-                    extraCommunicationEnabled
+                    extraCommunicationEnabled,
+                    projectId
                 );
 
                 return new ChatResponse

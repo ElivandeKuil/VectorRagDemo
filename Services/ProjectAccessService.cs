@@ -49,7 +49,7 @@ namespace VectorRagDemo.Services
                 ["Chunks"]             = new("Documenten",         "Chunk",       "Index",          "bi-file-earmark-text"),
                 ["Prompts"]            = new("Prompts",            "Prompts",     "Index",          "bi-chat-square-text"),
                 ["API Logs"]           = new("API Logs",           "ApiCallLog",  "Index",          "bi-journal-code"),
-                ["Widget instellingen"] = new("Widget instellingen", "Chat",      "WidgetSettings", "bi-sliders"),
+                ["Widget instellingen"]   = new("Widget instellingen",   "Chat",               "WidgetSettings", "bi-sliders"),
             };
 
         public ProjectAccessService(ManagementDbContext context)

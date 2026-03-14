@@ -17,8 +17,12 @@
             </div>
         </form>
 
-        <div class="mt-3">
-            <a asp-action="WidgetSettings" btn-variant="outline-primary" btn-size="sm" btn-icon="sliders" class="me-1">Widget uiterlijk aanpassen</a>
+        <div class="mt-3 d-flex flex-wrap gap-2">
+            <a asp-action="WidgetSettings" btn-variant="outline-primary" btn-size="sm" btn-icon="sliders">Widget uiterlijk aanpassen</a>
+            @if (!Model.GebruikPromptTabel)
+            {
+                <a asp-controller="PromptInstelling" asp-action="Edit" asp-route-projectId="@Model.ID" btn-variant="outline-secondary" btn-size="sm" btn-icon="pencil-square">Prompt instellingen</a>
+            }
         </div>
 
     </div>

@@ -24,6 +24,7 @@ namespace VectorRagDemo.DAL
         public DbSet<Folder> Folders { get; set; }
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<PromptInstelling> PromptInstellingen { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -63,6 +64,7 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.Status).IsRequired();
                 entity.Property(e => e.EmbedKey).HasMaxLength(50);
+                entity.Property(e => e.GebruikPromptTabel).IsRequired().HasDefaultValue(true);
             });
 
             // Bron configuration
@@ -186,6 +188,20 @@ namespace VectorRagDemo.DAL
                     .HasForeignKey(e => e.PromptType)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+            // PromptInstelling configuration
+            modelBuilder.Entity<PromptInstelling>(entity =>
+            {
+                entity.ToTable("promptinstelling");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.ProjectID).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithOne()
+                    .HasForeignKey<PromptInstelling>(e => e.ProjectID)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
             // Conversation configuration
             modelBuilder.Entity<Conversation>(entity =>
             {
