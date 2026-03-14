@@ -1,0 +1,146 @@
+@{
+    var currentPath = Context.Request.Path.Value ?? "/";
+    var isHome       = currentPath == "/";
+    var isHowItWorks = currentPath == "/hoe-het-werkt";
+    var isPricing    = currentPath == "/tarieven";
+    var isAbout      = currentPath == "/over-ons";
+    var isContact    = currentPath == "/contact";
+}
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <meta name="description" content="@ViewData["MetaDescription"]" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:description" content="@ViewData["MetaDescription"]" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ElAI Solutions" />
+
+    <!-- Bootstrap CSS (local) -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- Bootstrap Icons (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <!-- Marketing site CSS -->
+    <link rel="stylesheet" href="~/css/marketing.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar navbar-marketing navbar-expand-lg sticky-top" id="mainNav">
+        <div class="container">
+            <a class="navbar-brand brand-logo" href="/">
+                <i class="bi bi-stars"></i> ElAI
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
+                    aria-controls="navbarMain" aria-expanded="false" aria-label="Navigatiemenu openen">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link @(isHome ? "active" : "")" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(isHowItWorks ? "active" : "")" href="/hoe-het-werkt">Hoe het werkt</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(isPricing ? "active" : "")" href="/tarieven">Tarieven</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(isAbout ? "active" : "")" href="/over-ons">Over ons</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(isContact ? "active" : "")" href="/contact">Contact</a>
+                    </li>
+                </ul>
+                <div class="navbar-cta ms-lg-3 d-flex gap-2 align-items-center">
+                    <a href="/contact" class="btn btn-outline-secondary btn-sm">Plan een demo</a>
+                    <a href="/Account/Login" class="btn btn-cta btn-sm">Inloggen</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main>
+        @RenderBody()
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- Brand col -->
+                <div class="footer-brand-col">
+                    <div class="footer-logo">
+                        <i class="bi bi-stars"></i> ElAI Solutions
+                    </div>
+                    <p class="footer-tagline">Slimme AI-assistenten voor Nederlandse bedrijven</p>
+                </div>
+
+                <!-- Nav col -->
+                <div class="footer-nav-col">
+                    <h5 class="footer-heading">Navigatie</h5>
+                    <ul class="footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/hoe-het-werkt">Hoe het werkt</a></li>
+                        <li><a href="/tarieven">Tarieven</a></li>
+                        <li><a href="/over-ons">Over ons</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Legal col -->
+                <div class="footer-legal-col">
+                    <h5 class="footer-heading">Juridisch &amp; Contact</h5>
+                    <ul class="footer-links">
+                        <li><a href="/privacybeleid">Privacybeleid</a></li>
+                        <li><a href="/algemene-voorwaarden">Algemene voorwaarden</a></li>
+                    </ul>
+                    <div class="footer-contact mt-3">
+                        <a href="mailto:info@elai.nl" class="footer-email">
+                            <i class="bi bi-envelope"></i> info@elai.nl
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p class="mb-0">© 2026 ElAI Solutions · Alle rechten voorbehouden &middot; Alle prijzen excl. BTW · KVK: 12345678</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== COOKIE BANNER ===== -->
+    <div id="cookie-banner" class="cookie-banner" style="display:none;" role="region" aria-label="Cookiemelding">
+        <div class="cookie-banner-inner">
+            <p class="cookie-text mb-0">
+                <i class="bi bi-cookie me-2"></i>
+                Wij gebruiken cookies om uw ervaring te verbeteren. Door verder te gaan accepteert u ons cookiebeleid.
+                <a href="/privacybeleid" class="cookie-policy-link">Meer informatie</a>
+            </p>
+            <div class="cookie-actions">
+                <button id="cookie-accept" class="btn btn-cookie-accept">Accepteren</button>
+                <button id="cookie-decline" class="btn btn-cookie-decline">Alleen noodzakelijk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery (local) -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <!-- Bootstrap JS (local) -->
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Marketing site JS -->
+    <script src="~/js/marketing.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

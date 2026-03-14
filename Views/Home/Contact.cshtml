@@ -1,0 +1,134 @@
+@{
+    Layout = "_MarketingLayout";
+    ViewData["Title"] = "Contact | ElAI Solutions";
+    ViewData["MetaDescription"] = "Plan een gratis demo of neem contact op met ElAI Solutions. Wij reageren binnen 24 uur op werkdagen.";
+}
+
+<section class="section-light" style="padding-top: 5rem; padding-bottom: 5rem;">
+    <div class="container">
+        <div class="contact-grid">
+            <!-- LEFT: FORM -->
+            <div>
+                <div class="contact-form-card">
+                    <h2>Plan een gratis demo</h2>
+                    <p class="contact-sub">Wij laten u in een kort gesprek zien wat een AI-assistent voor uw bedrijf kan betekenen.</p>
+
+                    <form id="contact-form" novalidate>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="naam" name="naam" placeholder="Naam" required>
+                                    <label for="naam">Naam <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="E-mailadres" required>
+                                    <label for="email">E-mailadres <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="tel" class="form-control" id="telefoon" name="telefoon" placeholder="Telefoonnummer">
+                                    <label for="telefoon">Telefoonnummer</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="bedrijf" name="bedrijf" placeholder="Bedrijfsnaam" required>
+                                    <label for="bedrijf">Bedrijfsnaam <span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="url" class="form-control" id="website" name="website" placeholder="Website">
+                                    <label for="website">Website</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <select class="form-select" id="plan" name="plan">
+                                        <option value="" selected>Ik weet het nog niet</option>
+                                        <option value="professional">Professional (€89/mo)</option>
+                                        <option value="business">Business (€149/mo)</option>
+                                        <option value="concierge">Concierge (€349/mo)</option>
+                                    </select>
+                                    <label for="plan">Geïnteresseerd in plan</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="bericht" name="bericht" placeholder="Bericht" style="height: 110px;"></textarea>
+                                    <label for="bericht">Bericht</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="button" id="contact-submit" class="btn-submit-full">
+                                    <i class="bi bi-send me-2"></i> Verstuur aanvraag
+                                </button>
+                                <p class="text-muted-custom mt-2" style="font-size: 0.8rem; text-align: center;">
+                                    Door te versturen gaat u akkoord met ons <a href="/privacybeleid" style="color: var(--blue);">privacybeleid</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Success message (hidden by default, shown via JS) -->
+                    <div id="contact-success" class="success-message">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <h4>Aanvraag ontvangen!</h4>
+                        <p>Bedankt voor uw bericht. Wij nemen binnen 24 uur op werkdagen contact met u op.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: INFO -->
+            <div class="contact-info">
+                <h3>Wij reageren snel</h3>
+                <p style="font-size: 0.925rem; color: var(--muted); margin-bottom: 1.25rem;">
+                    Wij reageren binnen 24 uur op werkdagen op alle aanvragen.
+                </p>
+
+                <div class="contact-info-item">
+                    <i class="bi bi-envelope"></i>
+                    <a href="mailto:info@elai.nl">info@elai.nl</a>
+                </div>
+
+                <div class="trust-signals">
+                    <h4>Waarom een demo plannen?</h4>
+                    <div class="trust-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>GDPR-compliant</span>
+                    </div>
+                    <div class="trust-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Geen verplichtingen</span>
+                    </div>
+                    <div class="trust-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Gratis kennismakingsgesprek</span>
+                    </div>
+                    <div class="trust-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Maandelijks opzegbaar</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3" style="background: var(--bg-alt); border-radius: var(--radius); border: 1px solid var(--border);">
+                    <p style="font-size: 0.875rem; color: var(--muted); margin: 0; line-height: 1.65;">
+                        <i class="bi bi-info-circle text-blue me-1"></i>
+                        Het kennismakingsgesprek duurt 30–45 minuten en is volledig vrijblijvend. Er zijn geen verborgen kosten.
+                    </p>
+                </div>
+
+                <div class="mt-4">
+                    <p style="font-size: 0.875rem; color: var(--muted); margin-bottom: 0.75rem;">Of bekijk alvast meer informatie:</p>
+                    <div class="d-flex flex-column gap-2">
+                        <a href="/tarieven" class="link-arrow">Bekijk onze tarieven <i class="bi bi-arrow-right"></i></a>
+                        <a href="/hoe-het-werkt" class="link-arrow">Hoe het werkt <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
