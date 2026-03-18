@@ -117,8 +117,6 @@ namespace VectorRagDemo.Controllers
             vm.GesprekkenVorigeWeek  = await _repo.GetGesprekkenTussenAsync(pid, startOfLastWeek, startOfWeek);
             vm.TotaalBerichten       = await _repo.GetTotaalBerichtenAsync(pid);
 
-            (vm.WidgetGesprekken, vm.StudioGesprekken) = await _repo.GetKanaalVerdeling(pid);
-
             vm.VerlatenGesprekken = await _repo.GetVerlatenGesprekkenAsync(pid);
             vm.VerlatenPercent    = vm.TotaalGesprekken > 0
                 ? Math.Round(vm.VerlatenGesprekken * 100.0 / vm.TotaalGesprekken, 1) : 0;

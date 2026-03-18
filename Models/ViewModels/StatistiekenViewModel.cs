@@ -16,8 +16,6 @@ namespace VectorRagDemo.Models.ViewModels
         public int GesprekkenDezeWeek { get; set; }
         public int GesprekkenVorigeWeek { get; set; }
         public int TotaalBerichten { get; set; }
-        public int WidgetGesprekken { get; set; }
-        public int StudioGesprekken { get; set; }
 
         /// <summary>Aantal dagen in de afgelopen 30 dagen waarop minstens 1 gesprek plaatsvond.</summary>
         public int ActieveDagen { get; set; }

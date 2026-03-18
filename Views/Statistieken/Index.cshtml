@@ -214,36 +214,15 @@
     }
 </div>
 
-@* ─── ROW 1: Daily trend + Canal split ──────────────────────────────── *@
+@* ─── ROW 1: Daily trend ─────────────────────────────────────────────── *@
 <div class="row g-3 mb-4">
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="card shadow-sm h-100">
             <div class="card-header">
                 <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Gesprekken per dag (laatste 30 dagen)</h6>
             </div>
             <div class="card-body">
-                <canvas id="chartDag" height="90"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Kanaalverdeling</h6>
-            </div>
-            <div class="card-body d-flex flex-column justify-content-center align-items-center">
-                @if (Model.TotaalGesprekken == 0)
-                {
-                    <p class="text-muted small mb-0">Geen gegevens beschikbaar.</p>
-                }
-                else
-                {
-                    <canvas id="chartKanaal" style="max-height:220px;"></canvas>
-                    <div class="mt-3 small text-muted text-center">
-                        <span class="me-3"><span style="display:inline-block;width:12px;height:12px;background:#0d6efd;border-radius:2px;" class="me-1"></span>Widget (@Model.WidgetGesprekken)</span>
-                        <span><span style="display:inline-block;width:12px;height:12px;background:#6f42c1;border-radius:2px;" class="me-1"></span>Studio (@Model.StudioGesprekken)</span>
-                    </div>
-                }
+                <canvas id="chartDag" height="60"></canvas>
             </div>
         </div>
     </div>
@@ -465,28 +444,6 @@
             }
         }
     });
-
-    // ── Kanaalverdeling donut chart ───────────────────────────────────────
-    @if (Model.TotaalGesprekken > 0)
-    {
-        <text>
-    new Chart(document.getElementById('chartKanaal'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Widget', 'Studio'],
-            datasets: [{
-                data: [@Model.WidgetGesprekken, @Model.StudioGesprekken],
-                backgroundColor: ['#0d6efd', '#6f42c1'],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } }
-        }
-    });
-        </text>
-    }
 
     @if (tier >= 2)
     {

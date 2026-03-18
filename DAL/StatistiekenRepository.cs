@@ -35,20 +35,6 @@ namespace VectorRagDemo.DAL
             return await _context.Messages.Where(m => ids.Contains(m.Conversation)).CountAsync();
         }
 
-        public async Task<(int widget, int studio)> GetKanaalVerdeling(int pid)
-        {
-            var bronTypes = await _context.Conversations
-                .Where(c => c.ProjectID == pid && c.Status == 1)
-                .GroupBy(c => c.BronType)
-                .Select(g => new { g.Key, Count = g.Count() })
-                .ToListAsync();
-
-            return (
-                bronTypes.FirstOrDefault(b => b.Key == "widget")?.Count ?? 0,
-                bronTypes.FirstOrDefault(b => b.Key == "studio")?.Count ?? 0
-            );
-        }
-
         public async Task<Dictionary<DateTime, int>> GetGesprekkenPerDagAsync(int pid, DateTime van)
         {
             var result = new Dictionary<DateTime, int>();

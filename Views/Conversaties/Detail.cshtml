@@ -1,0 +1,276 @@
+@model VectorRagDemo.Models.ViewModels.ConversatieDetailViewModel
+@{
+    ViewData["Title"] = $"Gesprek #{Model.ID} – {Model.Project.Naam}";
+    var isAdmin = User.IsInRole("Admin");
+
+    // Interleave messages and escalation events by timestamp, then group consecutive
+    // same-sender messages so we only render the avatar once per run.
+    var timeline = new List<(DateTime Ts, object Item)>();
+    foreach (var b in Model.Berichten)  timeline.Add((b.GemaaktOp, b));
+    foreach (var e in Model.Escalaties) timeline.Add((e.GemaaktOp, e));
+    timeline.Sort((a, b) => a.Ts.CompareTo(b.Ts));
+
+    // Build display groups: each entry is either an EscalatieEventRij
+    // or a List<BerichtViewModel> (consecutive same-sender run).
+    var displayItems = new List<object>();
+    List<VectorRagDemo.Models.ViewModels.BerichtViewModel>? currentGroup = null;
+    bool? currentIsBot = null;
+
+    foreach (var (_, item) in timeline)
+    {
+        if (item is VectorRagDemo.Models.ViewModels.EscalatieEventRij esc)
+        {
+            currentGroup  = null;
+            currentIsBot  = null;
+            displayItems.Add(esc);
+        }
+        else if (item is VectorRagDemo.Models.ViewModels.BerichtViewModel msg)
+        {
+            if (currentIsBot == msg.IsBot && currentGroup != null)
+            {
+                currentGroup.Add(msg);
+            }
+            else
+            {
+                currentGroup = new List<VectorRagDemo.Models.ViewModels.BerichtViewModel> { msg };
+                currentIsBot = msg.IsBot;
+                displayItems.Add(currentGroup);
+            }
+        }
+    }
+}
+
+<style>
+    .chat-window {
+        background: #f0f2f5;
+        border-radius: 16px;
+        padding: 1.5rem 1.25rem;
+    }
+
+    /* ── Avatar circles ─────────────────────────────────────── */
+    .chat-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .8rem;
+        flex-shrink: 0;
+        align-self: flex-end; /* sits at bottom of a tall bubble group */
+    }
+    .chat-avatar-bot  { background: #e7f1ff; color: #0d6efd; }
+    .chat-avatar-user { background: #0d6efd; color: #fff; }
+    .chat-avatar-placeholder { width: 34px; flex-shrink: 0; } /* keeps alignment when no avatar */
+
+    /* ── Message groups ─────────────────────────────────────── */
+    .msg-group       { display: flex; flex-direction: column; gap: 3px; margin-bottom: 14px; }
+    .msg-group:last-child { margin-bottom: 0; }
+    .msg-row         { display: flex; gap: 8px; align-items: flex-end; }
+    .msg-row-bot     { justify-content: flex-start; }
+    .msg-row-user    { justify-content: flex-end; }
+
+    /* ── Bubbles ────────────────────────────────────────────── */
+    .bubble {
+        padding: 9px 13px;
+        line-height: 1.55;
+        font-size: .88rem;
+        max-width: 68%;
+        word-break: break-word;
+        white-space: pre-wrap;
+        position: relative;
+    }
+    /* Bot: white card, top-left corner flat (tail side) */
+    .bubble-bot {
+        background: #ffffff;
+        border: 1px solid #e4e6e9;
+        border-radius: 4px 18px 18px 18px;
+        color: #212529;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    }
+    /* First bubble in a bot group has the sharp corner (tail); rest are rounded */
+    .bubble-bot.bubble-mid,
+    .bubble-bot.bubble-last { border-radius: 18px; }
+    .bubble-bot.bubble-last { border-radius: 18px 18px 18px 4px; }
+
+    /* User: blue, top-right corner flat (tail side) */
+    .bubble-user {
+        background: #0d6efd;
+        border: none;
+        border-radius: 18px 4px 18px 18px;
+        color: #fff;
+        box-shadow: 0 1px 2px rgba(13,110,253,.25);
+    }
+    .bubble-user.bubble-mid,
+    .bubble-user.bubble-last { border-radius: 18px; }
+    .bubble-user.bubble-last { border-radius: 18px 4px 18px 18px; }
+
+    /* ── Timestamp below each group ─────────────────────────── */
+    .msg-time {
+        font-size: .72rem;
+        color: #9aa0aa;
+        margin-top: 3px;
+    }
+    .msg-time-bot  { padding-left: 42px; } /* avatar width + gap */
+    .msg-time-user { text-align: right; padding-right: 42px; }
+
+    /* ── Escalation divider ─────────────────────────────────── */
+    .escalation-divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 18px 0;
+        color: #6c757d;
+        font-size: .78rem;
+    }
+    .escalation-divider hr { flex: 1; border-color: #ced4da; margin: 0; }
+    .escalation-pill {
+        background: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 20px;
+        padding: 3px 12px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+</style>
+
+@* ─── HEADER ──────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1">
+            <i class="bi bi-chat-left-text me-2 text-primary"></i>Gesprek #@Model.ID
+            <span class="text-muted fs-5 fw-normal">– @Model.Project.Naam</span>
+        </h4>
+    </div>
+    <a asp-action="Index"
+       asp-route-projectId="@(isAdmin ? Model.ProjectID : 0)"
+       class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Terug naar gesprekken
+    </a>
+</div>
+
+@* ─── METADATA BAR ─────────────────────────────────────────────────────── *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+        <div class="d-flex flex-wrap gap-4 align-items-center small">
+            <span class="text-muted">
+                <i class="bi bi-calendar3 me-1"></i>@Model.GemaaktOp.ToString("dd-MM-yyyy HH:mm")
+            </span>
+            <span class="badge bg-primary">Widget</span>
+            @if (Model.DuurMinuten > 0)
+            {
+                <span class="text-muted"><i class="bi bi-clock me-1"></i>@Model.DuurMinuten min</span>
+            }
+            <span class="text-muted">
+                <i class="bi bi-chat-dots me-1"></i>@Model.Berichten.Count bericht@(Model.Berichten.Count == 1 ? "" : "en")
+            </span>
+            @if (Model.Escalaties.Any())
+            {
+                <span class="badge bg-primary">
+                    <i class="bi bi-arrow-right-circle me-1"></i>Doorverwezen
+                </span>
+            }
+        </div>
+    </div>
+</div>
+
+@* ─── CHAT WINDOW ───────────────────────────────────────────────────────── *@
+<div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+        <div class="chat-window">
+
+            @if (!displayItems.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-chat-left display-4 d-block mb-3 opacity-50"></i>
+                    <p>Geen berichten in dit gesprek.</p>
+                </div>
+            }
+
+            @foreach (var displayItem in displayItems)
+            {
+                if (displayItem is VectorRagDemo.Models.ViewModels.EscalatieEventRij escalatie)
+                {
+                    var kanaalIcon  = escalatie.Kanaal == "whatsapp" ? "bi-whatsapp" : "bi-envelope";
+                    var kanaalLabel = escalatie.Kanaal switch
+                    {
+                        "whatsapp" => "WhatsApp doorverwijzing",
+                        "email"    => "E-mail doorverwijzing",
+                        _          => escalatie.Kanaal + " doorverwijzing"
+                    };
+                    <div class="escalation-divider">
+                        <hr />
+                        <span class="escalation-pill">
+                            <i class="bi @kanaalIcon text-primary"></i>
+                            @kanaalLabel &nbsp;·&nbsp; @escalatie.GemaaktOp.ToString("HH:mm")
+                        </span>
+                        <hr />
+                    </div>
+                }
+                else if (displayItem is List<VectorRagDemo.Models.ViewModels.BerichtViewModel> groep)
+                {
+                    var isBot = groep[0].IsBot;
+                    var count = groep.Count;
+
+                    <div class="msg-group">
+                        @for (int gi = 0; gi < count; gi++)
+                        {
+                            var msg         = groep[gi];
+                            var isFirst     = gi == 0;
+                            var isLast      = gi == count - 1;
+                            var bubbleClass = isBot ? "bubble-bot" : "bubble-user";
+
+                            // Corner shaping: first = tail corner, middle = all round, last = base corner
+                            if (count > 1)
+                            {
+                                if (!isFirst && !isLast) bubbleClass += " bubble-mid";
+                                if (!isFirst && isLast)  bubbleClass += " bubble-last";
+                            }
+
+                            if (isBot)
+                            {
+                                <div class="msg-row msg-row-bot">
+                                    @if (isFirst)
+                                    {
+                                        <div class="chat-avatar chat-avatar-bot">
+                                            <i class="bi bi-stars"></i>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="chat-avatar-placeholder"></div>
+                                    }
+                                    <div class="bubble bubble-bot @bubbleClass">@msg.Tekst</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="msg-row msg-row-user">
+                                    <div class="bubble bubble-user @bubbleClass">@msg.Tekst</div>
+                                    @if (isFirst)
+                                    {
+                                        <div class="chat-avatar chat-avatar-user">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="chat-avatar-placeholder"></div>
+                                    }
+                                </div>
+                            }
+                        }
+
+                        @* Timestamp once per group, under the last bubble *@
+                        <div class="msg-time @(isBot ? "msg-time-bot" : "msg-time-user")">
+                            @groep.Last().GemaaktOp.ToString("HH:mm")
+                        </div>
+                    </div>
+                }
+            }
+
+        </div>
+    </div>
+</div>

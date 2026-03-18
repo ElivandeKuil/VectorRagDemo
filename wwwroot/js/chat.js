@@ -79,7 +79,7 @@ async function sendMessage() {
     try {
         // Get the base URL from the data attribute on the chat container
         const chatContainer = document.querySelector('[data-ask-url]');
-        const askUrl = chatContainer ? chatContainer.getAttribute('data-ask-url') : '/Chat/Ask';
+        const askUrl = chatContainer ? chatContainer.getAttribute('data-ask-url') : '/Chat/AskEmbed';
 
         // Extract current chat history and retrieved chunks from hidden divs
         const chatHistory = getChatHistory();
@@ -87,8 +87,8 @@ async function sendMessage() {
 
         const projectId = parseInt(chatContainer.getAttribute('data-project-id') || '0', 10);
 
-        const conversationIdDiv = document.getElementById('conversationId');
-        const conversationId = conversationIdDiv ? parseInt(conversationIdDiv.textContent || '0', 10) : 0;
+        const sessionTokenDiv = document.getElementById('sessionToken');
+        const sessionToken = sessionTokenDiv ? (sessionTokenDiv.textContent || '').trim() : '';
 
         // Use the global loadPartialView function to load the updated chat panel
         await loadPartialView(
@@ -99,7 +99,7 @@ async function sendMessage() {
                 history: chatHistory,
                 retrievedChunks: retrievedChunks,
                 projectId: projectId,
-                conversationId: conversationId
+                sessionToken: sessionToken || null
             },
             'POST'
         );

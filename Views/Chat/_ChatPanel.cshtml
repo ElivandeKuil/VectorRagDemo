@@ -18,3 +18,4 @@
 <div id="chatHistory" style="display:none;">@Html.Raw(JsonSerializer.Serialize(Model.Messages))</div>
 <div id="retrievedChunks" style="display:none;">@Html.Raw(JsonSerializer.Serialize(Model.RetrievedChunks))</div>
 <div id="conversationId" style="display:none;">@Model.ConversationId</div>
+<div id="sessionToken" style="display:none;">@(Model.SessionToken ?? "")</div>
