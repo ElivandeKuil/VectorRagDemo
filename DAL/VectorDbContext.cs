@@ -25,6 +25,7 @@ namespace VectorRagDemo.DAL
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<PromptInstelling> PromptInstellingen { get; set; }
+        public DbSet<EscalatieEvent> EscalatieEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +66,8 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Status).IsRequired();
                 entity.Property(e => e.EmbedKey).HasMaxLength(50);
                 entity.Property(e => e.GebruikPromptTabel).IsRequired().HasDefaultValue(true);
+                entity.Property(e => e.ExtraCommunicationEnabled).IsRequired().HasDefaultValue(false);
+                entity.Property(e => e.StatistiekenTier).IsRequired().HasDefaultValue(0);
             });
 
             // Bron configuration
@@ -210,6 +213,7 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Gebruiker);                   // nullable: null = widget
                 entity.Property(e => e.SessionToken).HasMaxLength(100); // null = studio
                 entity.Property(e => e.BronType).HasMaxLength(10).IsRequired().HasDefaultValue("studio");
+                entity.Property(e => e.ProjectID);
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.GewijzigdOp).IsRequired();
                 entity.Property(e => e.Status).IsRequired();
@@ -229,6 +233,16 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Tekst).HasMaxLength(10000).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.SenderType).IsRequired();
+            });
+
+            // EscalatieEvent configuration
+            modelBuilder.Entity<EscalatieEvent>(entity =>
+            {
+                entity.ToTable("escalatieevent");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Kanaal).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.SessionToken).HasMaxLength(100);
+                entity.Property(e => e.GemaaktOp).IsRequired();
             });
         }
     }

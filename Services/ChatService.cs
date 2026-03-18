@@ -30,10 +30,12 @@ namespace VectorRagDemo.Services
                     throw new ArgumentException("Query cannot be empty.");
                 }
 
-                var preProcessedQuery = await PreProcessingProcessor.GetPreProcessedQuery(request.Query, request.History);
+                var correlationId = Guid.NewGuid();
+
+                var preProcessedQuery = await PreProcessingProcessor.GetPreProcessedQuery(request.Query, request.History, correlationId);
                 AppLogger.Log($"Pre-processed query: {preProcessedQuery}", source: nameof(ChatService));
 
-                List<float> queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery);
+                List<float> queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery, correlationId);
 
                 if (queryEmbedding == null || !queryEmbedding.Any())
                 {
@@ -69,7 +71,8 @@ namespace VectorRagDemo.Services
                     preProcessedQuery,
                     formattedNeighbors,
                     extraCommunicationEnabled,
-                    projectId
+                    projectId,
+                    correlationId
                 );
 
                 return new ChatResponse

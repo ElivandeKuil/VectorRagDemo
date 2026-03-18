@@ -60,9 +60,7 @@ namespace VectorRagDemo.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var project = await _context.Projects
-                .Include(p => p.WidgetConfig)
-                .FirstOrDefaultAsync(p => p.ID == id);
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.ID == id);
 
             if (project == null) return NotFound();
             return View(project);
@@ -70,7 +68,7 @@ namespace VectorRagDemo.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Project model, bool extraCommunicationEnabled)
+        public async Task<IActionResult> Edit(int id, Project model, int statistiekenTier)
         {
             if (string.IsNullOrWhiteSpace(model.Naam))
                 ModelState.AddModelError(nameof(model.Naam), "Naam is verplicht.");
@@ -78,25 +76,19 @@ namespace VectorRagDemo.Controllers
             if (!ModelState.IsValid)
             {
                 model.ID = id;
-                await _context.Entry(model).Reference(p => p.WidgetConfig).LoadAsync();
                 return View(model);
             }
 
-            var project = await _context.Projects
-                .Include(p => p.WidgetConfig)
-                .FirstOrDefaultAsync(p => p.ID == id);
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.ID == id);
 
             if (project == null) return NotFound();
 
             project.Naam = model.Naam.Trim();
             project.BotName = string.IsNullOrWhiteSpace(model.BotName) ? "Assistant" : model.BotName.Trim();
             project.GebruikPromptTabel = model.GebruikPromptTabel;
+            project.ExtraCommunicationEnabled = model.ExtraCommunicationEnabled;
+            project.StatistiekenTier = Math.Clamp(statistiekenTier, 0, 2);
             project.GewijzigdOp = DateTime.Now;
-
-            if (project.WidgetConfig != null)
-            {
-                project.WidgetConfig.ExtraCommunicationEnabled = extraCommunicationEnabled;
-            }
 
             await _context.SaveChangesAsync();
 

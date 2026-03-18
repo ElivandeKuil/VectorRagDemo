@@ -81,6 +81,7 @@ namespace VectorRagDemo.Views.Chat
                 var conversation = new Conversation
                 {
                     Gebruiker = userId,
+                    ProjectID = projectId > 0 ? projectId : null,
                     BronType = "studio",
                     GemaaktOp = DateTime.Now,
                     GewijzigdOp = DateTime.Now,
@@ -91,15 +92,16 @@ namespace VectorRagDemo.Views.Chat
                 conversationId = conversation.ID;
             }
 
+            var studioProject = projectId > 0 ? await _context.Projects.FindAsync(projectId) : null;
             var studioWidgetConfig = projectId > 0
                 ? await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId)
                 : null;
 
             var response = await _chatService.Ask(request, projectId,
-                extraCommunicationEnabled: HasActiveEscalationChannel(studioWidgetConfig));
+                extraCommunicationEnabled: HasActiveEscalationChannel(studioProject, studioWidgetConfig));
 
             var (studioWhatsAppUrl, studioEmailUrl) = BuildEscalationUrls(
-                studioWidgetConfig, response.GenerativeResponse.TransferToWhatsApp);
+                studioProject, studioWidgetConfig, response.GenerativeResponse.TransferToWhatsApp);
 
             _context.Messages.Add(new Message
             {
@@ -280,6 +282,7 @@ namespace VectorRagDemo.Views.Chat
                 {
                     Gebruiker = null,
                     SessionToken = sessionToken,
+                    ProjectID = projectId,
                     BronType = "widget",
                     GemaaktOp = DateTime.Now,
                     GewijzigdOp = DateTime.Now,
@@ -293,11 +296,13 @@ namespace VectorRagDemo.Views.Chat
 
             var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId);
 
+            var escalateCommunication = HasActiveEscalationChannel(project, widgetConfig);
+
             var response = await _chatService.Ask(request, projectId,
-                extraCommunicationEnabled: HasActiveEscalationChannel(widgetConfig));
+                extraCommunicationEnabled: escalateCommunication);
 
             var (whatsAppUrl, emailUrl) = BuildEscalationUrls(
-                widgetConfig, response.GenerativeResponse.TransferToWhatsApp);
+                project, widgetConfig, response.GenerativeResponse.TransferToWhatsApp);
 
             _context.Messages.Add(new Message
             {
@@ -432,6 +437,7 @@ namespace VectorRagDemo.Views.Chat
 
             ViewData["ProjectId"] = project.ID;
             ViewData["ProjectName"] = project.Naam;
+            ViewData["ExtraCommunicationEnabled"] = project.ExtraCommunicationEnabled;
 
             if (User.IsInRole("Admin"))
             {
@@ -470,8 +476,7 @@ namespace VectorRagDemo.Views.Chat
             {
                 config.ID = 0;
                 config.ProjectID = project.ID;
-                // Non-admins cannot create a record with ExtraCommunicationEnabled = true
-                if (!User.IsInRole("Admin")) config.ExtraCommunicationEnabled = false;
+                config.ExtraCommunicationEnabled = false; // master switch lives on Project, not WidgetConfig
                 _context.WidgetConfigs.Add(config);
             }
             else
@@ -500,10 +505,6 @@ namespace VectorRagDemo.Views.Chat
                 existing.SendButtonColor   = config.SendButtonColor;
                 existing.SendButtonIconColor = config.SendButtonIconColor;
                 existing.ButtonLogoUrl     = config.ButtonLogoUrl;
-
-                // Admin-only: master escalation switch
-                if (User.IsInRole("Admin"))
-                    existing.ExtraCommunicationEnabled = config.ExtraCommunicationEnabled;
 
                 // Channel settings (editable by all, but only active when admin enables them)
                 existing.WhatsAppEnabled   = config.WhatsAppEnabled;
@@ -551,6 +552,38 @@ namespace VectorRagDemo.Views.Chat
             });
         }
 
+        /// <summary>
+        /// Registreert een escalatie-klik (WhatsApp/e-mail doorverwijzing).
+        /// Mag anoniem worden aangeroepen — de conversatieID is de enige context die nodig is.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> LogEscalation([FromQuery] int conversationId, [FromQuery] string kanaal)
+        {
+            if (conversationId <= 0 || string.IsNullOrWhiteSpace(kanaal))
+                return Ok();
+
+            var normalized = kanaal.ToLowerInvariant();
+            if (normalized != "whatsapp" && normalized != "email")
+                return Ok();
+
+            var conversation = await _context.Conversations.FindAsync(conversationId);
+            if (conversation == null)
+                return Ok();
+
+            _context.EscalatieEvents.Add(new Models.Entities.EscalatieEvent
+            {
+                ConversatieID = conversationId,
+                ProjectID = conversation.ProjectID,
+                SessionToken = conversation.SessionToken,
+                Kanaal = normalized,
+                GemaaktOp = DateTime.Now
+            });
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
         private async Task<Models.Entities.Project?> ResolveProjectForSettingsAsync(int projectId)
         {
             if (User.IsInRole("Admin"))
@@ -574,9 +607,9 @@ namespace VectorRagDemo.Views.Chat
         /// Both are null when the bot did not signal escalation or ExtraCommunicationEnabled is off.
         /// </summary>
         private static (string? WhatsAppUrl, string? EmailUrl) BuildEscalationUrls(
-            Models.Entities.WidgetConfig? cfg, bool botSignalled)
+            Models.Entities.Project? project, Models.Entities.WidgetConfig? cfg, bool botSignalled)
         {
-            if (!botSignalled || cfg == null || !cfg.ExtraCommunicationEnabled)
+            if (!botSignalled || project == null || !project.ExtraCommunicationEnabled || cfg == null)
                 return (null, null);
 
             string? whatsAppUrl = null;
@@ -596,11 +629,16 @@ namespace VectorRagDemo.Views.Chat
             return (whatsAppUrl, emailUrl);
         }
 
-        /// <summary>True when ExtraCommunicationEnabled and at least one channel has valid settings.</summary>
-        private static bool HasActiveEscalationChannel(Models.Entities.WidgetConfig? cfg) =>
-            cfg != null && cfg.ExtraCommunicationEnabled &&
-            ((cfg.WhatsAppEnabled && !string.IsNullOrWhiteSpace(cfg.WhatsAppNumber)) ||
-             (cfg.EmailEnabled   && !string.IsNullOrWhiteSpace(cfg.EmailAddress)));
+        /// <summary>True when ExtraCommunicationEnabled (on project) and at least one channel has valid settings.</summary>
+        private static bool HasActiveEscalationChannel(Models.Entities.Project? project, Models.Entities.WidgetConfig? cfg)
+        {
+            bool hasProjectSetting = project != null && project.ExtraCommunicationEnabled;
+
+            bool hasWhatsapp = cfg != null && cfg.WhatsAppEnabled && !string.IsNullOrWhiteSpace(cfg.WhatsAppNumber);
+            bool hasEmail = cfg != null && cfg.EmailEnabled && !string.IsNullOrWhiteSpace(cfg.EmailAddress);
+
+            return hasProjectSetting && (hasWhatsapp || hasEmail);
+        }
 
         private async Task<(string BotName, int ProjectId, bool HasProject)> GetProjectContextAsync(int adminProjectId = 0)
         {

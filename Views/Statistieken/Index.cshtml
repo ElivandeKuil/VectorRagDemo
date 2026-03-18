@@ -1,0 +1,652 @@
+@model VectorRagDemo.Models.ViewModels.StatistiekenViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Statistieken – " + Model.Project.Naam;
+    var tier    = Model.Project.StatistiekenTier;
+    var isAdmin = User.IsInRole("Admin");
+
+    var dagLabels       = JsonSerializer.Serialize(Model.GesprekkenPerDag.Select(d => d.Datum.ToString("dd MMM")));
+    var dagData         = JsonSerializer.Serialize(Model.GesprekkenPerDag.Select(d => d.Aantal));
+    var berichtenData   = JsonSerializer.Serialize(Model.BerichtenPerDag.Select(d => d.Aantal));
+    var urenData        = JsonSerializer.Serialize(Model.GesprekkenPerUur);
+    var dagNamen        = new[] { "Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo" };
+    var dagWeekData     = JsonSerializer.Serialize(Model.GesprekkenPerDagVanDeWeek);
+    var maandLabels         = JsonSerializer.Serialize(Model.GesprekkenPerMaandLabels);
+    var maandData           = JsonSerializer.Serialize(Model.GesprekkenPerMaand);
+    var maandEscalatieData  = JsonSerializer.Serialize(Model.EscalatiesPerMaand);
+    var rtLabels        = JsonSerializer.Serialize(Model.GesprekkenPerDag.Select(d => d.Datum.ToString("dd MMM")));
+    var rtData          = JsonSerializer.Serialize(Model.ResponstijdPerDag.Select(d => d.Waarde));
+
+    // Growth vs previous month
+    var groeiPercent = Model.GesprekkenVorigeMaand > 0
+        ? (int)Math.Round((Model.GesprekkendezeMaand - Model.GesprekkenVorigeMaand) * 100.0 / Model.GesprekkenVorigeMaand)
+        : (Model.GesprekkendezeMaand > 0 ? 100 : 0);
+    var groeiPositief = groeiPercent >= 0;
+
+    // Week comparison
+    var weekPositief = Model.GesprekkenDezeWeek >= Model.GesprekkenVorigeWeek;
+    var weekDelta    = Model.GesprekkenDezeWeek - Model.GesprekkenVorigeWeek;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Statistieken – @Model.Project.Naam</h4>
+        <span class="badge @(tier == 2 ? "bg-success" : "bg-primary")">
+            @(tier == 2 ? "Uitgebreid" : "Basis")
+        </span>
+    </div>
+    @if (isAdmin)
+    {
+        <form asp-action="Index" method="get" class="d-flex align-items-center gap-2">
+            @Html.DropDownList("projectId",
+                (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewData["AdminProjects"]!,
+                "– Selecteer project –",
+                new { @class = "form-select form-select-sm", onchange = "this.form.submit()", style = "min-width:180px;" })
+        </form>
+    }
+</div>
+
+@* ─── KPI CARDS ─────────────────────────────────────────────────────── *@
+<div class="row g-3 mb-4">
+
+    <div class="col-6 col-md-3 col-xl-2">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body py-3">
+                <div class="text-muted small mb-1"><i class="bi bi-chat-left-dots me-1"></i>Totaal gesprekken</div>
+                <div class="fs-3 fw-bold text-primary">@Model.TotaalGesprekken</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3 col-xl-2">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body py-3">
+                <div class="text-muted small mb-1"><i class="bi bi-calendar-month me-1"></i>Deze maand</div>
+                <div class="fs-3 fw-bold text-primary">@Model.GesprekkendezeMaand</div>
+                @if (Model.GesprekkenVorigeMaand > 0 || Model.GesprekkendezeMaand > 0)
+                {
+                    <div class="small @(groeiPositief ? "text-success" : "text-danger")">
+                        <i class="bi @(groeiPositief ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>@Math.Abs(groeiPercent)% vs vorige maand
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3 col-xl-2">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body py-3">
+                <div class="text-muted small mb-1"><i class="bi bi-calendar-week me-1"></i>Deze week</div>
+                <div class="fs-3 fw-bold text-primary">@Model.GesprekkenDezeWeek</div>
+                <div class="small @(weekPositief ? "text-success" : "text-danger")">
+                    <i class="bi @(weekPositief ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>@(weekDelta >= 0 ? "+" : "")@weekDelta vs vorige week
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3 col-xl-2">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body py-3">
+                <div class="text-muted small mb-1"><i class="bi bi-chat-dots me-1"></i>Totaal berichten</div>
+                <div class="fs-3 fw-bold text-primary">@Model.TotaalBerichten</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3 col-xl-2">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body py-3">
+                <div class="text-muted small mb-1"><i class="bi bi-lightning me-1"></i>Actieve dagen</div>
+                <div class="fs-3 fw-bold text-primary">
+                    @Model.ActieveDagen<span class="fs-6 text-muted fw-normal">/30</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (tier >= 2)
+    {
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-chat-square-text me-1"></i>Gem. berichten/gesprek</div>
+                    <div class="fs-3 fw-bold text-primary">@Model.GemiddeldBerichtenPerGesprek</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-clock me-1"></i>Gem. duur (min)</div>
+                    <div class="fs-3 fw-bold text-primary">@Model.GemiddeldeDuurMinuten</div>
+                </div>
+            </div>
+        </div>
+        @if (Model.PiekUur >= 0)
+        {
+            <div class="col-6 col-md-3 col-xl-2">
+                <div class="card text-center h-100 shadow-sm">
+                    <div class="card-body py-3">
+                        <div class="text-muted small mb-1"><i class="bi bi-sun me-1"></i>Piekuur</div>
+                        <div class="fs-3 fw-bold text-primary">@(Model.PiekUur):00</div>
+                        <div class="small text-muted">@Model.GesprekkenPerUur[Model.PiekUur] gesprekken</div>
+                    </div>
+                </div>
+            </div>
+        }
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-stars me-1"></i>Betrokken gesprekken</div>
+                    <div class="fs-3 fw-bold text-primary">@Model.BetrokkenGesprekkenPercent%</div>
+                    <div class="small text-muted">≥5 berichten (@Model.BetrokkenGesprekken)</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Effectiviteit KPI cards ─────────────────────────────────────────── *@
+    <div class="col-6 col-md-3 col-xl-2">
+        <div class="card text-center h-100 shadow-sm border-warning">
+            <div class="card-body py-3">
+                <div class="text-muted small mb-1"><i class="bi bi-door-open me-1 text-warning"></i>Snel verlaten gesprekken</div>
+                <div class="fs-3 fw-bold text-warning">@Model.VerlatenPercent%</div>
+                <div class="small text-muted">@Model.VerlatenGesprekken met slechts 1 bericht</div>
+            </div>
+        </div>
+    </div>
+    @if (Model.HeeftEscalatie)
+    {
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm border-success">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-shield-check me-1 text-success"></i>Zelfbediening</div>
+                    <div class="fs-3 fw-bold text-success">@Model.ZelfbedieningPercent%</div>
+                    <div class="small text-muted">zonder doorverwijzing</div>
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.UniekeBezoekersDezeWeand > 0)
+    {
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-people me-1"></i>Bezoekers deze maand</div>
+                    <div class="fs-3 fw-bold text-primary">@Model.UniekeBezoekersDezeWeand</div>
+                    <div class="small text-muted">unieke widget-gebruikers</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Prestaties KPI cards ─────────────────────────────────────────────── *@
+    @if (Model.GemiddeldeResponstijdSec > 0)
+    {
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm border-info">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-speedometer2 me-1 text-info"></i>Gem. responstijd</div>
+                    <div class="fs-3 fw-bold text-info">@Model.GemiddeldeResponstijdSec<span class="fs-6 text-muted fw-normal"> s</span></div>
+                </div>
+            </div>
+        </div>
+    }
+    @if (Model.HeeftEscalatie)
+    {
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm border-primary">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-arrow-right-circle me-1 text-primary"></i>Doorverwijzingen</div>
+                    <div class="fs-3 fw-bold text-primary">@Model.TotaalEscalaties</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card text-center h-100 shadow-sm border-primary">
+                <div class="card-body py-3">
+                    <div class="text-muted small mb-1"><i class="bi bi-percent me-1 text-primary"></i>Doorverwijzingsratio</div>
+                    <div class="fs-3 fw-bold text-primary">@Model.EscalatieRatioPercent%</div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* ─── ROW 1: Daily trend + Canal split ──────────────────────────────── *@
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Gesprekken per dag (laatste 30 dagen)</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="chartDag" height="90"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Kanaalverdeling</h6>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                @if (Model.TotaalGesprekken == 0)
+                {
+                    <p class="text-muted small mb-0">Geen gegevens beschikbaar.</p>
+                }
+                else
+                {
+                    <canvas id="chartKanaal" style="max-height:220px;"></canvas>
+                    <div class="mt-3 small text-muted text-center">
+                        <span class="me-3"><span style="display:inline-block;width:12px;height:12px;background:#0d6efd;border-radius:2px;" class="me-1"></span>Widget (@Model.WidgetGesprekken)</span>
+                        <span><span style="display:inline-block;width:12px;height:12px;background:#6f42c1;border-radius:2px;" class="me-1"></span>Studio (@Model.StudioGesprekken)</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ─── TIER 2: Monthly trend + Messages per day ───────────────────────── *@
+@if (tier >= 2)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Gesprekken vs. doorverwijzingen per maand</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartMaand" height="110"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-chat-right-dots me-2"></i>Berichten per dag (laatste 30 dagen)</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartBerichtenDag" height="110"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Gesprekken per uur (laatste 90 dagen)</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartUur" height="90"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Dag van de week</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartDagWeek" height="160"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Berichtenverdeling</h6>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                    @if (Model.TotaalBerichten == 0)
+                    {
+                        <p class="text-muted small mb-0">Geen berichten.</p>
+                    }
+                    else
+                    {
+                        <canvas id="chartBerichten" style="max-height:200px;"></canvas>
+                        <div class="mt-3 small text-muted text-center">
+                            <span class="me-3"><span style="display:inline-block;width:12px;height:12px;background:#0d6efd;border-radius:2px;" class="me-1"></span>Gebruiker (@Model.TotaalGebruikerBerichten)</span>
+                            <span><span style="display:inline-block;width:12px;height:12px;background:#20c997;border-radius:2px;" class="me-1"></span>Bot (@Model.TotaalBotBerichten)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (Model.HeeftEscalatie)
+        {
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 border-primary">
+                    <div class="card-header bg-primary bg-opacity-10">
+                        <h6 class="mb-0"><i class="bi bi-arrow-right-circle me-2 text-primary"></i>Doorverwijzingsdetail</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless mb-3">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted"><i class="bi bi-whatsapp me-1"></i>WhatsApp</td>
+                                    <td class="fw-semibold">@Model.WhatsAppEscalaties</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted"><i class="bi bi-envelope me-1"></i>E-mail</td>
+                                    <td class="fw-semibold">@Model.EmailEscalaties</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Doorverwijzingsratio</td>
+                                    <td class="fw-semibold">@Model.EscalatieRatioPercent%</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Gem. berichten vóór doorverwijzing</td>
+                                    <td class="fw-semibold">@Model.GemiddeldBerichtenVoorEscalatie</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* ─── PRESTATIES ─────────────────────────────────────────────────────── *@
+@if (tier >= 2)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-speedometer2 me-2 text-info"></i>Gem. responstijd per dag (laatste 30 dagen)</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.GemiddeldeResponstijdSec == 0)
+                    {
+                        <p class="text-muted small mb-0">Nog geen data beschikbaar. Responstijden worden bijgehouden zodra gesprekken plaatsvinden.</p>
+                    }
+                    else
+                    {
+                        <canvas id="chartResponstijd" height="90"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100 border-info">
+                <div class="card-header bg-info bg-opacity-10">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart-steps me-2 text-info"></i>Responstijd detail</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.GemiddeldeResponstijdSec == 0)
+                    {
+                        <p class="text-muted small mb-0">–</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted">Gem. responstijd</td>
+                                    <td class="fw-semibold">@Model.GemiddeldeResponstijdSec s</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">P95 responstijd</td>
+                                    <td class="fw-semibold">@Model.P95ResponstijdSec s</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ─── TIER 1 escalation summary (when no tier-2 card above) ─────────── *@
+@if (Model.HeeftEscalatie && tier < 2)
+{
+    <div class="card shadow-sm mb-4 border-primary">
+        <div class="card-header bg-primary bg-opacity-10">
+            <h6 class="mb-0"><i class="bi bi-arrow-right-circle me-2 text-primary"></i>Doorverwijzingen</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-sm-4 text-center">
+                    <div class="text-muted small">Totaal</div>
+                    <div class="fs-4 fw-bold text-primary">@Model.TotaalEscalaties</div>
+                </div>
+                <div class="col-sm-4 text-center">
+                    <div class="text-muted small"><i class="bi bi-whatsapp me-1"></i>WhatsApp</div>
+                    <div class="fs-4 fw-bold">@Model.WhatsAppEscalaties</div>
+                </div>
+                <div class="col-sm-4 text-center">
+                    <div class="text-muted small"><i class="bi bi-envelope me-1"></i>E-mail</div>
+                    <div class="fs-4 fw-bold">@Model.EmailEscalaties</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    Chart.defaults.font.family = 'inherit';
+    Chart.defaults.color = '#6c757d';
+
+    // ── Dag-trend line chart ──────────────────────────────────────────────
+    new Chart(document.getElementById('chartDag'), {
+        type: 'line',
+        data: {
+            labels: @Html.Raw(dagLabels),
+            datasets: [{
+                label: 'Gesprekken',
+                data: @Html.Raw(dagData),
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13,110,253,0.08)',
+                borderWidth: 2,
+                pointRadius: 3,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { ticks: { maxTicksLimit: 10 } }
+            }
+        }
+    });
+
+    // ── Kanaalverdeling donut chart ───────────────────────────────────────
+    @if (Model.TotaalGesprekken > 0)
+    {
+        <text>
+    new Chart(document.getElementById('chartKanaal'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Widget', 'Studio'],
+            datasets: [{
+                data: [@Model.WidgetGesprekken, @Model.StudioGesprekken],
+                backgroundColor: ['#0d6efd', '#6f42c1'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
+        </text>
+    }
+
+    @if (tier >= 2)
+    {
+        <text>
+    // ── Maandelijkse trend bar chart ──────────────────────────────────────
+    new Chart(document.getElementById('chartMaand'), {
+        type: 'bar',
+        data: {
+            labels: @Html.Raw(maandLabels),
+            datasets: [
+                {
+                    label: 'Gesprekken',
+                    data: @Html.Raw(maandData),
+                    backgroundColor: 'rgba(13,110,253,0.7)',
+                    borderRadius: 4
+                }
+                @if (Model.HeeftEscalatie)
+                {
+                    <text>
+                ,{
+                    label: 'Doorverwijzingen',
+                    data: @Html.Raw(maandEscalatieData),
+                    backgroundColor: 'rgba(13,110,253,0.3)',
+                    borderRadius: 4
+                }
+                    </text>
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: @(Model.HeeftEscalatie ? "true" : "false") } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // ── Berichten per dag line chart ──────────────────────────────────────
+    new Chart(document.getElementById('chartBerichtenDag'), {
+        type: 'line',
+        data: {
+            labels: @Html.Raw(dagLabels),
+            datasets: [{
+                label: 'Berichten',
+                data: @Html.Raw(berichtenData),
+                borderColor: '#20c997',
+                backgroundColor: 'rgba(32,201,151,0.08)',
+                borderWidth: 2,
+                pointRadius: 3,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { ticks: { maxTicksLimit: 10 } }
+            }
+        }
+    });
+
+    // ── Piekuren bar chart ────────────────────────────────────────────────
+    new Chart(document.getElementById('chartUur'), {
+        type: 'bar',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => i + ':00'),
+            datasets: [{
+                label: 'Gesprekken',
+                data: @Html.Raw(urenData),
+                backgroundColor: 'rgba(13,110,253,0.65)',
+                borderRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // ── Dag van de week bar chart ─────────────────────────────────────────
+    new Chart(document.getElementById('chartDagWeek'), {
+        type: 'bar',
+        data: {
+            labels: @Html.Raw(JsonSerializer.Serialize(dagNamen)),
+            datasets: [{
+                label: 'Gesprekken',
+                data: @Html.Raw(dagWeekData),
+                backgroundColor: 'rgba(111,66,193,0.65)',
+                borderRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // ── Berichtenverdeling donut ──────────────────────────────────────────
+    @if (Model.TotaalBerichten > 0)
+    {
+        <text>
+    new Chart(document.getElementById('chartBerichten'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Gebruiker', 'Bot'],
+            datasets: [{
+                data: [@Model.TotaalGebruikerBerichten, @Model.TotaalBotBerichten],
+                backgroundColor: ['#0d6efd', '#20c997'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
+        </text>
+    }
+
+    // ── Responstijd trend line chart ──────────────────────────────────────
+    @if (Model.GemiddeldeResponstijdSec > 0)
+    {
+        <text>
+    new Chart(document.getElementById('chartResponstijd'), {
+        type: 'line',
+        data: {
+            labels: @Html.Raw(rtLabels),
+            datasets: [{
+                label: 'Responstijd (s)',
+                data: @Html.Raw(rtData),
+                borderColor: '#0dcaf0',
+                backgroundColor: 'rgba(13,202,240,0.08)',
+                borderWidth: 2,
+                pointRadius: 3,
+                fill: true,
+                tension: 0.3,
+                spanGaps: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => v + ' s' } },
+                x: { ticks: { maxTicksLimit: 10 } }
+            }
+        }
+    });
+        </text>
+    }
+        </text>
+    }
+</script>
+}

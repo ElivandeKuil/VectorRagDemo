@@ -50,6 +50,7 @@ namespace VectorRagDemo.Services
                 ["Prompts"]            = new("Prompts",            "Prompts",     "Index",          "bi-chat-square-text"),
                 ["API Logs"]           = new("API Logs",           "ApiCallLog",  "Index",          "bi-journal-code"),
                 ["Widget instellingen"]   = new("Widget instellingen",   "Chat",               "WidgetSettings", "bi-sliders"),
+                ["Statistieken"]          = new("Statistieken",          "Statistieken",        "Index",          "bi-bar-chart-line"),
             };
 
         public ProjectAccessService(ManagementDbContext context)

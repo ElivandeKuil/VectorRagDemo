@@ -26,9 +26,10 @@ namespace VectorRagDemo.BLL
             string currentUserInput,
             string formattedNeighbors,
             bool extraCommunicationEnabled = false,
-            int projectId = 0)
+            int projectId = 0,
+            Guid? correlationId = null)
         {
-            var generativeModelService = new GenerativeModelService(_context, _client, _logboekContext, projectId);
+            var generativeModelService = new GenerativeModelService(_context, _client, _logboekContext, projectId, correlationId);
             var chatHistoryString = FormatChatHistory(chatHistory);
 
             var summarisedResult = await generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse, (string RelevantOutput, List<int> UsedChunkIds)>(
@@ -89,7 +90,7 @@ namespace VectorRagDemo.BLL
             ResponseSchema = InjectWhatsAppIntoSchema(prompt.ResponseSchema)
         };
 
-        private const string WhatsAppSystemInstruction =
+        internal const string WhatsAppSystemInstruction =
             "\n\nWanneer je een vraag niet kunt beantwoorden op basis van de beschikbare informatie, " +
             "of wanneer je detecteert dat de gebruiker interesse toont in een aankoop, offerte of persoonlijk contact, " +
             "stel dan 'transferToWhatsApp' in op true. In alle andere gevallen is het false.";
@@ -101,7 +102,7 @@ namespace VectorRagDemo.BLL
                 var schema = JObject.Parse(existingSchema);
 
                 var properties = schema["properties"] as JObject ?? new JObject();
-                properties["transferToWhatsApp"] = JObject.Parse("{\"type\":\"boolean\"}");
+                properties["transferToWhatsApp"] = JObject.Parse("{\"type\":\"BOOLEAN\"}");
                 schema["properties"] = properties;
 
                 var required = schema["required"] as JArray ?? new JArray();

@@ -15,6 +15,12 @@ namespace VectorRagDemo.Models.Entities.Management
         // 'studio' = ingelogde gebruiker | 'widget' = anonieme websitebezoeker
         public string BronType { get; set; } = "studio";
 
+        /// <summary>
+        /// Koppeling naar het project. Null voor gesprekken aangemaakt vóór de statistieken-migratie.
+        /// Wordt altijd ingevuld voor nieuwe gesprekken.
+        /// </summary>
+        public int? ProjectID { get; set; }
+
         public DateTime GemaaktOp { get; set; }
         public DateTime GewijzigdOp { get; set; }
         public int Status { get; set; }

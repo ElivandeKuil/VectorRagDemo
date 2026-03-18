@@ -180,3 +180,21 @@ document.addEventListener('DOMContentLoaded', function() {
         parseMarkdownContent(chatMessages);
     }
 });
+
+// Escalation-button click tracking (fire-and-forget)
+// Listens for clicks on any element with data-log-escalation="whatsapp|email",
+// reads the current conversationId from the DOM and POSTs to LogEscalation.
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-log-escalation]');
+    if (!btn) return;
+
+    var kanaal = btn.getAttribute('data-log-escalation');
+    var conversationIdDiv = document.getElementById('conversationId');
+    var conversationId = conversationIdDiv ? parseInt(conversationIdDiv.textContent || '0', 10) : 0;
+
+    if (!kanaal || conversationId <= 0) return;
+
+    fetch('/Chat/LogEscalation?conversationId=' + conversationId + '&kanaal=' + encodeURIComponent(kanaal), {
+        method: 'POST'
+    }).catch(function () { /* intentionally ignored */ });
+});

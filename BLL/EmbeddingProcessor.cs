@@ -15,10 +15,10 @@ namespace VectorRagDemo.BLL
             _apiClient = new ApiClient(client, logboekContext);
         }
 
-        public async Task<List<float>> GenerateQueryEmbeddingAsync(string query)
+        public async Task<List<float>> GenerateQueryEmbeddingAsync(string query, Guid? correlationId = null)
         {
             var requestContent = BuildEmbeddingRequest(query, "RETRIEVAL_QUERY");
-            var response = await SendEmbeddingRequestAsync(requestContent);
+            var response = await SendEmbeddingRequestAsync(requestContent, correlationId);
             return await ProcessEmbeddingResponse(response);
         }
 
@@ -50,13 +50,13 @@ namespace VectorRagDemo.BLL
             return await ProcessBatchEmbeddingResponse(response);
         }
 
-        private async Task<HttpResponseMessage> SendEmbeddingRequestAsync(StringContent content)
+        private async Task<HttpResponseMessage> SendEmbeddingRequestAsync(StringContent content, Guid? correlationId = null)
         {
             string endpoint = VertexApiEndpointBuilder.BuildEmbeddingEndpoint();
             AppLogger.Log($"Calling embedding endpoint: {endpoint}", source: nameof(EmbeddingProcessor));
             string accessToken = await ConnectionProcessor.GetAuthenticationToken();
 
-            return await _apiClient.PostAsync(endpoint, content, accessToken);
+            return await _apiClient.PostAsync(endpoint, content, accessToken, correlationId);
         }
 
         private StringContent BuildEmbeddingRequest(string text, string taskType)

@@ -47,6 +47,7 @@ builder.Services.AddScoped<ProjectAccessService>();
 builder.Services.AddScoped<ConsentService>();
 builder.Services.AddScoped<UserDeletionService>();
 builder.Services.AddScoped<DataExportService>();
+builder.Services.AddScoped<StatistiekenRepository>();
 
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -49,14 +49,42 @@
 
             <div>
                 <div class="form-check form-switch">
-                    <input type="hidden" name="extraCommunicationEnabled" value="false" />
-                    <input type="checkbox" class="form-check-input" name="extraCommunicationEnabled" id="chk_extracommunication"
-                           value="true" @(Model.WidgetConfig?.ExtraCommunicationEnabled == true ? "checked" : "") role="switch" />
+                    <input asp-for="ExtraCommunicationEnabled" class="form-check-input" type="checkbox" role="switch" id="chk_extracommunication" />
                     <label class="form-check-label fw-semibold" for="chk_extracommunication">Extra communicatiekanalen inschakelen</label>
                 </div>
                 <div class="form-text mt-1">
                     <strong>Aan:</strong> de bot toont een doorverwijzingsknop (WhatsApp / e-mail) zodra hij een lead detecteert of vastloopt.<br />
                     <strong>Uit:</strong> doorverwijzing is uitgeschakeld, ongeacht de kanaalinstellingen in Widget instellingen.
+                </div>
+            </div>
+
+            <div>
+                <label class="fw-semibold mb-2 d-block">Statistieken</label>
+                <div class="d-flex gap-4 flex-wrap">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="statistiekenTier" id="tier_0" value="0"
+                               @(Model.StatistiekenTier == 0 ? "checked" : "") />
+                        <label class="form-check-label" for="tier_0">Uitgeschakeld</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="statistiekenTier" id="tier_1" value="1"
+                               @(Model.StatistiekenTier == 1 ? "checked" : "") />
+                        <label class="form-check-label" for="tier_1">Basis</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="statistiekenTier" id="tier_2" value="2"
+                               @(Model.StatistiekenTier == 2 ? "checked" : "") />
+                        <label class="form-check-label" for="tier_2">Uitgebreid</label>
+                    </div>
+                </div>
+                <div class="form-text mt-1">
+                    <strong>Uitgeschakeld:</strong> statistiekenpagina verborgen voor gebruikers.<br />
+                    <strong>Basis:</strong> gespreks- en berichtentelling, kanaalverdeling, dagtrend (30 d).<br />
+                    <strong>Uitgebreid:</strong> alles van Basis plus gemiddelden, piekuren en berichtenverdeling.
+                    @if (Model.ExtraCommunicationEnabled)
+                    {
+                        <br /><i class="bi bi-info-circle me-1"></i>@:Omdat extra communicatiekanalen zijn ingeschakeld worden ook doorverwijzingsstatistieken getoond.
+                    }
                 </div>
             </div>
 
@@ -70,6 +98,10 @@
         @if (!Model.GebruikPromptTabel)
         {
             <a asp-controller="PromptInstelling" asp-action="Edit" asp-route-projectId="@Model.ID" btn-variant="outline-secondary" btn-icon="pencil-square">Prompt instellingen</a>
+        }
+        @if (Model.StatistiekenTier > 0)
+        {
+            <a asp-controller="Statistieken" asp-action="Index" asp-route-projectId="@Model.ID" btn-variant="outline-success" btn-icon="bar-chart-line">Statistieken</a>
         }
     </div>
 

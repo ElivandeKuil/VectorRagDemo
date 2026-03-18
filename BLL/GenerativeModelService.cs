@@ -17,12 +17,14 @@ namespace VectorRagDemo.BLL
         private readonly VectorDbContext _context;
         private readonly ApiClient _apiClient;
         private readonly int _project;
+        private readonly Guid? _correlationId;
 
-        public GenerativeModelService(VectorDbContext context, HttpClient client, LogboekDbContext logboekContext, int projectId = 1)
+        public GenerativeModelService(VectorDbContext context, HttpClient client, LogboekDbContext logboekContext, int projectId = 1, Guid? correlationId = null)
         {
             _context = context;
             _apiClient = new ApiClient(client, logboekContext);
             _project = projectId;
+            _correlationId = correlationId;
         }
 
         /// <summary>
@@ -123,7 +125,7 @@ namespace VectorRagDemo.BLL
             string endpoint = VertexApiEndpointBuilder.BuildGeminiEndpoint(model);
             string accessToken = await ConnectionProcessor.GetAuthenticationToken();
 
-            return await _apiClient.PostAsync(endpoint, content, accessToken);
+            return await _apiClient.PostAsync(endpoint, content, accessToken, _correlationId);
         }
 
         /// <summary>
@@ -161,9 +163,17 @@ namespace VectorRagDemo.BLL
             if (!string.IsNullOrWhiteSpace(instelling.Voorbeelden))
                 parts.Add($"## Voorbeelden\n{instelling.Voorbeelden.Trim()}");
 
-            return parts.Count == 0
+            var built = parts.Count == 0
                 ? prompt.SystemInstruction
                 : string.Join("\n\n", parts);
+
+            // If the prompt was escalation-injected (WhatsApp suffix appended at runtime),
+            // re-attach that suffix so it isn't lost when building from PromptInstelling.
+            if (prompt.SystemInstruction.EndsWith(GeminiProcessor.WhatsAppSystemInstruction,
+                    StringComparison.Ordinal))
+                built += GeminiProcessor.WhatsAppSystemInstruction;
+
+            return built;
         }
 
         /// <summary>
