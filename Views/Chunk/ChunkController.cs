@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using VectorRagDemo.BLL;
+using VectorRagDemo.BLL.Processors;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Extensions;
 using VectorRagDemo.Models.Entities;

@@ -1,4 +1,5 @@
 using VectorRagDemo.BLL;
+using VectorRagDemo.BLL.Processors;
 using VectorRagDemo.Models.Enums;
 
 namespace VectorRagDemo.DAL

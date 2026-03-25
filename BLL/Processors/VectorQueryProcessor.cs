@@ -5,7 +5,7 @@ using VectorRagDemo.DAL;
 using VectorRagDemo.Models.JsonContracts.GeminiAPI;
 using VectorRagDemo.Services;
 
-namespace VectorRagDemo.BLL
+namespace VectorRagDemo.BLL.Processors
 {
     public class VectorQueryProcessor
     {

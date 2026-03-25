@@ -1,0 +1,82 @@
+@model VectorRagDemo.Models.ViewModels.CorrectieBewerkenViewModel
+@{
+    ViewData["Title"] = "Correctie bewerken";
+    var isAdmin = User.IsInRole("Admin");
+}
+
+@* ─── HEADER ──────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1"><i class="bi bi-pencil-square me-2 text-primary"></i>Correctie bewerken</h4>
+        <span class="text-muted small">@Model.Project.Naam</span>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Detail" asp-controller="Conversaties"
+           asp-route-id="@Model.ConversatieID"
+           asp-route-projectId="@(isAdmin ? Model.ProjectID : 0)"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-chat-left-text me-1"></i>Gesprek bekijken
+        </a>
+        <a asp-action="Index"
+           asp-route-projectId="@(isAdmin ? Model.ProjectID : 0)"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Terug
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+        @* ─── CONTEXT CARDS ─────────────────────────────────────────────── *@
+        <div class="card shadow-sm mb-3 border-0 bg-light">
+            <div class="card-body">
+                <p class="small fw-semibold text-muted mb-1">
+                    <i class="bi bi-stars me-1 text-primary"></i>Originele bot-respons
+                </p>
+                <p class="mb-0 small" style="white-space:pre-wrap;">@Model.OrigineleTekst</p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4 border-0 bg-light">
+            <div class="card-body">
+                <p class="small fw-semibold text-muted mb-1">
+                    <i class="bi bi-question-circle me-1 text-primary"></i>Gecontextualiseerde vraag
+                </p>
+                <p class="mb-0 small">@Model.GecontextualiseerdeVraag</p>
+            </div>
+        </div>
+
+        @* ─── EDIT FORM ──────────────────────────────────────────────────── *@
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Bewerk" method="post">
+                    <input type="hidden" name="id" value="@Model.ID" />
+                    <input type="hidden" name="projectId" value="@(isAdmin ? Model.ProjectID : 0)" />
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="correctietekst">
+                            Gecorrigeerde respons
+                        </label>
+                        <textarea class="form-control" id="correctietekst" name="correctietekst"
+                                  rows="8" required>@Model.Correctietekst</textarea>
+                        <div class="form-text">
+                            De embedding wordt automatisch opnieuw gegenereerd na opslaan.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-action="Index"
+                           asp-route-projectId="@(isAdmin ? Model.ProjectID : 0)"
+                           class="btn btn-outline-secondary">Annuleren</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy me-1"></i>Opslaan &amp; herberekenen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Extensions;
+using VectorRagDemo.Services;
 using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.ViewModels;
 
@@ -14,11 +15,13 @@ namespace VectorRagDemo.Controllers
     {
         private readonly VectorDbContext _context;
         private readonly ConversatieRepository _repo;
+        private readonly CorrectieService _correctieService;
 
-        public ConversatiesController(VectorDbContext context, ConversatieRepository repo)
+        public ConversatiesController(VectorDbContext context, ConversatieRepository repo, CorrectieService correctieService)
         {
-            _context = context;
-            _repo    = repo;
+            _context          = context;
+            _repo             = repo;
+            _correctieService = correctieService;
         }
 
         public async Task<IActionResult> Index(int projectId = 0, ConversatieFilterModel? filter = null)
@@ -98,6 +101,29 @@ namespace VectorRagDemo.Controllers
             }
 
             return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SlaCorrectieOp(
+            int conversationId, int messageId, string correctieTekst, int projectId = 0)
+        {
+            if (string.IsNullOrWhiteSpace(correctieTekst))
+                return BadRequest("Correctietekst mag niet leeg zijn.");
+
+            var project = await ResolveProjectAsync(projectId);
+            if (project == null)
+                return Forbid();
+
+            // Verify the conversation belongs to this project
+            var conversation = await _context.Conversations
+                .FirstOrDefaultAsync(c => c.ID == conversationId && c.ProjectID == project.ID);
+            if (conversation == null)
+                return NotFound();
+
+            await _correctieService.SlaCorrectieOpAsync(conversationId, messageId, correctieTekst, project.ID);
+
+            return Ok();
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────────

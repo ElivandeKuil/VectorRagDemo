@@ -26,6 +26,7 @@ namespace VectorRagDemo.DAL
         public DbSet<Message> Messages { get; set; }
         public DbSet<PromptInstelling> PromptInstellingen { get; set; }
         public DbSet<EscalatieEvent> EscalatieEvents { get; set; }
+        public DbSet<Correctie> Correcties { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -101,6 +102,7 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Tekst).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.IsCorrectie).HasColumnName("correctie").IsRequired().HasDefaultValue(false);
 
                 // EF Core doesn't natively support VECTOR type yet in SQL Server 2025
                 // We'll handle vector operations with raw SQL
@@ -233,6 +235,22 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Tekst).HasMaxLength(10000).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.SenderType).IsRequired();
+            });
+
+            // Correctie configuration
+            modelBuilder.Entity<Correctie>(entity =>
+            {
+                entity.ToTable("correctie");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.ProjectID).IsRequired();
+                entity.Property(e => e.ConversatieID).IsRequired();
+                entity.Property(e => e.MessageID).IsRequired();
+                entity.Property(e => e.OrigineleTekst).IsRequired();
+                entity.Property(e => e.GecontextualiseerdeVraag).IsRequired();
+                entity.Property(e => e.Correctietekst).IsRequired();
+                entity.Property(e => e.ChunkID).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
             });
 
             // EscalatieEvent configuration

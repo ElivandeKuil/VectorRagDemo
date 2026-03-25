@@ -1,0 +1,140 @@
+@model VectorRagDemo.Models.ViewModels.CorrectiesViewModel
+@{
+    ViewData["Title"] = "Correcties – " + Model.Project.Naam;
+    var isAdmin = User.IsInRole("Admin");
+}
+
+@* ─── HEADER ──────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1"><i class="bi bi-pencil-square me-2 text-primary"></i>Correcties – @Model.Project.Naam</h4>
+        <span class="badge bg-secondary">@Model.TotaalAantal correctie@(Model.TotaalAantal == 1 ? "" : "s") gevonden</span>
+    </div>
+    @if (isAdmin)
+    {
+        <form asp-action="Index" method="get" class="d-flex align-items-center gap-2">
+            @Html.DropDownList("projectId",
+                (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewData["AdminProjects"]!,
+                "– Selecteer project –",
+                new { @class = "form-select form-select-sm", onchange = "this.form.submit()", style = "min-width:180px;" })
+        </form>
+    }
+</div>
+
+@* ─── TABLE ────────────────────────────────────────────────────────────── *@
+@if (!Model.Correcties.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-pencil-square display-4 d-block mb-3 opacity-50"></i>
+        <h5>Geen correcties gevonden</h5>
+        <p class="mb-0 small">Er zijn nog geen correcties ingediend voor dit project.</p>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-nowrap"><i class="bi bi-calendar3 me-1"></i>Datum</th>
+                    <th>Vraag</th>
+                    <th>Originele respons</th>
+                    <th>Correctie</th>
+                    <th class="text-center">Bijgewerkt</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Correcties)
+                {
+                    <tr>
+                        <td class="text-nowrap small">@c.GemaaktOp.ToString("dd-MM-yyyy HH:mm")</td>
+                        <td class="small" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                            title="@c.GecontextualiseerdeVraag">
+                            @c.GecontextualiseerdeVraag
+                        </td>
+                        <td class="small text-muted fst-italic" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                            title="@c.OrigineleTekst">
+                            @c.OrigineleTekst
+                        </td>
+                        <td class="small" style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                            title="@c.Correctietekst">
+                            @c.Correctietekst
+                        </td>
+                        <td class="text-center small text-muted">
+                            @if (c.GewijzigdOp.HasValue)
+                            {
+                                <span title="@c.GewijzigdOp.Value.ToString("dd-MM-yyyy HH:mm")">
+                                    <i class="bi bi-check-circle text-success"></i>
+                                </span>
+                            }
+                            else
+                            {
+                                <text>–</text>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Detail" asp-controller="Conversaties"
+                               asp-route-id="@c.ConversatieID"
+                               asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
+                               class="btn btn-outline-secondary btn-sm me-1" title="Gesprek bekijken">
+                                <i class="bi bi-chat-left-text"></i>
+                            </a>
+                            <a asp-action="Bewerk"
+                               asp-route-id="@c.ID"
+                               asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil me-1"></i>Bewerken
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* ─── PAGINATION ──────────────────────────────────────────────────────── *@
+    @if (Model.TotaalPaginas > 1)
+    {
+        var pagina = Model.Pagina;
+        var totaalPaginas = Model.TotaalPaginas;
+
+        <nav class="mt-3" aria-label="Paginering correcties">
+            <ul class="pagination justify-content-center flex-wrap">
+                <li class="page-item @(pagina <= 1 ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
+                       asp-route-pagina="@(pagina - 1)">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                @{
+                    var pagesToShow = new SortedSet<int> { 1, totaalPaginas };
+                    for (int p = Math.Max(1, pagina - 2); p <= Math.Min(totaalPaginas, pagina + 2); p++)
+                        pagesToShow.Add(p);
+                    int? prev = null;
+                    foreach (var p in pagesToShow)
+                    {
+                        if (prev.HasValue && p - prev.Value > 1)
+                        {
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        }
+                        <li class="page-item @(p == pagina ? "active" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
+                               asp-route-pagina="@p">@p</a>
+                        </li>
+                        prev = p;
+                    }
+                }
+                <li class="page-item @(pagina >= totaalPaginas ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
+                       asp-route-pagina="@(pagina + 1)">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+}

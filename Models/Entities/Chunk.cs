@@ -9,6 +9,7 @@
         public DateTime GemaaktOp { get; set; }
         public DateTime? GewijzigdOp { get; set; }
         public int Status { get; set; }
+        public bool IsCorrectie { get; set; }
 
         // Navigation property
         public Bron? Bron { get; set; }

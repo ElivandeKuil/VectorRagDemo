@@ -6,7 +6,7 @@ using VectorRagDemo.Models.JsonContracts.GeminiAPI;
 using VectorRagDemo.Models.DataContracts;
 using VectorRagDemo.Models.Entities;
 
-namespace VectorRagDemo.BLL
+namespace VectorRagDemo.BLL.Processors
 {
     public class GeminiProcessor
     {

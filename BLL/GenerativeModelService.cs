@@ -5,6 +5,7 @@ using VectorRagDemo.DAL;
 using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.ApiContracts.GeminiAPI;
 using VectorRagDemo.Models.JsonContracts.GeminiAPI;
+using VectorRagDemo.BLL.Processors;
 
 namespace VectorRagDemo.BLL
 {

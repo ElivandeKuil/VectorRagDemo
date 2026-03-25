@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.BLL;
+using VectorRagDemo.BLL.Processors;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Filters;
 using VectorRagDemo.Services;
@@ -49,6 +50,13 @@ builder.Services.AddScoped<UserDeletionService>();
 builder.Services.AddScoped<DataExportService>();
 builder.Services.AddScoped<StatistiekenRepository>();
 builder.Services.AddScoped<ConversatieRepository>();
+
+builder.Services.AddScoped<CorrectieService>(provider =>
+{
+    var context       = provider.GetRequiredService<VectorDbContext>();
+    var logboekContext = provider.GetRequiredService<LogboekDbContext>();
+    return new CorrectieService(context, logboekContext, builder.Configuration);
+});
 
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

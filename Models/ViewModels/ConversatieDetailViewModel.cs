@@ -11,6 +11,7 @@ namespace VectorRagDemo.Models.ViewModels
         public double DuurMinuten { get; set; }
         public List<BerichtViewModel> Berichten { get; set; } = new();
         public List<EscalatieEventRij> Escalaties { get; set; } = new();
+        public List<CorrectieDetailRij> Correcties { get; set; } = new();
         public Project Project { get; set; } = null!;
     }
 
@@ -26,5 +27,13 @@ namespace VectorRagDemo.Models.ViewModels
     {
         public DateTime GemaaktOp { get; set; }
         public string Kanaal { get; set; } = "";
+    }
+
+    public class CorrectieDetailRij
+    {
+        public int ID { get; set; }
+        public int MessageID { get; set; }
+        public string Correctietekst { get; set; } = "";
+        public DateTime GemaaktOp { get; set; }
     }
 }

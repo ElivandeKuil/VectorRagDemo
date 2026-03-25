@@ -135,6 +135,11 @@ namespace VectorRagDemo.DAL
                 .OrderBy(e => e.GemaaktOp)
                 .ToListAsync();
 
+            var correcties = await _context.Correcties
+                .Where(c => c.ConversatieID == conversatieId && c.Status == 1)
+                .OrderBy(c => c.GemaaktOp)
+                .ToListAsync();
+
             var duurMinuten = conversation.GewijzigdOp > conversation.GemaaktOp
                 ? Math.Round((conversation.GewijzigdOp - conversation.GemaaktOp).TotalMinutes, 1)
                 : 0;
@@ -158,6 +163,13 @@ namespace VectorRagDemo.DAL
                 {
                     GemaaktOp = e.GemaaktOp,
                     Kanaal    = e.Kanaal
+                }).ToList(),
+                Correcties   = correcties.Select(c => new CorrectieDetailRij
+                {
+                    ID            = c.ID,
+                    MessageID     = c.MessageID,
+                    Correctietekst = c.Correctietekst,
+                    GemaaktOp     = c.GemaaktOp
                 }).ToList()
             };
         }

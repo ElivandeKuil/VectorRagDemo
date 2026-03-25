@@ -4,7 +4,7 @@ using System.Text;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Services;
 
-namespace VectorRagDemo.BLL
+namespace VectorRagDemo.BLL.Processors
 {
     public class EmbeddingProcessor
     {

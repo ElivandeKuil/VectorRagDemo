@@ -1,7 +1,7 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Configuration;
 
-namespace VectorRagDemo.BLL
+namespace VectorRagDemo.BLL.Processors
 {
     // Leesolgorde voor elke waarde:
     //   1. appsettings.{Environment}.json  (via IConfiguration, nooit committen)

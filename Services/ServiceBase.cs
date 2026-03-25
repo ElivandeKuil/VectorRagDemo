@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using VectorRagDemo.BLL;
+using VectorRagDemo.BLL.Processors;
 using VectorRagDemo.DAL;
 
 namespace VectorRagDemo.Services

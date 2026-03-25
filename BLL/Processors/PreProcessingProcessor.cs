@@ -3,7 +3,7 @@ using VectorRagDemo.Models.ApiContracts.GeminiAPI;
 using VectorRagDemo.Models.DataContracts;
 using VectorRagDemo.Models.Enums;
 
-namespace VectorRagDemo.BLL
+namespace VectorRagDemo.BLL.Processors
 {
     public class PreProcessingProcessor
     {
