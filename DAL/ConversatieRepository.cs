@@ -23,11 +23,6 @@ namespace VectorRagDemo.DAL
             int pid, ConversatieFilterModel filter)
         {
             var whereClause = new StringBuilder("WHERE c.projectid = @pid AND c.status = 1");
-            var havingClause = new StringBuilder();
-
-            // Kanaal filter
-            if (filter.Kanaal != "alle")
-                whereClause.Append(" AND c.brontype = @kanaal");
 
             // Date filters
             if (filter.DatumVan.HasValue)
@@ -39,14 +34,6 @@ namespace VectorRagDemo.DAL
             // Zoekterm filter (full-text search in messages)
             if (!string.IsNullOrWhiteSpace(filter.Zoekterm))
                 whereClause.Append(" AND EXISTS (SELECT 1 FROM message WHERE conversation = c.id AND tekst ILIKE @zoek)");
-
-            // Type filter: escalatie goes into WHERE, verlaten/betrokken into HAVING
-            if (filter.Type == "escalatie")
-                whereClause.Append(" AND EXISTS (SELECT 1 FROM escalatieevent WHERE conversatieid = c.id)");
-            else if (filter.Type == "verlaten")
-                havingClause.Append("HAVING COUNT(m.id) FILTER (WHERE m.sendertype = 1) = 1");
-            else if (filter.Type == "betrokken")
-                havingClause.Append("HAVING COUNT(m.id) >= 5");
 
             var orderClause = filter.Sortering == "nieuwste"
                 ? "ORDER BY c.gemaaktop DESC"
@@ -61,7 +48,7 @@ namespace VectorRagDemo.DAL
                     c.brontype,
                     COUNT(m.id)::int                                                         AS totaal_berichten,
                     COUNT(m.id) FILTER (WHERE m.sendertype = 1)::int                        AS gebruiker_berichten,
-                    ROUND(COALESCE(EXTRACT(EPOCH FROM (c.gewijzigdop - c.gemaaktop)), 0) / 60.0, 1)::float AS duur_minuten,
+                    MAX(m.gemaaktop)                                                         AS laatste_bericht,
                     (SELECT LEFT(tekst, 120) FROM message WHERE conversation = c.id AND sendertype = 1
                      ORDER BY gemaaktop ASC LIMIT 1)                                        AS eerste_bericht,
                     EXISTS(SELECT 1 FROM escalatieevent WHERE conversatieid = c.id)         AS heeft_escalatie,
@@ -69,8 +56,7 @@ namespace VectorRagDemo.DAL
                 FROM conversation c
                 LEFT JOIN message m ON m.conversation = c.id
                 {whereClause}
-                GROUP BY c.id, c.gemaaktop, c.gewijzigdop, c.brontype
-                {havingClause}
+                GROUP BY c.id, c.gemaaktop, c.brontype
                 {orderClause}
                 LIMIT @limit OFFSET @offset";
 
@@ -81,7 +67,6 @@ namespace VectorRagDemo.DAL
                     LEFT JOIN message m ON m.conversation = c.id
                     {whereClause}
                     GROUP BY c.id
-                    {havingClause}
                 ) sub";
 
             var rows = new List<ConversatieRijViewModel>();
@@ -110,15 +95,15 @@ namespace VectorRagDemo.DAL
                 {
                     rows.Add(new ConversatieRijViewModel
                     {
-                        ID                  = reader.GetInt32(0),
-                        GemaaktOp           = reader.GetDateTime(1),
-                        BronType            = reader.GetString(2),
-                        TotaalBerichten     = reader.GetInt32(3),
-                        GebruikerBerichten  = reader.GetInt32(4),
-                        DuurMinuten         = reader.GetDouble(5),
+                        ID                   = reader.GetInt32(0),
+                        GemaaktOp            = reader.GetDateTime(1),
+                        BronType             = reader.GetString(2),
+                        TotaalBerichten      = reader.GetInt32(3),
+                        GebruikerBerichten   = reader.GetInt32(4),
+                        LaatsteBerichtOp     = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
                         EersteBerichtPreview = reader.IsDBNull(6) ? null : reader.GetString(6),
-                        HeeftEscalatie      = reader.GetBoolean(7),
-                        EscalatieKanalen    = reader.IsDBNull(8) ? null : reader.GetString(8)
+                        HeeftEscalatie       = reader.GetBoolean(7),
+                        EscalatieKanalen     = reader.IsDBNull(8) ? null : reader.GetString(8)
                     });
                 }
             }
@@ -164,6 +149,7 @@ namespace VectorRagDemo.DAL
                 Project      = project,
                 Berichten    = messages.Select(m => new BerichtViewModel
                 {
+                    ID        = m.ID,
                     Tekst     = m.Tekst,
                     GemaaktOp = m.GemaaktOp,
                     IsBot     = m.SenderType == 2
@@ -181,9 +167,6 @@ namespace VectorRagDemo.DAL
         private static void AddFilterParameters(NpgsqlCommand cmd, int pid, ConversatieFilterModel filter)
         {
             cmd.Parameters.AddWithValue("pid", pid);
-
-            if (filter.Kanaal != "alle")
-                cmd.Parameters.AddWithValue("kanaal", filter.Kanaal);
 
             if (filter.DatumVan.HasValue)
                 cmd.Parameters.AddWithValue("van", filter.DatumVan.Value);

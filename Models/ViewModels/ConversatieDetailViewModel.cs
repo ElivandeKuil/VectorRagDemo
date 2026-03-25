@@ -16,6 +16,7 @@ namespace VectorRagDemo.Models.ViewModels
 
     public class BerichtViewModel
     {
+        public int ID { get; set; }
         public string Tekst { get; set; } = "";
         public DateTime GemaaktOp { get; set; }
         public bool IsBot { get; set; }

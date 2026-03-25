@@ -16,14 +16,15 @@ namespace VectorRagDemo.Models.ViewModels
     {
         public int ID { get; set; }
         public DateTime GemaaktOp { get; set; }
+        public DateTime? LaatsteBerichtOp { get; set; }
         public string BronType { get; set; } = "";
         public int TotaalBerichten { get; set; }
         public int GebruikerBerichten { get; set; }
-        public double DuurMinuten { get; set; }
         public string? EersteBerichtPreview { get; set; }
         public bool HeeftEscalatie { get; set; }
         public string? EscalatieKanalen { get; set; }
-        public bool IsVerlaten => GebruikerBerichten == 1;
+        public bool IsNieuw => (DateTime.UtcNow - GemaaktOp) < TimeSpan.FromHours(24);
+        public bool IsActief => LaatsteBerichtOp.HasValue && (DateTime.UtcNow - LaatsteBerichtOp.Value) < TimeSpan.FromMinutes(10);
         public bool IsBetrokken => TotaalBerichten >= 5;
     }
 }

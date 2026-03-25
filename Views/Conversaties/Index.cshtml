@@ -41,22 +41,6 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <label class="form-label small mb-1 text-muted">Kanaal</label>
-                    <select name="filter.Kanaal" class="form-select form-select-sm">
-                        <option value="alle" selected="@(f.Kanaal == "alle")">Alle kanalen</option>
-                        <option value="widget" selected="@(f.Kanaal == "widget")">Widget</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label small mb-1 text-muted">Type</label>
-                    <select name="filter.Type" class="form-select form-select-sm">
-                        <option value="alle" selected="@(f.Type == "alle")">Alle types</option>
-                        <option value="verlaten" selected="@(f.Type == "verlaten")">Verlaten</option>
-                        <option value="betrokken" selected="@(f.Type == "betrokken")">Betrokken</option>
-                        <option value="escalatie" selected="@(f.Type == "escalatie")">Doorverwijzing</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-2">
                     <label class="form-label small mb-1 text-muted">Datum van</label>
                     <input type="date" name="filter.DatumVan" class="form-control form-control-sm"
                            value="@(f.DatumVan.HasValue ? f.DatumVan.Value.ToString("yyyy-MM-dd") : "")" />
@@ -114,9 +98,7 @@ else
             <thead class="table-light">
                 <tr>
                     <th class="text-nowrap"><i class="bi bi-calendar3 me-1"></i>Datum / tijd</th>
-                    <th>Kanaal</th>
                     <th class="text-center">Berichten</th>
-                    <th class="text-center">Duur</th>
                     <th>Eerste bericht</th>
                     <th>Status</th>
                     <th></th>
@@ -127,31 +109,22 @@ else
                 {
                     <tr>
                         <td class="text-nowrap small">@g.GemaaktOp.ToString("dd-MM-yyyy HH:mm")</td>
-                        <td>
-                            <span class="badge bg-primary">Widget</span>
-                        </td>
                         <td class="text-center small">
                             <span title="Totaal berichten">@g.TotaalBerichten</span>
                             <span class="text-muted"> / </span>
                             <span class="text-muted" title="Berichten van bezoeker">@g.GebruikerBerichten</span>
                         </td>
-                        <td class="text-center small text-muted">
-                            @if (g.DuurMinuten > 0)
-                            {
-                                @(g.DuurMinuten)<text> min</text>
-                            }
-                            else
-                            {
-                                <text>–</text>
-                            }
-                        </td>
                         <td class="small text-muted fst-italic" style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             @(g.EersteBerichtPreview ?? "–")
                         </td>
                         <td class="text-nowrap">
-                            @if (g.IsVerlaten)
+                            @if (g.IsActief)
                             {
-                                <span class="badge bg-warning text-dark me-1">Verlaten</span>
+                                <span class="badge bg-success me-1">Actief</span>
+                            }
+                            @if (g.IsNieuw)
+                            {
+                                <span class="badge bg-info text-dark me-1">Nieuw</span>
                             }
                             @if (g.IsBetrokken)
                             {
@@ -190,8 +163,6 @@ else
                     <a class="page-link" asp-action="Index"
                        asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
                        asp-route-filter.Zoekterm="@f.Zoekterm"
-                       asp-route-filter.Kanaal="@f.Kanaal"
-                       asp-route-filter.Type="@f.Type"
                        asp-route-filter.DatumVan="@(f.DatumVan.HasValue ? f.DatumVan.Value.ToString("yyyy-MM-dd") : "")"
                        asp-route-filter.DatumTot="@(f.DatumTot.HasValue ? f.DatumTot.Value.ToString("yyyy-MM-dd") : "")"
                        asp-route-filter.Sortering="@f.Sortering"
@@ -219,8 +190,6 @@ else
                             <a class="page-link" asp-action="Index"
                                asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
                                asp-route-filter.Zoekterm="@f.Zoekterm"
-                               asp-route-filter.Kanaal="@f.Kanaal"
-                               asp-route-filter.Type="@f.Type"
                                asp-route-filter.DatumVan="@(f.DatumVan.HasValue ? f.DatumVan.Value.ToString("yyyy-MM-dd") : "")"
                                asp-route-filter.DatumTot="@(f.DatumTot.HasValue ? f.DatumTot.Value.ToString("yyyy-MM-dd") : "")"
                                asp-route-filter.Sortering="@f.Sortering"
@@ -235,9 +204,7 @@ else
                     <a class="page-link" asp-action="Index"
                        asp-route-projectId="@(isAdmin ? Model.Project.ID : 0)"
                        asp-route-filter.Zoekterm="@f.Zoekterm"
-                       asp-route-filter.Kanaal="@f.Kanaal"
-                       asp-route-filter.Type="@f.Type"
-                       asp-route-filter.DatumVan="@(f.DatumVan.HasValue ? f.DatumVan.Value.ToString("yyyy-MM-dd") : "")"
+asp-route-filter.DatumVan="@(f.DatumVan.HasValue ? f.DatumVan.Value.ToString("yyyy-MM-dd") : "")"
                        asp-route-filter.DatumTot="@(f.DatumTot.HasValue ? f.DatumTot.Value.ToString("yyyy-MM-dd") : "")"
                        asp-route-filter.Sortering="@f.Sortering"
                        asp-route-filter.Pagina="@(pagina + 1)">
