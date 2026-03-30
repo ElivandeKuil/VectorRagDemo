@@ -1,0 +1,261 @@
+@model List<VectorRagDemo.Models.Entities.Chunk>
+@{
+    var bron = ViewBag.Bron as VectorRagDemo.Models.Entities.Bron;
+    ViewData["Title"] = $"Chunks bewerken — {bron?.Title}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <a asp-action="Index" class="text-muted small me-2">
+            <i class="bi bi-arrow-left me-1"></i>Terug naar documenten
+        </a>
+        <h1 class="mb-0 mt-1">
+            <i class="bi bi-file-earmark-text me-2"></i>@bron?.Title
+        </h1>
+        <p class="text-muted small mb-0">@Model.Count chunk@(Model.Count != 1 ? "s" : "") &mdash; bewerk tekst en sla op om de embedding automatisch bij te werken.</p>
+    </div>
+    <a asp-action="Download" asp-route-id="@bron?.ID"
+       btn-variant="outline-secondary" btn-icon="download" title="Downloaden als .txt"></a>
+</div>
+
+<div id="chunkList">
+    @for (int i = 0; i < Model.Count; i++)
+    {
+        var chunk = Model[i];
+        <div class="card mb-3 chunk-card" id="chunk-card-@chunk.ID" data-chunk-id="@chunk.ID">
+            <div class="card-header d-flex align-items-center justify-content-between py-2">
+                <span class="text-muted small fw-semibold">Chunk @(i + 1)</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-muted small chunk-word-count" id="wc-@chunk.ID">
+                        @chunk.Tekst.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length woorden
+                    </span>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary btn-save-chunk"
+                            data-chunk-id="@chunk.ID"
+                            title="Opslaan en embedding vernieuwen">
+                        <i class="bi bi-floppy me-1"></i>Opslaan
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger btn-delete-chunk"
+                            data-chunk-id="@chunk.ID"
+                            title="Chunk verwijderen">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <textarea class="form-control border-0 rounded-0 chunk-textarea"
+                          id="tekst-@chunk.ID"
+                          rows="6"
+                          style="resize:vertical;font-size:.85rem;line-height:1.65;font-family:inherit">@chunk.Tekst</textarea>
+            </div>
+            <div class="card-footer py-1 px-3 d-none chunk-status" id="status-@chunk.ID"></div>
+        </div>
+    }
+</div>
+
+<div class="card border-dashed mt-4" id="addChunkCard">
+    <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-plus-circle me-2 text-primary"></i>Nieuwe chunk toevoegen</span>
+    </div>
+    <div class="card-body p-0">
+        <textarea id="newChunkText" class="form-control border-0 rounded-0"
+                  rows="5"
+                  placeholder="Typ of plak hier de tekst voor de nieuwe chunk…"
+                  style="resize:vertical;font-size:.85rem;line-height:1.65;font-family:inherit"></textarea>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center py-2">
+        <span class="text-muted small" id="newChunkWc">0 woorden</span>
+        <button type="button" btn-variant="primary" btn-icon="plus-circle" id="btnAddChunk">
+            Chunk toevoegen &amp; embedden
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const bronId = @bron!.ID;
+    const afToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+    async function apiPost(url, params) {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ __RequestVerificationToken: afToken, ...params })
+        });
+        return resp.json();
+    }
+
+    function setStatus(chunkId, type, msg) {
+        const el = document.getElementById('status-' + chunkId);
+        el.className = `card-footer py-1 px-3 small bg-${type === 'ok' ? 'success' : type === 'err' ? 'danger' : 'warning'} bg-opacity-10 text-${type === 'ok' ? 'success' : type === 'err' ? 'danger' : 'warning'}`;
+        el.textContent = msg;
+        el.classList.remove('d-none');
+        if (type === 'ok') setTimeout(() => el.classList.add('d-none'), 3000);
+    }
+
+    function setLoading(btn, loading) {
+        if (loading) {
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Bezig…';
+            btn.disabled = true;
+        } else {
+            btn.innerHTML = btn.dataset.originalHtml ?? btn.innerHTML;
+            btn.disabled = false;
+        }
+    }
+
+    function updateWordCount(chunkId, textarea) {
+        const wc = textarea.value.trim().split(/\s+/).filter(Boolean).length;
+        const el = document.getElementById('wc-' + chunkId);
+        if (el) el.textContent = wc + ' woorden';
+    }
+
+    // Wire up save buttons
+    document.querySelectorAll('.btn-save-chunk').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const chunkId = this.dataset.chunkId;
+            const tekst = document.getElementById('tekst-' + chunkId).value;
+
+            if (!tekst.trim()) {
+                setStatus(chunkId, 'err', 'Tekst mag niet leeg zijn.');
+                return;
+            }
+
+            setLoading(this, true);
+            setStatus(chunkId, 'busy', 'Opslaan en embedden…');
+
+            const data = await apiPost('/Chunk/UpdateChunk', { chunkId, tekst });
+
+            setLoading(this, false);
+            if (data.success) {
+                setStatus(chunkId, 'ok', 'Opgeslagen en embedding vernieuwd.');
+            } else {
+                setStatus(chunkId, 'err', data.message ?? 'Opslaan mislukt.');
+            }
+        });
+    });
+
+    // Wire up delete buttons
+    document.querySelectorAll('.btn-delete-chunk').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const chunkId = this.dataset.chunkId;
+            if (!confirm('Chunk verwijderen?')) return;
+
+            setLoading(this, true);
+            const data = await apiPost('/Chunk/DeleteChunk', { chunkId });
+
+            if (data.success) {
+                const card = document.getElementById('chunk-card-' + chunkId);
+                card.remove();
+                renumberChunks();
+            } else {
+                setLoading(this, false);
+                alert(data.message ?? 'Verwijderen mislukt.');
+            }
+        });
+    });
+
+    // Live word counts on edit
+    document.querySelectorAll('.chunk-textarea').forEach(ta => {
+        const chunkId = ta.id.replace('tekst-', '');
+        ta.addEventListener('input', () => updateWordCount(chunkId, ta));
+    });
+
+    // Renumber chunk headers after delete
+    function renumberChunks() {
+        document.querySelectorAll('.chunk-card').forEach((card, idx) => {
+            card.querySelector('.card-header .text-muted').textContent = 'Chunk ' + (idx + 1);
+        });
+    }
+
+    // New chunk word count
+    const newChunkTextarea = document.getElementById('newChunkText');
+    newChunkTextarea.addEventListener('input', function () {
+        const wc = this.value.trim().split(/\s+/).filter(Boolean).length;
+        document.getElementById('newChunkWc').textContent = wc + ' woorden';
+    });
+
+    // Add chunk
+    document.getElementById('btnAddChunk').addEventListener('click', async function () {
+        const tekst = newChunkTextarea.value;
+        if (!tekst.trim()) {
+            alert('Voer tekst in voor de nieuwe chunk.');
+            return;
+        }
+
+        setLoading(this, true);
+        const data = await apiPost('/Chunk/AddChunk', { bronId, tekst });
+
+        setLoading(this, false);
+        if (data.success) {
+            newChunkTextarea.value = '';
+            document.getElementById('newChunkWc').textContent = '0 woorden';
+
+            // Append new chunk card to the list
+            const chunkList = document.getElementById('chunkList');
+            const idx = chunkList.querySelectorAll('.chunk-card').length + 1;
+            const chunkId = data.chunkId;
+            const card = document.createElement('div');
+            card.className = 'card mb-3 chunk-card';
+            card.id = 'chunk-card-' + chunkId;
+            card.dataset.chunkId = chunkId;
+            card.innerHTML = `
+                <div class="card-header d-flex align-items-center justify-content-between py-2">
+                    <span class="text-muted small fw-semibold">Chunk ${idx}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-muted small chunk-word-count" id="wc-${chunkId}">
+                            ${tekst.trim().split(/\s+/).filter(Boolean).length} woorden
+                        </span>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary btn-save-chunk"
+                                data-chunk-id="${chunkId}"
+                                title="Opslaan en embedding vernieuwen">
+                            <i class="bi bi-floppy me-1"></i>Opslaan
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger btn-delete-chunk"
+                                data-chunk-id="${chunkId}"
+                                title="Chunk verwijderen">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <textarea class="form-control border-0 rounded-0 chunk-textarea"
+                              id="tekst-${chunkId}"
+                              rows="6"
+                              style="resize:vertical;font-size:.85rem;line-height:1.65;font-family:inherit">${tekst.trim()}</textarea>
+                </div>
+                <div class="card-footer py-1 px-3 d-none chunk-status" id="status-${chunkId}"></div>`;
+            chunkList.appendChild(card);
+
+            // Wire up the new card's buttons
+            card.querySelector('.btn-save-chunk').addEventListener('click', async function () {
+                const t = document.getElementById('tekst-' + chunkId).value;
+                if (!t.trim()) { setStatus(chunkId, 'err', 'Tekst mag niet leeg zijn.'); return; }
+                setLoading(this, true);
+                setStatus(chunkId, 'busy', 'Opslaan en embedden…');
+                const r = await apiPost('/Chunk/UpdateChunk', { chunkId, tekst: t });
+                setLoading(this, false);
+                r.success ? setStatus(chunkId, 'ok', 'Opgeslagen en embedding vernieuwd.')
+                          : setStatus(chunkId, 'err', r.message ?? 'Opslaan mislukt.');
+            });
+
+            card.querySelector('.btn-delete-chunk').addEventListener('click', async function () {
+                if (!confirm('Chunk verwijderen?')) return;
+                setLoading(this, true);
+                const r = await apiPost('/Chunk/DeleteChunk', { chunkId });
+                if (r.success) { card.remove(); renumberChunks(); }
+                else { setLoading(this, false); alert(r.message ?? 'Verwijderen mislukt.'); }
+            });
+
+            card.querySelector('.chunk-textarea').addEventListener('input', function () {
+                updateWordCount(chunkId, this);
+            });
+        } else {
+            alert(data.message ?? 'Toevoegen mislukt.');
+        }
+    });
+</script>
+}

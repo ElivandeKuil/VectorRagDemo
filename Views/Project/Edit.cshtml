@@ -27,6 +27,8 @@
         </div>
     </div>
 
+    @if (User.IsInRole("Admin"))
+    {
     <div class="card shadow-sm border-warning mb-4">
         <div class="card-header bg-warning bg-opacity-10">
             <h5 class="mb-0">
@@ -90,10 +92,14 @@
 
         </div>
     </div>
+    } @* end admin-only betaalde features *@
 
     <div class="d-flex flex-wrap gap-2">
         <button type="submit" btn-variant="primary" btn-icon="check-lg">Opslaan</button>
-        <a asp-action="Index" btn-variant="outline-secondary">Annuleren</a>
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-action="Index" btn-variant="outline-secondary">Annuleren</a>
+        }
         <a asp-controller="Chat" asp-action="WidgetSettings" asp-route-projectId="@Model.ID" btn-variant="outline-primary" btn-icon="sliders">Widget instellingen</a>
         @if (!Model.GebruikPromptTabel)
         {
@@ -107,7 +113,83 @@
 
 </form>
 
-@if (!string.IsNullOrWhiteSpace(Model.EmbedKey))
+@{
+    bool isDevProject = Model.ProductieProjectId.HasValue;
+    bool isProdProject = ViewBag.DevProjectNaam != null;
+}
+
+<div class="card shadow-sm border-secondary mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Omgevingen
+            @if (isDevProject)
+            {
+                <span class="badge bg-primary ms-2 fw-normal" style="font-size:.7em">Ontwikkeling</span>
+            }
+            else if (isProdProject)
+            {
+                <span class="badge bg-success ms-2 fw-normal" style="font-size:.7em">Productie</span>
+            }
+        </h5>
+    </div>
+    <div class="card-body">
+        @if (isProdProject)
+        {
+            <p class="mb-0 text-muted small">
+                <i class="bi bi-info-circle me-1"></i>Dit project is de productieomgeving van <strong>@ViewBag.DevProjectNaam</strong>.
+                Het wordt gevuld via de kloonactie in dat project.
+            </p>
+        }
+        else if (isDevProject)
+        {
+            <p class="small text-muted mb-3">
+                Dit is een <strong>ontwikkelproject</strong>. De widget-sleutel bevindt zich op het gekoppelde productieproject.
+                Gebruik de kloonknop om alle bronnen en kennis naar productie te kopiëren.
+            </p>
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="fw-semibold">Productieomgeving:</span>
+                <span class="badge bg-success fs-6">@ViewBag.ProductieProjectNaam</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <form asp-action="CloneNaarProductie" asp-route-id="@Model.ID" method="post"
+                      onsubmit="return confirm('Weet u zeker dat u alle kennis wilt kopiëren naar productie? De bestaande kennis in het productieproject wordt vervangen.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" btn-variant="success" btn-icon="arrow-up-circle">Kloon naar productie</button>
+                </form>
+                @if (User.IsInRole("Admin"))
+                {
+                    <form asp-action="UnlinkProductieProject" asp-route-id="@Model.ID" method="post"
+                          onsubmit="return confirm('Weet u zeker dat u de koppeling met het productieproject wilt verwijderen?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" btn-variant="outline-danger" btn-size="sm" btn-icon="x-lg">Ontkoppelen</button>
+                    </form>
+                }
+            </div>
+        }
+        else if (User.IsInRole("Admin"))
+        {
+            <p class="small text-muted mb-3">
+                Koppel een productieproject aan dit project om een aparte ontwikkel- en productieomgeving te hebben.
+                De widget-sleutel blijft op het productieproject; kennis kloon je vanuit het ontwikkelproject.
+            </p>
+            <form asp-action="LinkProductieProject" asp-route-id="@Model.ID" method="post" class="d-flex gap-2 align-items-end flex-wrap">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label class="form-label fw-semibold small mb-1">Productieproject</label>
+                    <select name="productieProjectId" app-field style="min-width:220px">
+                        <option value="">— Selecteer project —</option>
+                        @foreach (var p in (List<VectorRagDemo.Models.Entities.Project>)ViewBag.BeschikbareProductieProjecten)
+                        {
+                            <option value="@p.ID">@p.Naam</option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" btn-variant="primary" btn-icon="link-45deg">Koppelen</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.EmbedKey) && !isDevProject)
 {
     var embedSnippet = $"<script src=\"{Context.Request.Scheme}://{Context.Request.Host}/js/widget-loader.js?key={Model.EmbedKey}\" defer></script>";
     <div class="card shadow-sm mt-4">

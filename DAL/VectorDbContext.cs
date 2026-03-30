@@ -69,6 +69,12 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.GebruikPromptTabel).IsRequired().HasDefaultValue(true);
                 entity.Property(e => e.ExtraCommunicationEnabled).IsRequired().HasDefaultValue(false);
                 entity.Property(e => e.StatistiekenTier).IsRequired().HasDefaultValue(0);
+                entity.Property(e => e.ProductieProjectId);
+
+                entity.HasOne(e => e.ProductieProjectNavigation)
+                    .WithMany()
+                    .HasForeignKey(e => e.ProductieProjectId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Bron configuration

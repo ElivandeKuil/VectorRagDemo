@@ -153,7 +153,11 @@
                             <td class="text-end doc-actions">
                                 <a asp-action="Download" asp-route-id="@doc.BronId"
                                    btn-variant="outline-secondary" btn-size="sm" btn-icon="download" class="me-1"
-                                   title="Downloaden"></a>
+                                   title="Downloaden als .txt"></a>
+                                <a asp-action="EditChunks" asp-route-bronId="@doc.BronId"
+                                   btn-variant="outline-primary" btn-size="sm" btn-icon="pencil-square" class="me-1"
+                                   title="Chunks bewerken"
+                                   onclick="event.stopPropagation()"></a>
                                 <button type="button"
                                         btn-variant="outline-secondary" btn-size="sm" btn-icon="pencil" class="me-1 btn-rename-doc"
                                         data-bron-id="@doc.BronId"

@@ -14,11 +14,13 @@ namespace VectorRagDemo.Controllers
     {
         private readonly VectorDbContext _context;
         private readonly CorrectieService _correctieService;
+        private readonly OmgevingService _omgevingService;
 
-        public CorrectiesController(VectorDbContext context, CorrectieService correctieService)
+        public CorrectiesController(VectorDbContext context, CorrectieService correctieService, OmgevingService omgevingService)
         {
-            _context         = context;
+            _context          = context;
             _correctieService = correctieService;
+            _omgevingService  = omgevingService;
         }
 
         public async Task<IActionResult> Index(int projectId = 0, int pagina = 1)
@@ -133,17 +135,15 @@ namespace VectorRagDemo.Controllers
         {
             if (User.IsInRole("Admin"))
             {
-                if (projectId <= 0) return null;
-                return await _context.Projects.FindAsync(projectId);
+                var id = _omgevingService.ResolveForAdmin(projectId);
+                if (id <= 0) return null;
+                return await _context.Projects.FindAsync(id);
             }
 
             var userId = User.GetUserId();
-            var entry = await _context.GebruikerProjecten
-                .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
-                .FirstOrDefaultAsync();
-
-            if (entry == null) return null;
-            return await _context.Projects.FindAsync(entry.Project);
+            var activeId = await _omgevingService.ResolveForUserAsync(userId);
+            if (activeId <= 0) return null;
+            return await _context.Projects.FindAsync(activeId);
         }
     }
 }

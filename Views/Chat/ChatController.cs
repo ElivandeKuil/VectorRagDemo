@@ -21,13 +21,15 @@ namespace VectorRagDemo.Views.Chat
         private readonly LinkPreviewService _linkPreviewService;
         private readonly VectorDbContext _context;
         private readonly ManagementDbContext _managementContext;
+        private readonly OmgevingService _omgevingService;
 
-        public ChatController(ChatService chatService, LinkPreviewService linkPreviewService, VectorDbContext context, ManagementDbContext managementContext)
+        public ChatController(ChatService chatService, LinkPreviewService linkPreviewService, VectorDbContext context, ManagementDbContext managementContext, OmgevingService omgevingService)
         {
             _chatService = chatService;
             _linkPreviewService = linkPreviewService;
             _context = context;
             _managementContext = managementContext;
+            _omgevingService = omgevingService;
         }
 
         public async Task<IActionResult> Index(int projectId = 0)
@@ -509,22 +511,21 @@ namespace VectorRagDemo.Views.Chat
         {
             if (User.IsInRole("Admin"))
             {
+                var id = _omgevingService.ResolveForAdmin(adminProjectId);
                 var botName = "Assistant";
-                if (adminProjectId > 0)
+                if (id > 0)
                 {
-                    var project = await _context.Projects.FindAsync(adminProjectId);
+                    var project = await _context.Projects.FindAsync(id);
                     botName = project?.BotName ?? "Assistant";
                 }
-                return (botName, adminProjectId, false);
+                return (botName, id, false);
             }
 
             var userId = User.GetUserId();
-            var entry = await _context.GebruikerProjecten
-                .Include(gp => gp.ProjectNavigation)
-                .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
-                .FirstOrDefaultAsync();
-
-            return (entry?.ProjectNavigation?.BotName ?? "Assistant", entry?.Project ?? 0, entry != null);
+            var activeId = await _omgevingService.ResolveForUserAsync(userId);
+            if (activeId <= 0) return ("Assistant", 0, false);
+            var activeProject = await _context.Projects.FindAsync(activeId);
+            return (activeProject?.BotName ?? "Assistant", activeId, true);
         }
     }
 }

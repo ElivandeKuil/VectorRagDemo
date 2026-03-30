@@ -44,6 +44,10 @@ builder.Services.AddScoped<UserAuthenticationService>();
 // Register ProjectAccessService
 builder.Services.AddScoped<ProjectAccessService>();
 
+// Environment (dev/prod) switcher — cookie-backed active project selection
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<OmgevingService>();
+
 // GDPR toestemmingsbeheer
 builder.Services.AddScoped<ConsentService>();
 builder.Services.AddScoped<UserDeletionService>();

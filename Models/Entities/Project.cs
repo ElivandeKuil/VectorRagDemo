@@ -31,9 +31,15 @@
         /// </summary>
         public int StatistiekenTier { get; set; } = 0;
 
+        /// <summary>
+        /// Wanneer ingesteld is dit de ontwikkelomgeving; de waarde verwijst naar het gekoppelde productieproject.
+        /// </summary>
+        public int? ProductieProjectId { get; set; }
+
         // Navigation properties
         public WidgetConfig? WidgetConfig { get; set; }
         public ICollection<Bron> Bronnen { get; set; } = new List<Bron>();
         public ICollection<Prompt> Prompts { get; set; } = new List<Prompt>();
+        public Project? ProductieProjectNavigation { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 @inject VectorRagDemo.Services.ProjectAccessService ProjectAccessService
 @inject VectorRagDemo.DAL.VectorDbContext VectorDbContext
+@inject VectorRagDemo.Services.OmgevingService OmgevingService
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -110,7 +111,14 @@
                                 }
                             }
 
-                            @* Toon "Prompt instellingen" automatisch als het project custom prompts gebruikt. *@
+                            @* Projectinstellingen: altijd zichtbaar voor niet-admins *@
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="Project" asp-action="Edit">
+                                <i class="bi bi-gear me-1"></i>Instellingen
+                            </a>
+                        </li>
+
+                        @* Toon "Prompt instellingen" automatisch als het project custom prompts gebruikt. *@
                             var navUserId = int.TryParse(
                                 User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
                                 out var navUid) ? navUid : 0;
@@ -138,6 +146,73 @@
 
                     @if (User.Identity?.IsAuthenticated == true)
                     {
+                        @* ── Environment / project switcher ── *@
+                        @if (User.IsInRole("Admin"))
+                        {
+                            var switchReturnUrl = Context.Request.Path + Context.Request.QueryString;
+                            var activeId = OmgevingService.GetActiveProjectId();
+                            var allProjects = VectorDbContext.Projects
+                                .Where(p => p.Status == 1)
+                                .OrderBy(p => p.Naam)
+                                .ToList();
+                            var activeName = allProjects.FirstOrDefault(p => p.ID == activeId)?.Naam ?? "Geen project";
+                            <ul class="navbar-nav me-2">
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-folder2-open me-1 text-primary"></i>@activeName
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        @foreach (var proj in allProjects)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(proj.ID == activeId ? "active" : "")"
+                                                   href="@Url.Action("Switch", "Omgeving", new { projectId = proj.ID, returnUrl = switchReturnUrl })">
+                                                    @if (proj.ProductieProjectId.HasValue)
+                                                    {
+                                                        <span class="badge bg-primary me-1" style="font-size:.6em">Dev</span>
+                                                    }
+                                                    else if (VectorDbContext.Projects.Any(d => d.ProductieProjectId == proj.ID))
+                                                    {
+                                                        <span class="badge bg-success me-1" style="font-size:.6em">Prod</span>
+                                                    }
+                                                    @proj.Naam
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </li>
+                            </ul>
+                        }
+                        else
+                        {
+                            var switchReturnUrl = Context.Request.Path + Context.Request.QueryString;
+                            var switcher_uid = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var suid) ? suid : 0;
+                            if (switcher_uid > 0)
+                            {
+                                var devEntry = VectorDbContext.GebruikerProjecten
+                                    .Where(gp => gp.Gebruiker == switcher_uid && gp.Status == 1)
+                                    .FirstOrDefault();
+                                var devProject = devEntry != null ? VectorDbContext.Projects.Find(devEntry.Project) : null;
+                                if (devProject?.ProductieProjectId.HasValue == true)
+                                {
+                                    var activeId = OmgevingService.GetActiveProjectId();
+                                    var isDevActive = activeId == 0 || activeId == devProject.ID;
+                                    <ul class="navbar-nav me-2 align-items-center">
+                                        <li class="nav-item d-flex gap-1">
+                                            <a href="@Url.Action("Switch", "Omgeving", new { projectId = devProject.ID, returnUrl = switchReturnUrl })"
+                                               class="badge text-decoration-none py-1 px-2 @(isDevActive ? "bg-primary" : "bg-secondary")">
+                                                Ontwikkeling
+                                            </a>
+                                            <a href="@Url.Action("Switch", "Omgeving", new { projectId = devProject.ProductieProjectId, returnUrl = switchReturnUrl })"
+                                               class="badge text-decoration-none py-1 px-2 @(!isDevActive ? "bg-success" : "bg-secondary")">
+                                                Productie
+                                            </a>
+                                        </li>
+                                    </ul>
+                                }
+                            }
+                        }
+
                         <ul class="navbar-nav">
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-dark" href="#" role="button"

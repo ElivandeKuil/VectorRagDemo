@@ -6,6 +6,7 @@ using VectorRagDemo.DAL;
 using VectorRagDemo.Extensions;
 using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.ViewModels;
+using VectorRagDemo.Services;
 
 namespace VectorRagDemo.Controllers
 {
@@ -14,11 +15,13 @@ namespace VectorRagDemo.Controllers
     {
         private readonly VectorDbContext _context;
         private readonly StatistiekenRepository _repo;
+        private readonly OmgevingService _omgevingService;
 
-        public StatistiekenController(VectorDbContext context, StatistiekenRepository repo)
+        public StatistiekenController(VectorDbContext context, StatistiekenRepository repo, OmgevingService omgevingService)
         {
             _context = context;
             _repo    = repo;
+            _omgevingService = omgevingService;
         }
 
         public async Task<IActionResult> Index(int projectId = 0)
@@ -72,17 +75,15 @@ namespace VectorRagDemo.Controllers
         {
             if (User.IsInRole("Admin"))
             {
-                if (projectId <= 0) return null;
-                return await _context.Projects.FindAsync(projectId);
+                var id = _omgevingService.ResolveForAdmin(projectId);
+                if (id <= 0) return null;
+                return await _context.Projects.FindAsync(id);
             }
 
             var userId = User.GetUserId();
-            var entry = await _context.GebruikerProjecten
-                .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
-                .FirstOrDefaultAsync();
-
-            if (entry == null) return null;
-            return await _context.Projects.FindAsync(entry.Project);
+            var activeId = await _omgevingService.ResolveForUserAsync(userId);
+            if (activeId <= 0) return null;
+            return await _context.Projects.FindAsync(activeId);
         }
 
         private async Task<StatistiekenViewModel> BuildStatistiekenAsync(Project project, bool heeftEscalatie)

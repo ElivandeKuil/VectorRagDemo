@@ -8,6 +8,7 @@ using VectorRagDemo.DAL;
 using VectorRagDemo.Extensions;
 using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.ViewModels;
+using VectorRagDemo.Services;
 
 namespace VectorRagDemo.Controllers
 {
@@ -16,20 +17,21 @@ namespace VectorRagDemo.Controllers
         private readonly VectorDbContext _context;
         private readonly LogboekDbContext _logboekContext;
         private readonly IConfiguration _configuration;
-        private readonly IWebHostEnvironment _env;
         private readonly EmbeddingProcessor _embeddingProcessor;
+
+        private readonly OmgevingService _omgevingService;
 
         public ChunkController(
             VectorDbContext context,
             LogboekDbContext logboekContext,
             IConfiguration configuration,
-            IWebHostEnvironment env)
+            OmgevingService omgevingService)
         {
             _context = context;
             _logboekContext = logboekContext;
             _configuration = configuration;
-            _env = env;
             _embeddingProcessor = new EmbeddingProcessor(new HttpClient(), logboekContext);
+            _omgevingService = omgevingService;
         }
 
         public async Task<IActionResult> Index(int? projectId = null, int? folderId = null)
@@ -43,15 +45,19 @@ namespace VectorRagDemo.Controllers
 
             if (User.IsInRole("Admin"))
             {
-                resolvedProjectId = accessibleProjects.Any(p => p.ID == projectId)
-                    ? projectId!.Value
+                var cookieId = _omgevingService.ResolveForAdmin(projectId ?? 0);
+                resolvedProjectId = accessibleProjects.Any(p => p.ID == cookieId)
+                    ? cookieId
                     : accessibleProjects.First().ID;
-
                 ViewBag.Projects = new SelectList(accessibleProjects, "ID", "Naam", resolvedProjectId);
             }
             else
             {
-                resolvedProjectId = accessibleProjects.First().ID;
+                var userId = User.GetUserId();
+                var cookieId = await _omgevingService.ResolveForUserAsync(userId);
+                resolvedProjectId = accessibleProjects.Any(p => p.ID == cookieId)
+                    ? cookieId
+                    : accessibleProjects.First().ID;
             }
 
             ViewBag.SelectedProjectId = resolvedProjectId;
@@ -358,7 +364,6 @@ namespace VectorRagDemo.Controllers
             }
 
             Bron? bron = null;
-            string? diskPath = null;
 
             try
             {
@@ -382,15 +387,12 @@ namespace VectorRagDemo.Controllers
                     return View();
                 }
 
-                var relPath = $"uploads/{Guid.NewGuid()}{ext}";
-                diskPath = Path.Combine(_env.WebRootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
-
                 bron = new Bron
                 {
                     Title = Path.GetFileNameWithoutExtension(file.FileName),
                     Project = projectId,
                     FileName = file.FileName,
-                    FilePath = relPath,
+                    FilePath = null,
                     FolderId = folderId,
                     Link = string.IsNullOrWhiteSpace(link) ? null : link.Trim(),
                     GemaaktOp = DateTime.Now,
@@ -399,9 +401,6 @@ namespace VectorRagDemo.Controllers
 
                 _context.Bronnen.Add(bron);
                 await _context.SaveChangesAsync();
-
-                Directory.CreateDirectory(Path.GetDirectoryName(diskPath)!);
-                await System.IO.File.WriteAllBytesAsync(diskPath, bytes);
 
                 var embeddings = await _embeddingProcessor.GenerateBatchEmbeddingsAsync(chunkTexts);
 
@@ -438,9 +437,6 @@ namespace VectorRagDemo.Controllers
                     bron.Status = 2;
                     await _context.SaveChangesAsync();
                 }
-
-                if (diskPath != null && System.IO.File.Exists(diskPath))
-                    System.IO.File.Delete(diskPath);
 
                 ModelState.AddModelError(string.Empty, $"Fout bij verwerking: {ex.Message}");
                 return View();
@@ -491,7 +487,6 @@ namespace VectorRagDemo.Controllers
             }
 
             Bron? bron = null;
-            string? diskPath = null;
 
             try
             {
@@ -507,15 +502,13 @@ namespace VectorRagDemo.Controllers
 
                 var safeTitle = string.Concat(title.Trim().Split(Path.GetInvalidFileNameChars()));
                 var fileName = (safeTitle.Length > 0 ? safeTitle : "tekst") + ".txt";
-                var relPath = $"uploads/{Guid.NewGuid()}.txt";
-                diskPath = Path.Combine(_env.WebRootPath, relPath.Replace('/', Path.DirectorySeparatorChar));
 
                 bron = new Bron
                 {
                     Title = title.Trim(),
                     Project = projectId,
                     FileName = fileName,
-                    FilePath = relPath,
+                    FilePath = null,
                     FolderId = folderId,
                     Link = string.IsNullOrWhiteSpace(link) ? null : link.Trim(),
                     GemaaktOp = DateTime.Now,
@@ -524,9 +517,6 @@ namespace VectorRagDemo.Controllers
 
                 _context.Bronnen.Add(bron);
                 await _context.SaveChangesAsync();
-
-                Directory.CreateDirectory(Path.GetDirectoryName(diskPath)!);
-                await System.IO.File.WriteAllBytesAsync(diskPath, System.Text.Encoding.UTF8.GetBytes(text));
 
                 var embeddings = await _embeddingProcessor.GenerateBatchEmbeddingsAsync(chunkTexts);
 
@@ -564,9 +554,6 @@ namespace VectorRagDemo.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                if (diskPath != null && System.IO.File.Exists(diskPath))
-                    System.IO.File.Delete(diskPath);
-
                 ModelState.AddModelError(string.Empty, $"Fout bij verwerking: {ex.Message}");
                 ViewBag.InputTitle = title;
                 ViewBag.InputText = text;
@@ -580,40 +567,39 @@ namespace VectorRagDemo.Controllers
         public async Task<IActionResult> Download(int id)
         {
             var bron = await _context.Bronnen.FindAsync(id);
-            if (bron == null || bron.FilePath == null || bron.FileName == null || bron.Status != 1)
-                return NotFound();
-
-            var diskPath = Path.Combine(_env.WebRootPath, bron.FilePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(diskPath))
-                return NotFound();
-
-            var ext = Path.GetExtension(bron.FileName).ToLowerInvariant();
-            var contentType = ext == ".docx"
-                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                : "text/plain";
-
-            var bytes = await System.IO.File.ReadAllBytesAsync(diskPath);
-            return File(bytes, contentType, bron.FileName);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Preview(int id)
-        {
-            var bron = await _context.Bronnen.FindAsync(id);
-            if (bron == null || bron.FilePath == null || bron.FileName == null || bron.Status != 1)
+            if (bron == null || bron.FileName == null || bron.Status != 1)
                 return NotFound();
 
             var accessible = await GetAccessibleProjectsAsync();
             if (!accessible.Any(p => p.ID == bron.Project))
                 return Forbid();
 
-            var diskPath = Path.Combine(_env.WebRootPath, bron.FilePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!System.IO.File.Exists(diskPath))
+            var chunkTexts = await _context.Chunks
+                .Where(c => c.BronID == id && c.Status == 1)
+                .OrderBy(c => c.ID)
+                .Select(c => c.Tekst)
+                .ToListAsync();
+
+            if (!chunkTexts.Any())
                 return NotFound();
 
-            var ext = Path.GetExtension(bron.FileName).ToLowerInvariant();
-            var bytes = await System.IO.File.ReadAllBytesAsync(diskPath);
-            var text = DocumentParser.ParseToText(bytes, ext);
+            var text = string.Join("\n\n", chunkTexts);
+            var downloadName = Path.GetFileNameWithoutExtension(bron.FileName) + ".txt";
+            return File(System.Text.Encoding.UTF8.GetBytes(text), "text/plain", downloadName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Preview(int id)
+        {
+            var bron = await _context.Bronnen.FindAsync(id);
+            if (bron == null || bron.FileName == null || bron.Status != 1)
+                return NotFound();
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == bron.Project))
+                return Forbid();
+
+            var text = await GetBronTextAsync(bron);
 
             const int maxChars = 15000;
             bool truncated = text.Length > maxChars;
@@ -638,22 +624,135 @@ namespace VectorRagDemo.Controllers
                 .Where(c => c.BronID == id && c.Status == 1)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, 2));
 
-            var filePath = bron.FilePath;
             bron.Status = 2;
             await _context.SaveChangesAsync();
-
-            if (!string.IsNullOrEmpty(filePath))
-            {
-                var diskPath = Path.Combine(_env.WebRootPath, filePath.Replace('/', Path.DirectorySeparatorChar));
-                if (System.IO.File.Exists(diskPath))
-                    System.IO.File.Delete(diskPath);
-            }
 
             TempData["Success"] = $"Document '{bron.Title}' is verwijderd.";
             return RedirectToAction(nameof(Index));
         }
 
+        // ── Chunk editing ──────────────────────────────────────────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> EditChunks(int bronId)
+        {
+            var bron = await _context.Bronnen.FindAsync(bronId);
+            if (bron == null || bron.Status != 1)
+                return NotFound();
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == bron.Project))
+                return Forbid();
+
+            var chunks = await _context.Chunks
+                .Where(c => c.BronID == bronId && c.Status == 1)
+                .OrderBy(c => c.ID)
+                .ToListAsync();
+
+            ViewBag.Bron = bron;
+            return View(chunks);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateChunk(int chunkId, string tekst)
+        {
+            var chunk = await _context.Chunks
+                .Include(c => c.Bron)
+                .FirstOrDefaultAsync(c => c.ID == chunkId);
+
+            if (chunk == null || chunk.Status != 1)
+                return Json(new { success = false, message = "Chunk niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == chunk.Bron!.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            if (string.IsNullOrWhiteSpace(tekst))
+                return Json(new { success = false, message = "Tekst is verplicht." });
+
+            var embeddings = await _embeddingProcessor.GenerateBatchEmbeddingsAsync(new List<string> { tekst.Trim() });
+            var vectorString = "[" + string.Join(",", embeddings[0].Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var cmd = new NpgsqlCommand(
+                "UPDATE chunk SET tekst = @Tekst, tekstvector = @Vector::vector, gewijzigdop = NOW() WHERE id = @ID",
+                connection);
+            cmd.Parameters.AddWithValue("@Tekst", tekst.Trim());
+            cmd.Parameters.AddWithValue("@Vector", vectorString);
+            cmd.Parameters.AddWithValue("@ID", chunkId);
+            await cmd.ExecuteNonQueryAsync();
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteChunk(int chunkId)
+        {
+            var chunk = await _context.Chunks
+                .Include(c => c.Bron)
+                .FirstOrDefaultAsync(c => c.ID == chunkId);
+
+            if (chunk == null || chunk.Status != 1)
+                return Json(new { success = false, message = "Chunk niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == chunk.Bron!.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            await _context.Chunks
+                .Where(c => c.ID == chunkId)
+                .ExecuteUpdateAsync(s => s.SetProperty(c => c.Status, 2));
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddChunk(int bronId, string tekst)
+        {
+            var bron = await _context.Bronnen.FindAsync(bronId);
+            if (bron == null || bron.Status != 1)
+                return Json(new { success = false, message = "Document niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == bron.Project))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            if (string.IsNullOrWhiteSpace(tekst))
+                return Json(new { success = false, message = "Tekst is verplicht." });
+
+            var embeddings = await _embeddingProcessor.GenerateBatchEmbeddingsAsync(new List<string> { tekst.Trim() });
+            var vectorString = "[" + string.Join(",", embeddings[0].Select(f => f.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using var connection = new NpgsqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var cmd = new NpgsqlCommand(
+                "INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status) VALUES (@BronID, @Tekst, @Vector::vector, NOW(), 1) RETURNING id",
+                connection);
+            cmd.Parameters.AddWithValue("@BronID", bronId);
+            cmd.Parameters.AddWithValue("@Tekst", tekst.Trim());
+            cmd.Parameters.AddWithValue("@Vector", vectorString);
+            var newId = (int)(await cmd.ExecuteScalarAsync())!;
+
+            return Json(new { success = true, chunkId = newId });
+        }
+
         // ── Helpers ─────────────────────────────────────────────────────────────
+
+        private async Task<string> GetBronTextAsync(Bron bron)
+        {
+            var chunkTexts = await _context.Chunks
+                .Where(c => c.BronID == bron.ID && c.Status == 1)
+                .OrderBy(c => c.ID)
+                .Select(c => c.Tekst)
+                .ToListAsync();
+
+            return chunkTexts.Any() ? string.Join("\n\n", chunkTexts) : string.Empty;
+        }
 
         private static HashSet<int> GetSubtreeFolderIds(List<Folder> allFolders, int rootId)
         {
@@ -683,13 +782,21 @@ namespace VectorRagDemo.Controllers
 
             var userId = User.GetUserId();
 
-            var userProjectIds = await _context.GebruikerProjecten
+            var devProjectIds = await _context.GebruikerProjecten
                 .Where(gp => gp.Gebruiker == userId && gp.Status == 1)
                 .Select(gp => gp.Project)
                 .ToListAsync();
 
+            // Also include prod projects that are linked to the user's dev projects
+            var prodProjectIds = await _context.Projects
+                .Where(p => devProjectIds.Contains(p.ID) && p.ProductieProjectId != null)
+                .Select(p => p.ProductieProjectId!.Value)
+                .ToListAsync();
+
+            var allIds = devProjectIds.Concat(prodProjectIds).ToList();
+
             return await _context.Projects
-                .Where(p => p.Status == 1 && userProjectIds.Contains(p.ID))
+                .Where(p => p.Status == 1 && allIds.Contains(p.ID))
                 .OrderBy(p => p.Naam)
                 .ToListAsync();
         }

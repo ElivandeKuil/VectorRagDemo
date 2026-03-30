@@ -1,5 +1,9 @@
 @model List<VectorRagDemo.Models.Entities.Project>
 
+@{
+    var prodProjectIds = new HashSet<int>(Model.Where(p => p.ProductieProjectId.HasValue).Select(p => p.ProductieProjectId!.Value));
+}
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0"><i class="bi bi-folder2 me-2"></i>Projecten</h1>
     <a asp-action="Create" btn-variant="primary" btn-icon="plus-lg" class="me-1">Nieuw project</a>
@@ -23,6 +27,7 @@ else
             <tr>
                 <th>Naam</th>
                 <th>Bot naam</th>
+                <th>Omgeving</th>
                 <th>Aangemaakt</th>
                 <th>Status</th>
                 <th class="text-end">Acties</th>
@@ -34,6 +39,16 @@ else
                 <tr class="@(p.Status == 0 ? "text-muted" : "")">
                     <td class="fw-semibold">@p.Naam</td>
                     <td>@p.BotName</td>
+                    <td>
+                        @if (p.ProductieProjectId.HasValue)
+                        {
+                            <span class="badge bg-primary">Ontwikkeling</span>
+                        }
+                        else if (prodProjectIds.Contains(p.ID))
+                        {
+                            <span class="badge bg-success">Productie</span>
+                        }
+                    </td>
                     <td class="small text-muted">@p.GemaaktOp.ToString("dd-MM-yyyy")</td>
                     <td>
                         @if (p.Status == 1)
