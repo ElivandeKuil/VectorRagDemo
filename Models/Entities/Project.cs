@@ -32,6 +32,11 @@
         public int StatistiekenTier { get; set; } = 0;
 
         /// <summary>
+        /// Wanneer true mogen gebruikers een URL-koppeling meegeven bij het invoeren of uploaden van tekst.
+        /// </summary>
+        public bool KoppelingIngeschakeld { get; set; } = false;
+
+        /// <summary>
         /// Wanneer ingesteld is dit de ontwikkelomgeving; de waarde verwijst naar het gekoppelde productieproject.
         /// </summary>
         public int? ProductieProjectId { get; set; }

@@ -51,6 +51,8 @@ namespace VectorRagDemo.Services
                 ["API Logs"]           = new("API Logs",           "ApiCallLog",  "Index",          "bi-journal-code"),
                 ["Widget instellingen"]   = new("Widget instellingen",   "Chat",               "WidgetSettings", "bi-sliders"),
                 ["Statistieken"]          = new("Statistieken",          "Statistieken",        "Index",          "bi-bar-chart-line"),
+                ["Correcties"]            = new("Correcties",            "Correcties",          "Index",          "bi-pencil-square"),
+                ["Gesprekken"]            = new("Gesprekken",            "Conversaties",        "Index",          "bi-chat-left-text"),
             };
 
         public ProjectAccessService(ManagementDbContext context)

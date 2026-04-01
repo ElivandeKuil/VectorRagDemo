@@ -133,6 +133,7 @@ namespace VectorRagDemo.Controllers
             {
                 project.GebruikPromptTabel = model.GebruikPromptTabel;
                 project.ExtraCommunicationEnabled = model.ExtraCommunicationEnabled;
+                project.KoppelingIngeschakeld = model.KoppelingIngeschakeld;
                 project.StatistiekenTier = Math.Clamp(statistiekenTier, 0, 2);
             }
 
@@ -295,6 +296,17 @@ namespace VectorRagDemo.Controllers
                 await cmd.ExecuteNonQueryAsync();
             }
 
+            // --- Clone project-level paid feature settings via EF Core ---
+            var prodProject = await _context.Projects.FindAsync(prodProjectId);
+            if (prodProject != null)
+            {
+                prodProject.GebruikPromptTabel        = devProject.GebruikPromptTabel;
+                prodProject.ExtraCommunicationEnabled = devProject.ExtraCommunicationEnabled;
+                prodProject.KoppelingIngeschakeld     = devProject.KoppelingIngeschakeld;
+                prodProject.StatistiekenTier          = devProject.StatistiekenTier;
+                await _context.SaveChangesAsync();
+            }
+
             // --- Clone widget config via EF Core ---
             if (devProject.WidgetConfig != null)
             {
@@ -344,7 +356,86 @@ namespace VectorRagDemo.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            TempData["Success"] = $"Kennis en widget-instellingen succesvol gekloond naar de productieomgeving ({devBronnen.Count} bron{(devBronnen.Count == 1 ? "" : "nen")}).";
+            // --- Clone PromptInstelling via EF Core ---
+            var devPromptInstelling = await _context.PromptInstellingen.FirstOrDefaultAsync(p => p.ProjectID == id);
+            if (devPromptInstelling != null)
+            {
+                var devPi = devPromptInstelling;
+                var prodPi = await _context.PromptInstellingen.FirstOrDefaultAsync(p => p.ProjectID == prodProjectId);
+
+                if (prodPi == null)
+                {
+                    prodPi = new PromptInstelling { ProjectID = prodProjectId };
+                    _context.PromptInstellingen.Add(prodPi);
+                }
+
+                prodPi.Persona     = devPi.Persona;
+                prodPi.Instructies = devPi.Instructies;
+                prodPi.Regels      = devPi.Regels;
+                prodPi.Voorbeelden = devPi.Voorbeelden;
+                prodPi.GewijzigdOp = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+            }
+
+            // --- Clone Prompts via EF Core ---
+            var devPrompts = await _context.Prompts
+                .Where(p => p.Project == id && p.Status == 1)
+                .ToListAsync();
+
+            var prodPrompts = await _context.Prompts
+                .Where(p => p.Project == prodProjectId)
+                .ToListAsync();
+
+            // Deactivate existing prod prompts that no longer exist in dev (by PromptType)
+            var devPromptTypes = devPrompts.Select(p => p.PromptType).ToHashSet();
+            foreach (var prodPrompt in prodPrompts.Where(p => !devPromptTypes.Contains(p.PromptType)))
+            {
+                prodPrompt.Status     = 0;
+                prodPrompt.GewijzigdOp = DateTime.UtcNow;
+            }
+
+            foreach (var devPrompt in devPrompts)
+            {
+                var prodPrompt = prodPrompts.FirstOrDefault(p => p.PromptType == devPrompt.PromptType);
+                if (prodPrompt == null)
+                {
+                    _context.Prompts.Add(new Prompt
+                    {
+                        Project           = prodProjectId,
+                        PromptType        = devPrompt.PromptType,
+                        SystemInstruction = devPrompt.SystemInstruction,
+                        Content           = devPrompt.Content,
+                        ResponseSchema    = devPrompt.ResponseSchema,
+                        MaxTokens         = devPrompt.MaxTokens,
+                        Temperature       = devPrompt.Temperature,
+                        TopP              = devPrompt.TopP,
+                        TopK              = devPrompt.TopK,
+                        Model             = devPrompt.Model,
+                        Volgorde          = devPrompt.Volgorde,
+                        Status            = 1,
+                        GemaaktOp         = DateTime.UtcNow,
+                    });
+                }
+                else
+                {
+                    prodPrompt.SystemInstruction = devPrompt.SystemInstruction;
+                    prodPrompt.Content           = devPrompt.Content;
+                    prodPrompt.ResponseSchema    = devPrompt.ResponseSchema;
+                    prodPrompt.MaxTokens         = devPrompt.MaxTokens;
+                    prodPrompt.Temperature       = devPrompt.Temperature;
+                    prodPrompt.TopP              = devPrompt.TopP;
+                    prodPrompt.TopK              = devPrompt.TopK;
+                    prodPrompt.Model             = devPrompt.Model;
+                    prodPrompt.Volgorde          = devPrompt.Volgorde;
+                    prodPrompt.Status            = 1;
+                    prodPrompt.GewijzigdOp       = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Kennis, widget-instellingen en prompts succesvol gekloond naar de productieomgeving ({devBronnen.Count} bron{(devBronnen.Count == 1 ? "" : "nen")}).";
             return RedirectToAction(nameof(Edit), new { id });
         }
 

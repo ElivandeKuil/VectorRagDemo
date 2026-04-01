@@ -61,11 +61,14 @@
                         </select>
                     </div>
 
+                    @if (singleProject == null || singleProject.KoppelingIngeschakeld)
+                    {
                     <div class="mb-4">
                         <label for="link" app-label class="fw-semibold">Koppeling <span class="text-muted fw-normal">(optioneel)</span></label>
                         <input type="text" name="link" id="link" app-field placeholder="https://…" />
                         <div class="form-text">URL die wordt getoond in de chatbot bij antwoorden die dit document gebruiken.</div>
                     </div>
+                    }
 
                     <div class="d-grid">
                         <button type="submit" btn-variant="primary" btn-size="lg" id="submitBtn">
