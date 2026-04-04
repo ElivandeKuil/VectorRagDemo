@@ -68,14 +68,11 @@
                         </select>
                     </div>
 
-                    @if (singleProject == null || singleProject.KoppelingIngeschakeld)
-                    {
-                    <div class="mb-3">
+                    <div class="mb-3" id="linkField" style="display:none">
                         <label for="link" app-label class="fw-semibold">Koppeling <span class="text-muted fw-normal">(optioneel)</span></label>
                         <input type="text" name="link" id="link" app-field placeholder="https://…" />
                         <div class="form-text">URL die wordt getoond in de chatbot bij antwoorden die dit document gebruiken.</div>
                     </div>
-                    }
 
                     <div class="mb-4">
                         <label for="text" app-label class="fw-semibold">Tekst</label>
@@ -124,6 +121,18 @@
 
 @section Scripts {
     <script>
+        const koppelingPerProject = @Html.Raw(Json.Serialize(ViewBag.KoppelingPerProject ?? new object()));
+
+        function updateLinkFieldVisibility(projectId) {
+            const enabled = koppelingPerProject[projectId] === true;
+            document.getElementById('linkField').style.display = enabled ? '' : 'none';
+        }
+
+        const initialProjectId = @(singleProject?.ID.ToString() ?? "null");
+        if (initialProjectId !== null) {
+            updateLinkFieldVisibility(initialProjectId);
+        }
+
         const initialFolderData = @Html.Raw(Json.Serialize(ViewBag.FolderData ?? new object[0]));
 
         function buildFolderOptions(folderData, select, parentId, depth) {
@@ -145,7 +154,9 @@
 
         const projectSelect = document.getElementById('projectId');
         if (projectSelect) {
+            updateLinkFieldVisibility(parseInt(projectSelect.value));
             projectSelect.addEventListener('change', async function () {
+                updateLinkFieldVisibility(parseInt(this.value));
                 const sel = document.getElementById('folderId');
                 sel.innerHTML = '<option value="">— Geen map —</option>';
                 if (!this.value) return;

@@ -112,26 +112,43 @@
   }
 
   // ============================================================
-  // 5. CONTACT FORM — JS-only submit (no backend yet)
+  // 5. CONTACT FORM
   // ============================================================
   var contactForm = document.getElementById('contact-form');
   var contactSuccess = document.getElementById('contact-success');
   var contactSubmitBtn = document.getElementById('contact-submit');
 
   if (contactSubmitBtn && contactForm) {
-    contactSubmitBtn.addEventListener('click', function () {
-      // Basic HTML5 validation check
+    contactSubmitBtn.addEventListener('click', async function () {
       if (!contactForm.checkValidity()) {
         contactForm.reportValidity();
         return;
       }
 
-      // TODO: Connect to email service (e.g. SendGrid, Resend, or ASP.NET POST handler)
-      // For now, show success message and reset form
-      contactForm.reset();
-      contactForm.style.display = 'none';
-      if (contactSuccess) {
-        contactSuccess.style.display = 'block';
+      var originalHtml = contactSubmitBtn.innerHTML;
+      contactSubmitBtn.disabled = true;
+      contactSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Versturen…';
+
+      try {
+        var resp = await fetch('https://formspree.io/f/mojpkzwq', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: new FormData(contactForm)
+        });
+
+        if (resp.ok) {
+          contactForm.reset();
+          contactForm.style.display = 'none';
+          if (contactSuccess) contactSuccess.style.display = 'block';
+        } else {
+          alert('Er is iets misgegaan. Probeer het later opnieuw of mail ons direct op elaistudionl@gmail.com.');
+          contactSubmitBtn.disabled = false;
+          contactSubmitBtn.innerHTML = originalHtml;
+        }
+      } catch (e) {
+        alert('Er is iets misgegaan. Probeer het later opnieuw of mail ons direct op elaistudionl@gmail.com.');
+        contactSubmitBtn.disabled = false;
+        contactSubmitBtn.innerHTML = originalHtml;
       }
     });
   }

@@ -9,6 +9,7 @@ using VectorRagDemo.Extensions;
 using VectorRagDemo.Models.Entities;
 using VectorRagDemo.Models.ViewModels;
 using VectorRagDemo.Services;
+using System.Text.RegularExpressions;
 
 namespace VectorRagDemo.Controllers
 {
@@ -326,6 +327,7 @@ namespace VectorRagDemo.Controllers
                 ? accessibleProjects.First()
                 : null;
             ViewBag.SingleProject = singleProject;
+            ViewBag.KoppelingPerProject = accessibleProjects.ToDictionary(p => p.ID, p => p.KoppelingIngeschakeld);
             var initialProjectId = singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0;
             ViewBag.FolderData = await GetFolderDataAsync(initialProjectId);
             return View();
@@ -342,6 +344,7 @@ namespace VectorRagDemo.Controllers
                 ? accessibleProjects.First()
                 : null;
             ViewBag.SingleProject = singleProject;
+            ViewBag.KoppelingPerProject = accessibleProjects.ToDictionary(p => p.ID, p => p.KoppelingIngeschakeld);
             ViewBag.FolderData = await GetFolderDataAsync(projectId > 0 ? projectId : singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0);
 
             if (file == null || file.Length == 0)
@@ -454,6 +457,7 @@ namespace VectorRagDemo.Controllers
                 ? accessibleProjects.First()
                 : null;
             ViewBag.SingleProject = singleProject;
+            ViewBag.KoppelingPerProject = accessibleProjects.ToDictionary(p => p.ID, p => p.KoppelingIngeschakeld);
             var initialProjectId = singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0;
             ViewBag.FolderData = await GetFolderDataAsync(initialProjectId);
             return View();
@@ -468,6 +472,7 @@ namespace VectorRagDemo.Controllers
                 ? accessibleProjects.First()
                 : null;
             ViewBag.SingleProject = singleProject;
+            ViewBag.KoppelingPerProject = accessibleProjects.ToDictionary(p => p.ID, p => p.KoppelingIngeschakeld);
             ViewBag.FolderData = await GetFolderDataAsync(projectId > 0 ? projectId : singleProject?.ID ?? accessibleProjects.FirstOrDefault()?.ID ?? 0);
 
             if (string.IsNullOrWhiteSpace(title))
@@ -650,6 +655,7 @@ namespace VectorRagDemo.Controllers
                 .ToListAsync();
 
             ViewBag.Bron = bron;
+            ViewBag.ProjectId = bron.Project;
             return View(chunks);
         }
 
@@ -739,6 +745,100 @@ namespace VectorRagDemo.Controllers
             var newId = (int)(await cmd.ExecuteScalarAsync())!;
 
             return Json(new { success = true, chunkId = newId });
+        }
+
+        // ── Placeholders ────────────────────────────────────────────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> GetPlaceholders(int projectId)
+        {
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == projectId))
+                return Forbid();
+
+            var placeholders = await _context.Placeholders
+                .Where(p => p.ProjectID == projectId && p.Status == 1)
+                .OrderBy(p => p.Naam)
+                .Select(p => new { p.ID, p.Naam, p.Waarde })
+                .ToListAsync();
+
+            return Json(placeholders);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SavePlaceholder(int id, int projectId, string naam, string waarde)
+        {
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == projectId))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            if (string.IsNullOrWhiteSpace(naam))
+                return Json(new { success = false, message = "Naam is verplicht." });
+
+            if (!Regex.IsMatch(naam.Trim(), @"^\w+$"))
+                return Json(new { success = false, message = "Naam mag alleen letters, cijfers en underscores bevatten." });
+
+            if (string.IsNullOrWhiteSpace(waarde))
+                return Json(new { success = false, message = "Waarde is verplicht." });
+
+            naam = naam.Trim();
+            waarde = waarde.Trim();
+
+            if (id == 0)
+            {
+                // Check uniqueness
+                bool exists = await _context.Placeholders
+                    .AnyAsync(p => p.ProjectID == projectId && p.Naam == naam && p.Status == 1);
+                if (exists)
+                    return Json(new { success = false, message = $"Er bestaat al een variabele met de naam '{naam}'." });
+
+                var placeholder = new Placeholder
+                {
+                    ProjectID = projectId,
+                    Naam = naam,
+                    Waarde = waarde,
+                    GemaaktOp = DateTime.UtcNow,
+                    Status = 1
+                };
+                _context.Placeholders.Add(placeholder);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, id = placeholder.ID, naam = placeholder.Naam, waarde = placeholder.Waarde });
+            }
+            else
+            {
+                var placeholder = await _context.Placeholders.FindAsync(id);
+                if (placeholder == null || placeholder.Status != 1 || placeholder.ProjectID != projectId)
+                    return Json(new { success = false, message = "Variabele niet gevonden." });
+
+                // Check uniqueness (excluding self)
+                bool exists = await _context.Placeholders
+                    .AnyAsync(p => p.ProjectID == projectId && p.Naam == naam && p.Status == 1 && p.ID != id);
+                if (exists)
+                    return Json(new { success = false, message = $"Er bestaat al een variabele met de naam '{naam}'." });
+
+                placeholder.Naam = naam;
+                placeholder.Waarde = waarde;
+                placeholder.GewijzigdOp = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, id = placeholder.ID, naam = placeholder.Naam, waarde = placeholder.Waarde });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeletePlaceholder(int id)
+        {
+            var placeholder = await _context.Placeholders.FindAsync(id);
+            if (placeholder == null || placeholder.Status != 1)
+                return Json(new { success = false, message = "Variabele niet gevonden." });
+
+            var accessible = await GetAccessibleProjectsAsync();
+            if (!accessible.Any(p => p.ID == placeholder.ProjectID))
+                return Json(new { success = false, message = "Geen toegang." });
+
+            placeholder.Status = 2;
+            placeholder.GewijzigdOp = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
         }
 
         // ── Helpers ─────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ using VectorRagDemo.Models.Enums;
 using VectorRagDemo.Models.JsonContracts.GeminiAPI;
 using VectorRagDemo.Models.Requests;
 using VectorRagDemo.Models.Responses;
+using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.Services
 {
@@ -64,8 +65,16 @@ namespace VectorRagDemo.Services
                     chatHistory.AddRange(request.History);
                 }
 
+                // Resolve @@placeholders in chunk text before sending to LLM
+                Dictionary<string, string> placeholders = new();
+                if (projectId > 0)
+                {
+                    var proc = new PlaceholderProcessor(Context);
+                    placeholders = await proc.GetPlaceholdersAsync(projectId);
+                }
+
                 // Generate response using Gemini
-                var formattedNeighbors = FormatChunksForGemini(retrievedChunks);
+                var formattedNeighbors = FormatChunksForGemini(retrievedChunks, placeholders);
                 var geminiResponse = await GeminiProcessor.GenerateContent(
                     chatHistory,
                     preProcessedQuery,
@@ -189,7 +198,7 @@ namespace VectorRagDemo.Services
             return (normalizedFreshness * FreshnessWeight) + (normalizedSimilarity * SimilarityWeight);
         }
 
-        private string FormatChunksForGemini(List<RetrievedChunk> chunks)
+        private string FormatChunksForGemini(List<RetrievedChunk> chunks, Dictionary<string, string>? placeholders = null)
         {
             if (!chunks.Any())
             {
@@ -202,11 +211,15 @@ namespace VectorRagDemo.Services
             {
                 var chunkEntity = retrievedChunk.Chunk;
                 var bronTitle = retrievedChunk.BronTitle ?? chunkEntity.Bron?.Title ?? "Unknown";
+                var tekst = placeholders != null && placeholders.Count > 0
+                    ? PlaceholderProcessor.Resolve(chunkEntity.Tekst, placeholders)
+                    : chunkEntity.Tekst;
+
                 formattedChunks.AppendLine($"=== CHUNK ID: {chunkEntity.ID} (Score: {retrievedChunk.InitialSimilirityScore:F4}) ===");
                 formattedChunks.AppendLine($"BRON: {bronTitle}");
                 if (!string.IsNullOrWhiteSpace(retrievedChunk.BronLink))
                     formattedChunks.AppendLine($"LINK: {retrievedChunk.BronLink}");
-                formattedChunks.AppendLine($"CONTENT: {chunkEntity.Tekst}");
+                formattedChunks.AppendLine($"CONTENT: {tekst}");
                 formattedChunks.AppendLine();
             }
 

@@ -1,6 +1,7 @@
 @model List<VectorRagDemo.Models.Entities.Chunk>
 @{
     var bron = ViewBag.Bron as VectorRagDemo.Models.Entities.Bron;
+    int projectId = ViewBag.ProjectId ?? 0;
     ViewData["Title"] = $"Chunks bewerken — {bron?.Title}";
 }
 
@@ -14,8 +15,64 @@
         </h1>
         <p class="text-muted small mb-0">@Model.Count chunk@(Model.Count != 1 ? "s" : "") &mdash; bewerk tekst en sla op om de embedding automatisch bij te werken.</p>
     </div>
-    <a asp-action="Download" asp-route-id="@bron?.ID"
-       btn-variant="outline-secondary" btn-icon="download" title="Downloaden als .txt"></a>
+    <div class="d-flex gap-2 align-items-center">
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="offcanvas" data-bs-target="#placeholderPanel" aria-controls="placeholderPanel">
+            <i class="bi bi-braces me-1"></i>Variabelen
+            <span class="badge bg-primary ms-1" id="placeholderCount">…</span>
+        </button>
+        <a asp-action="Download" asp-route-id="@bron?.ID"
+           btn-variant="outline-secondary" btn-icon="download" title="Downloaden als .txt"></a>
+    </div>
+</div>
+
+<!-- Placeholder side panel (Bootstrap offcanvas) -->
+<div class="offcanvas offcanvas-end placeholder-panel" tabindex="-1" id="placeholderPanel" aria-labelledby="placeholderPanelLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="placeholderPanelLabel">
+            <i class="bi bi-braces me-2 text-primary"></i>Variabelen
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Sluiten"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column gap-3">
+        <p class="text-muted small mb-0">
+            Typ <code>@@@@naam</code> in een chunktekst. Bij ophalen wordt de variabele vervangen door de bijbehorende waarde.
+            Typ <kbd>@@@@</kbd> in een tekstveld voor autocomplete.
+        </p>
+
+        <!-- Placeholder list -->
+        <div id="placeholderList" class="d-flex flex-column gap-1">
+            <div class="text-muted small text-center py-2">Laden…</div>
+        </div>
+
+        <hr class="my-1">
+
+        <!-- Add / edit form -->
+        <div>
+            <h6 class="fw-semibold mb-2" id="phFormTitle">Nieuwe variabele</h6>
+            <div class="mb-2">
+                <label class="form-label small mb-1">Naam <span class="text-muted">(letters, cijfers, _)</span></label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text text-primary fw-bold">@@</span>
+                    <input type="text" id="phNaam" class="form-control" placeholder="basisprijs">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small mb-1">Waarde</label>
+                <input type="text" id="phWaarde" class="form-control form-control-sm" placeholder="bijv. €99,95">
+            </div>
+            <input type="hidden" id="phEditId" value="0">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btnSavePlaceholder">
+                    <i class="bi bi-check-lg me-1"></i>Opslaan
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="btnCancelEdit">
+                    Annuleren
+                </button>
+            </div>
+            <div id="phFormError" class="text-danger small mt-2 d-none"></div>
+        </div>
+    </div>
 </div>
 
 <div id="chunkList">
@@ -72,10 +129,16 @@
     </div>
 </div>
 
+<!-- Autocomplete dropdown (portal, appended to body) -->
+<div id="phAutocomplete" class="ph-autocomplete" style="display:none;" role="listbox"></div>
+
 @section Scripts {
 <script>
     const bronId = @bron!.ID;
+    const projectId = @projectId;
     const afToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+    // ── Shared helpers ──────────────────────────────────────────────────────────
 
     async function apiPost(url, params) {
         const resp = await fetch(url, {
@@ -111,88 +174,59 @@
         if (el) el.textContent = wc + ' woorden';
     }
 
-    // Wire up save buttons
+    // ── Chunk save / delete / add ───────────────────────────────────────────────
+
     document.querySelectorAll('.btn-save-chunk').forEach(btn => {
         btn.addEventListener('click', async function () {
             const chunkId = this.dataset.chunkId;
             const tekst = document.getElementById('tekst-' + chunkId).value;
-
-            if (!tekst.trim()) {
-                setStatus(chunkId, 'err', 'Tekst mag niet leeg zijn.');
-                return;
-            }
-
+            if (!tekst.trim()) { setStatus(chunkId, 'err', 'Tekst mag niet leeg zijn.'); return; }
             setLoading(this, true);
             setStatus(chunkId, 'busy', 'Opslaan en embedden…');
-
             const data = await apiPost('/Chunk/UpdateChunk', { chunkId, tekst });
-
             setLoading(this, false);
-            if (data.success) {
-                setStatus(chunkId, 'ok', 'Opgeslagen en embedding vernieuwd.');
-            } else {
-                setStatus(chunkId, 'err', data.message ?? 'Opslaan mislukt.');
-            }
+            data.success ? setStatus(chunkId, 'ok', 'Opgeslagen en embedding vernieuwd.')
+                         : setStatus(chunkId, 'err', data.message ?? 'Opslaan mislukt.');
         });
     });
 
-    // Wire up delete buttons
     document.querySelectorAll('.btn-delete-chunk').forEach(btn => {
         btn.addEventListener('click', async function () {
             const chunkId = this.dataset.chunkId;
             if (!confirm('Chunk verwijderen?')) return;
-
             setLoading(this, true);
             const data = await apiPost('/Chunk/DeleteChunk', { chunkId });
-
-            if (data.success) {
-                const card = document.getElementById('chunk-card-' + chunkId);
-                card.remove();
-                renumberChunks();
-            } else {
-                setLoading(this, false);
-                alert(data.message ?? 'Verwijderen mislukt.');
-            }
+            if (data.success) { document.getElementById('chunk-card-' + chunkId).remove(); renumberChunks(); }
+            else { setLoading(this, false); alert(data.message ?? 'Verwijderen mislukt.'); }
         });
     });
 
-    // Live word counts on edit
     document.querySelectorAll('.chunk-textarea').forEach(ta => {
         const chunkId = ta.id.replace('tekst-', '');
         ta.addEventListener('input', () => updateWordCount(chunkId, ta));
     });
 
-    // Renumber chunk headers after delete
     function renumberChunks() {
         document.querySelectorAll('.chunk-card').forEach((card, idx) => {
             card.querySelector('.card-header .text-muted').textContent = 'Chunk ' + (idx + 1);
         });
     }
 
-    // New chunk word count
     const newChunkTextarea = document.getElementById('newChunkText');
     newChunkTextarea.addEventListener('input', function () {
         const wc = this.value.trim().split(/\s+/).filter(Boolean).length;
         document.getElementById('newChunkWc').textContent = wc + ' woorden';
     });
 
-    // Add chunk
     document.getElementById('btnAddChunk').addEventListener('click', async function () {
         const tekst = newChunkTextarea.value;
-        if (!tekst.trim()) {
-            alert('Voer tekst in voor de nieuwe chunk.');
-            return;
-        }
-
+        if (!tekst.trim()) { alert('Voer tekst in voor de nieuwe chunk.'); return; }
         setLoading(this, true);
         const data = await apiPost('/Chunk/AddChunk', { bronId, tekst });
-
         setLoading(this, false);
         if (data.success) {
             newChunkTextarea.value = '';
             document.getElementById('newChunkWc').textContent = '0 woorden';
-
-            // Append new chunk card to the list
             const chunkList = document.getElementById('chunkList');
             const idx = chunkList.querySelectorAll('.chunk-card').length + 1;
             const chunkId = data.chunkId;
@@ -207,30 +241,21 @@
                         <span class="badge bg-light text-muted small chunk-word-count" id="wc-${chunkId}">
                             ${tekst.trim().split(/\s+/).filter(Boolean).length} woorden
                         </span>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-primary btn-save-chunk"
-                                data-chunk-id="${chunkId}"
-                                title="Opslaan en embedding vernieuwen">
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-save-chunk" data-chunk-id="${chunkId}" title="Opslaan en embedding vernieuwen">
                             <i class="bi bi-floppy me-1"></i>Opslaan
                         </button>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-danger btn-delete-chunk"
-                                data-chunk-id="${chunkId}"
-                                title="Chunk verwijderen">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-chunk" data-chunk-id="${chunkId}" title="Chunk verwijderen">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <textarea class="form-control border-0 rounded-0 chunk-textarea"
-                              id="tekst-${chunkId}"
-                              rows="6"
-                              style="resize:vertical;font-size:.85rem;line-height:1.65;font-family:inherit">${tekst.trim()}</textarea>
+                    <textarea class="form-control border-0 rounded-0 chunk-textarea" id="tekst-${chunkId}" rows="6"
+                              style="resize:vertical;font-size:.85rem;line-height:1.65;font-family:inherit">${escapeHtml(tekst.trim())}</textarea>
                 </div>
                 <div class="card-footer py-1 px-3 d-none chunk-status" id="status-${chunkId}"></div>`;
             chunkList.appendChild(card);
 
-            // Wire up the new card's buttons
             card.querySelector('.btn-save-chunk').addEventListener('click', async function () {
                 const t = document.getElementById('tekst-' + chunkId).value;
                 if (!t.trim()) { setStatus(chunkId, 'err', 'Tekst mag niet leeg zijn.'); return; }
@@ -241,7 +266,6 @@
                 r.success ? setStatus(chunkId, 'ok', 'Opgeslagen en embedding vernieuwd.')
                           : setStatus(chunkId, 'err', r.message ?? 'Opslaan mislukt.');
             });
-
             card.querySelector('.btn-delete-chunk').addEventListener('click', async function () {
                 if (!confirm('Chunk verwijderen?')) return;
                 setLoading(this, true);
@@ -249,13 +273,276 @@
                 if (r.success) { card.remove(); renumberChunks(); }
                 else { setLoading(this, false); alert(r.message ?? 'Verwijderen mislukt.'); }
             });
-
-            card.querySelector('.chunk-textarea').addEventListener('input', function () {
-                updateWordCount(chunkId, this);
-            });
+            const newTa = card.querySelector('.chunk-textarea');
+            newTa.addEventListener('input', () => updateWordCount(chunkId, newTa));
+            autocomplete.attach(newTa);
         } else {
             alert(data.message ?? 'Toevoegen mislukt.');
         }
     });
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ── Placeholder management ──────────────────────────────────────────────────
+
+    let allPlaceholders = [];
+
+    async function loadPlaceholders() {
+        const resp = await fetch(`/Chunk/GetPlaceholders?projectId=${projectId}`);
+        allPlaceholders = await resp.json();
+        renderPlaceholderList();
+        document.getElementById('placeholderCount').textContent = allPlaceholders.length;
+        autocomplete.updateList(allPlaceholders);
+    }
+
+    function renderPlaceholderList() {
+        const list = document.getElementById('placeholderList');
+        if (allPlaceholders.length === 0) {
+            list.innerHTML = '<div class="text-muted small text-center py-2">Nog geen variabelen.</div>';
+            return;
+        }
+        list.innerHTML = allPlaceholders.map(p => `
+            <div class="ph-item d-flex align-items-start gap-2 py-1 px-2 rounded" data-id="${p.id}">
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-primary small">@@@@${escapeHtml(p.naam)}</div>
+                    <div class="text-muted small text-truncate" title="${escapeHtml(p.waarde)}">${escapeHtml(p.waarde)}</div>
+                </div>
+                <div class="d-flex gap-1 flex-shrink-0 pt-1">
+                    <button class="btn-ph btn-ph-edit" data-id="${p.id}" title="Bewerken"><i class="bi bi-pencil"></i></button>
+                    <button class="btn-ph btn-ph-del" data-id="${p.id}" title="Verwijderen"><i class="bi bi-trash"></i></button>
+                </div>
+            </div>`).join('');
+
+        list.querySelectorAll('.btn-ph-edit').forEach(btn => btn.addEventListener('click', () => startEdit(parseInt(btn.dataset.id))));
+        list.querySelectorAll('.btn-ph-del').forEach(btn => btn.addEventListener('click', () => deletePlaceholder(parseInt(btn.dataset.id))));
+    }
+
+    function startEdit(id) {
+        const ph = allPlaceholders.find(p => p.id === id);
+        if (!ph) return;
+        document.getElementById('phEditId').value = ph.id;
+        document.getElementById('phNaam').value = ph.naam;
+        document.getElementById('phWaarde').value = ph.waarde;
+        document.getElementById('phFormTitle').textContent = 'Variabele bewerken';
+        document.getElementById('btnCancelEdit').classList.remove('d-none');
+        document.getElementById('phNaam').focus();
+    }
+
+    function resetForm() {
+        document.getElementById('phEditId').value = '0';
+        document.getElementById('phNaam').value = '';
+        document.getElementById('phWaarde').value = '';
+        document.getElementById('phFormTitle').textContent = 'Nieuwe variabele';
+        document.getElementById('btnCancelEdit').classList.add('d-none');
+        document.getElementById('phFormError').classList.add('d-none');
+    }
+
+    document.getElementById('btnCancelEdit').addEventListener('click', resetForm);
+
+    document.getElementById('btnSavePlaceholder').addEventListener('click', async function () {
+        const id = parseInt(document.getElementById('phEditId').value);
+        const naam = document.getElementById('phNaam').value.trim();
+        const waarde = document.getElementById('phWaarde').value.trim();
+        const errEl = document.getElementById('phFormError');
+        errEl.classList.add('d-none');
+
+        setLoading(this, true);
+        const data = await apiPost('/Chunk/SavePlaceholder', { id, projectId, naam, waarde });
+        setLoading(this, false);
+
+        if (data.success) {
+            resetForm();
+            await loadPlaceholders();
+        } else {
+            errEl.textContent = data.message ?? 'Opslaan mislukt.';
+            errEl.classList.remove('d-none');
+        }
+    });
+
+    async function deletePlaceholder(id) {
+        if (!confirm('Variabele verwijderen?')) return;
+        const data = await apiPost('/Chunk/DeletePlaceholder', { id });
+        if (data.success) {
+            await loadPlaceholders();
+        } else {
+            alert(data.message ?? 'Verwijderen mislukt.');
+        }
+    }
+
+    // Load on page start and when panel opens
+    loadPlaceholders();
+
+    // ── @@ autocomplete ─────────────────────────────────────────────────────────
+
+    class PlaceholderAutocomplete {
+        constructor() {
+            this.placeholders = [];
+            this.activeTextarea = null;
+            this.currentMatch = null;
+            this.activeIndex = -1;
+            this.dropdown = document.getElementById('phAutocomplete');
+            document.addEventListener('click', e => {
+                if (!this.dropdown.contains(e.target)) this.hide();
+            });
+        }
+
+        updateList(list) {
+            this.placeholders = list;
+        }
+
+        attach(textarea) {
+            textarea.addEventListener('input', () => this.onInput(textarea));
+            textarea.addEventListener('keydown', e => this.onKeyDown(e));
+            textarea.addEventListener('scroll', () => this.hide());
+            textarea.addEventListener('blur', () => setTimeout(() => this.hide(), 150));
+        }
+
+        onInput(textarea) {
+            this.activeTextarea = textarea;
+            const match = this.getAtMatch(textarea);
+            if (match) {
+                const partial = match.partial.toLowerCase();
+                const filtered = this.placeholders.filter(p => p.naam.toLowerCase().startsWith(partial));
+                if (filtered.length > 0) {
+                    this.show(textarea, filtered, match);
+                } else {
+                    this.hide();
+                }
+            } else {
+                this.hide();
+            }
+        }
+
+        getAtMatch(textarea) {
+            const pos = textarea.selectionStart;
+            const before = textarea.value.substring(0, pos);
+            const m = before.match(/@@(\w*)$/);
+            if (!m) return null;
+            return { partial: m[1], start: pos - m[0].length };
+        }
+
+        show(textarea, items, match) {
+            this.currentMatch = match;
+            this.activeIndex = 0;
+
+            this.dropdown.innerHTML = items.map((p, i) =>
+                `<div class="ph-ac-item${i === 0 ? ' active' : ''}" data-naam="${escapeHtml(p.naam)}" role="option">
+                    <span class="ph-ac-name">@@@@${escapeHtml(p.naam)}</span>
+                    <span class="ph-ac-value">${escapeHtml(p.waarde)}</span>
+                </div>`
+            ).join('');
+
+            this.dropdown.querySelectorAll('.ph-ac-item').forEach((item, idx) => {
+                item.addEventListener('mouseover', () => this.setActive(idx));
+                item.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    this.select(item.dataset.naam);
+                });
+            });
+
+            // Position dropdown
+            const coords = this.getCaretCoords(textarea);
+            const rect = textarea.getBoundingClientRect();
+            this.dropdown.style.display = 'block';
+
+            let top = rect.top + coords.top - textarea.scrollTop + 20;
+            let left = rect.left + coords.left;
+
+            // Keep in viewport
+            const ddRect = this.dropdown.getBoundingClientRect();
+            if (top + 220 > window.innerHeight) top = rect.top + coords.top - textarea.scrollTop - ddRect.height - 4;
+            if (left + 220 > window.innerWidth) left = window.innerWidth - 225;
+            if (left < 4) left = 4;
+
+            this.dropdown.style.top = top + 'px';
+            this.dropdown.style.left = left + 'px';
+        }
+
+        setActive(idx) {
+            this.activeIndex = idx;
+            this.dropdown.querySelectorAll('.ph-ac-item').forEach((item, i) => {
+                item.classList.toggle('active', i === idx);
+            });
+        }
+
+        onKeyDown(e) {
+            if (this.dropdown.style.display === 'none') return;
+            const items = this.dropdown.querySelectorAll('.ph-ac-item');
+            if (!items.length) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                this.setActive(Math.min(this.activeIndex + 1, items.length - 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                this.setActive(Math.max(this.activeIndex - 1, 0));
+            } else if (e.key === 'Enter' || e.key === 'Tab') {
+                const activeItem = items[this.activeIndex];
+                if (activeItem) {
+                    e.preventDefault();
+                    this.select(activeItem.dataset.naam);
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                this.hide();
+            }
+        }
+
+        select(naam) {
+            if (!this.activeTextarea) return;
+            const match = this.getAtMatch(this.activeTextarea);
+            if (!match) return;
+            const ta = this.activeTextarea;
+            const before = ta.value.substring(0, match.start);
+            const after = ta.value.substring(ta.selectionStart);
+            ta.value = before + '@@@@' + naam + after;
+            const newPos = match.start + naam.length + 2;
+            ta.setSelectionRange(newPos, newPos);
+            ta.dispatchEvent(new Event('input'));
+            this.hide();
+            ta.focus();
+        }
+
+        hide() {
+            this.dropdown.style.display = 'none';
+            this.currentMatch = null;
+            this.activeIndex = -1;
+        }
+
+        // Mirror-div technique: estimates pixel position of the caret inside a textarea
+        getCaretCoords(textarea) {
+            const mirrorProps = [
+                'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+                'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
+                'letterSpacing', 'textTransform', 'wordSpacing', 'textIndent',
+                'lineHeight', 'boxSizing'
+            ];
+            const style = window.getComputedStyle(textarea);
+            const mirror = document.createElement('div');
+            mirror.style.position = 'absolute';
+            mirror.style.visibility = 'hidden';
+            mirror.style.whiteSpace = 'pre-wrap';
+            mirror.style.wordWrap = 'break-word';
+            mirror.style.width = textarea.clientWidth + 'px';
+            mirrorProps.forEach(p => { mirror.style[p] = style[p]; });
+            document.body.appendChild(mirror);
+
+            const text = textarea.value.substring(0, textarea.selectionStart);
+            mirror.textContent = text;
+            const span = document.createElement('span');
+            span.textContent = '|';
+            mirror.appendChild(span);
+
+            const coords = { top: span.offsetTop, left: span.offsetLeft };
+            document.body.removeChild(mirror);
+            return coords;
+        }
+    }
+
+    const autocomplete = new PlaceholderAutocomplete();
+    document.querySelectorAll('.chunk-textarea, #newChunkText').forEach(ta => autocomplete.attach(ta));
 </script>
 }

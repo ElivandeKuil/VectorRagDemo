@@ -435,7 +435,50 @@ namespace VectorRagDemo.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Kennis, widget-instellingen en prompts succesvol gekloond naar de productieomgeving ({devBronnen.Count} bron{(devBronnen.Count == 1 ? "" : "nen")}).";
+            // --- Clone Placeholders via EF Core ---
+            var devPlaceholders = await _context.Placeholders
+                .Where(p => p.ProjectID == id && p.Status == 1)
+                .ToListAsync();
+
+            var prodPlaceholders = await _context.Placeholders
+                .Where(p => p.ProjectID == prodProjectId)
+                .ToListAsync();
+
+            // Deactivate prod placeholders whose name no longer exists in dev
+            var devNames = devPlaceholders.Select(p => p.Naam).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var prodPh in prodPlaceholders.Where(p => p.Status == 1 && !devNames.Contains(p.Naam)))
+            {
+                prodPh.Status = 2;
+                prodPh.GewijzigdOp = DateTime.UtcNow;
+            }
+
+            foreach (var devPh in devPlaceholders)
+            {
+                var prodPh = prodPlaceholders.FirstOrDefault(p =>
+                    string.Equals(p.Naam, devPh.Naam, StringComparison.OrdinalIgnoreCase));
+
+                if (prodPh == null)
+                {
+                    _context.Placeholders.Add(new Placeholder
+                    {
+                        ProjectID  = prodProjectId,
+                        Naam       = devPh.Naam,
+                        Waarde     = devPh.Waarde,
+                        GemaaktOp  = DateTime.UtcNow,
+                        Status     = 1
+                    });
+                }
+                else
+                {
+                    prodPh.Waarde      = devPh.Waarde;
+                    prodPh.Status      = 1;
+                    prodPh.GewijzigdOp = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Kennis, widget-instellingen, prompts en variabelen succesvol gekloond naar de productieomgeving ({devBronnen.Count} bron{(devBronnen.Count == 1 ? "" : "nen")}).";
             return RedirectToAction(nameof(Edit), new { id });
         }
 

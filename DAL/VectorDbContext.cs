@@ -27,6 +27,7 @@ namespace VectorRagDemo.DAL
         public DbSet<PromptInstelling> PromptInstellingen { get; set; }
         public DbSet<EscalatieEvent> EscalatieEvents { get; set; }
         public DbSet<Correctie> Correcties { get; set; }
+        public DbSet<Placeholder> Placeholders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -257,6 +258,23 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.ChunkID).IsRequired();
                 entity.Property(e => e.GemaaktOp).IsRequired();
                 entity.Property(e => e.Status).IsRequired();
+            });
+
+            // Placeholder configuration
+            modelBuilder.Entity<Placeholder>(entity =>
+            {
+                entity.ToTable("placeholder");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.ProjectID).IsRequired();
+                entity.Property(e => e.Naam).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Waarde).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany()
+                    .HasForeignKey(e => e.ProjectID)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // EscalatieEvent configuration
