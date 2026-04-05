@@ -10,7 +10,63 @@
 <div class="d-flex align-items-center mb-4">
     <a asp-action="Index" btn-variant="outline-secondary" btn-size="sm" btn-icon="arrow-left" class="me-3"></a>
     <h1 class="mb-0"><i class="bi bi-keyboard me-2"></i>Tekst invoeren</h1>
+    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto"
+            data-bs-toggle="offcanvas" data-bs-target="#placeholderPanel" aria-controls="placeholderPanel"
+            id="btnVariabelen" @(singleProject == null ? "disabled" : "")>
+        <i class="bi bi-braces me-1"></i>Variabelen
+        <span class="badge bg-primary ms-1" id="placeholderCount">…</span>
+    </button>
 </div>
+
+<!-- Placeholder side panel (Bootstrap offcanvas) -->
+<div class="offcanvas offcanvas-end placeholder-panel" tabindex="-1" id="placeholderPanel" aria-labelledby="placeholderPanelLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="placeholderPanelLabel">
+            <i class="bi bi-braces me-2 text-primary"></i>Variabelen
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Sluiten"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column gap-3">
+        <p class="text-muted small mb-0">
+            Typ <code>@@@@naam</code> in de tekst. Bij ophalen wordt de variabele vervangen door de bijbehorende waarde.
+            Typ <kbd>@@@@</kbd> in het tekstveld voor autocomplete.
+        </p>
+
+        <div id="placeholderList" class="d-flex flex-column gap-1">
+            <div class="text-muted small text-center py-2">Laden…</div>
+        </div>
+
+        <hr class="my-1">
+
+        <div>
+            <h6 class="fw-semibold mb-2" id="phFormTitle">Nieuwe variabele</h6>
+            <div class="mb-2">
+                <label class="form-label small mb-1">Naam <span class="text-muted">(letters, cijfers, _)</span></label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text text-primary fw-bold">@@</span>
+                    <input type="text" id="phNaam" class="form-control" placeholder="basisprijs">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small mb-1">Waarde</label>
+                <input type="text" id="phWaarde" class="form-control form-control-sm" placeholder="bijv. €99,95">
+            </div>
+            <input type="hidden" id="phEditId" value="0">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btnSavePlaceholder">
+                    <i class="bi bi-check-lg me-1"></i>Opslaan
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="btnCancelEdit">
+                    Annuleren
+                </button>
+            </div>
+            <div id="phFormError" class="text-danger small mt-2 d-none"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Autocomplete dropdown (portal, appended to body) -->
+<div id="phAutocomplete" class="ph-autocomplete" style="display:none;" role="listbox"></div>
 
 @if (!ViewData.ModelState.IsValid)
 {
@@ -182,5 +238,262 @@
             document.getElementById('btnSpinner').classList.remove('d-none');
             document.getElementById('submitBtn').disabled = true;
         });
+
+        // ── Placeholder management ──────────────────────────────────────────────
+
+        const afToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+        async function apiPost(url, params) {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ __RequestVerificationToken: afToken, ...params })
+            });
+            return resp.json();
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        let allPlaceholders = [];
+        let currentProjectId = initialProjectId;
+
+        async function loadPlaceholders() {
+            if (!currentProjectId) return;
+            const resp = await fetch(`/Chunk/GetPlaceholders?projectId=${currentProjectId}`);
+            allPlaceholders = await resp.json();
+            renderPlaceholderList();
+            document.getElementById('placeholderCount').textContent = allPlaceholders.length;
+            autocomplete.updateList(allPlaceholders);
+        }
+
+        function renderPlaceholderList() {
+            const list = document.getElementById('placeholderList');
+            if (allPlaceholders.length === 0) {
+                list.innerHTML = '<div class="text-muted small text-center py-2">Nog geen variabelen.</div>';
+                return;
+            }
+            list.innerHTML = allPlaceholders.map(p => `
+                <div class="ph-item d-flex align-items-start gap-2 py-1 px-2 rounded" data-id="${p.id}">
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold text-primary small">@@@@${escapeHtml(p.naam)}</div>
+                        <div class="text-muted small text-truncate" title="${escapeHtml(p.waarde)}">${escapeHtml(p.waarde)}</div>
+                    </div>
+                    <div class="d-flex gap-1 flex-shrink-0 pt-1">
+                        <button class="btn-ph btn-ph-edit" data-id="${p.id}" title="Bewerken"><i class="bi bi-pencil"></i></button>
+                        <button class="btn-ph btn-ph-del" data-id="${p.id}" title="Verwijderen"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>`).join('');
+
+            list.querySelectorAll('.btn-ph-edit').forEach(btn => btn.addEventListener('click', () => startEdit(parseInt(btn.dataset.id))));
+            list.querySelectorAll('.btn-ph-del').forEach(btn => btn.addEventListener('click', () => deletePlaceholder(parseInt(btn.dataset.id))));
+        }
+
+        function startEdit(id) {
+            const ph = allPlaceholders.find(p => p.id === id);
+            if (!ph) return;
+            document.getElementById('phEditId').value = ph.id;
+            document.getElementById('phNaam').value = ph.naam;
+            document.getElementById('phWaarde').value = ph.waarde;
+            document.getElementById('phFormTitle').textContent = 'Variabele bewerken';
+            document.getElementById('btnCancelEdit').classList.remove('d-none');
+            document.getElementById('phNaam').focus();
+        }
+
+        function resetForm() {
+            document.getElementById('phEditId').value = '0';
+            document.getElementById('phNaam').value = '';
+            document.getElementById('phWaarde').value = '';
+            document.getElementById('phFormTitle').textContent = 'Nieuwe variabele';
+            document.getElementById('btnCancelEdit').classList.add('d-none');
+            document.getElementById('phFormError').classList.add('d-none');
+        }
+
+        document.getElementById('btnCancelEdit').addEventListener('click', resetForm);
+
+        document.getElementById('btnSavePlaceholder').addEventListener('click', async function () {
+            const id = parseInt(document.getElementById('phEditId').value);
+            const naam = document.getElementById('phNaam').value.trim();
+            const waarde = document.getElementById('phWaarde').value.trim();
+            const errEl = document.getElementById('phFormError');
+            errEl.classList.add('d-none');
+
+            const btn = this;
+            btn.dataset.originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Bezig…';
+            btn.disabled = true;
+
+            const data = await apiPost('/Chunk/SavePlaceholder', { id, projectId: currentProjectId, naam, waarde });
+
+            btn.innerHTML = btn.dataset.originalHtml;
+            btn.disabled = false;
+
+            if (data.success) {
+                resetForm();
+                await loadPlaceholders();
+            } else {
+                errEl.textContent = data.message ?? 'Opslaan mislukt.';
+                errEl.classList.remove('d-none');
+            }
+        });
+
+        async function deletePlaceholder(id) {
+            if (!confirm('Variabele verwijderen?')) return;
+            const data = await apiPost('/Chunk/DeletePlaceholder', { id });
+            if (data.success) {
+                await loadPlaceholders();
+            } else {
+                alert(data.message ?? 'Verwijderen mislukt.');
+            }
+        }
+
+        // When project dropdown changes, reload placeholders and toggle the button
+        if (projectSelect) {
+            projectSelect.addEventListener('change', async function () {
+                currentProjectId = parseInt(this.value) || null;
+                const btn = document.getElementById('btnVariabelen');
+                btn.disabled = !currentProjectId;
+                allPlaceholders = [];
+                document.getElementById('placeholderCount').textContent = '…';
+                autocomplete.updateList([]);
+                if (currentProjectId) await loadPlaceholders();
+            });
+        }
+
+        if (initialProjectId !== null) loadPlaceholders();
+
+        // ── @@ autocomplete ─────────────────────────────────────────────────────
+
+        class PlaceholderAutocomplete {
+            constructor() {
+                this.placeholders = [];
+                this.activeTextarea = null;
+                this.currentMatch = null;
+                this.activeIndex = -1;
+                this.dropdown = document.getElementById('phAutocomplete');
+                document.addEventListener('click', e => {
+                    if (!this.dropdown.contains(e.target)) this.hide();
+                });
+            }
+
+            updateList(list) { this.placeholders = list; }
+
+            attach(ta) {
+                ta.addEventListener('input', () => this.onInput(ta));
+                ta.addEventListener('keydown', e => this.onKeyDown(e));
+                ta.addEventListener('scroll', () => this.hide());
+                ta.addEventListener('blur', () => setTimeout(() => this.hide(), 150));
+            }
+
+            onInput(ta) {
+                this.activeTextarea = ta;
+                const match = this.getAtMatch(ta);
+                if (match) {
+                    const partial = match.partial.toLowerCase();
+                    const filtered = this.placeholders.filter(p => p.naam.toLowerCase().startsWith(partial));
+                    filtered.length > 0 ? this.show(ta, filtered, match) : this.hide();
+                } else {
+                    this.hide();
+                }
+            }
+
+            getAtMatch(ta) {
+                const pos = ta.selectionStart;
+                const before = ta.value.substring(0, pos);
+                const m = before.match(/@@@@(\w*)$/);
+                if (!m) return null;
+                return { partial: m[1], start: pos - m[0].length };
+            }
+
+            show(ta, items, match) {
+                this.currentMatch = match;
+                this.activeIndex = 0;
+                this.dropdown.innerHTML = items.map((p, i) =>
+                    `<div class="ph-ac-item${i === 0 ? ' active' : ''}" data-naam="${escapeHtml(p.naam)}" role="option">
+                        <span class="ph-ac-name">@@@@${escapeHtml(p.naam)}</span>
+                        <span class="ph-ac-value">${escapeHtml(p.waarde)}</span>
+                    </div>`
+                ).join('');
+
+                this.dropdown.querySelectorAll('.ph-ac-item').forEach((item, idx) => {
+                    item.addEventListener('mouseover', () => this.setActive(idx));
+                    item.addEventListener('mousedown', e => { e.preventDefault(); this.select(item.dataset.naam); });
+                });
+
+                const coords = this.getCaretCoords(ta);
+                const rect = ta.getBoundingClientRect();
+                this.dropdown.style.display = 'block';
+
+                let top = rect.top + coords.top - ta.scrollTop + 20;
+                let left = rect.left + coords.left;
+                const ddRect = this.dropdown.getBoundingClientRect();
+                if (top + 220 > window.innerHeight) top = rect.top + coords.top - ta.scrollTop - ddRect.height - 4;
+                if (left + 220 > window.innerWidth) left = window.innerWidth - 225;
+                if (left < 4) left = 4;
+                this.dropdown.style.top = top + 'px';
+                this.dropdown.style.left = left + 'px';
+            }
+
+            setActive(idx) {
+                this.activeIndex = idx;
+                this.dropdown.querySelectorAll('.ph-ac-item').forEach((item, i) => item.classList.toggle('active', i === idx));
+            }
+
+            onKeyDown(e) {
+                if (this.dropdown.style.display === 'none') return;
+                const items = this.dropdown.querySelectorAll('.ph-ac-item');
+                if (!items.length) return;
+                if (e.key === 'ArrowDown') { e.preventDefault(); this.setActive(Math.min(this.activeIndex + 1, items.length - 1)); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); this.setActive(Math.max(this.activeIndex - 1, 0)); }
+                else if (e.key === 'Enter' || e.key === 'Tab') { const a = items[this.activeIndex]; if (a) { e.preventDefault(); this.select(a.dataset.naam); } }
+                else if (e.key === 'Escape') { e.preventDefault(); this.hide(); }
+            }
+
+            select(naam) {
+                if (!this.activeTextarea) return;
+                const match = this.getAtMatch(this.activeTextarea);
+                if (!match) return;
+                const ta = this.activeTextarea;
+                const before = ta.value.substring(0, match.start);
+                const after = ta.value.substring(ta.selectionStart);
+                ta.value = before + '@@@@' + naam + after;
+                const newPos = match.start + naam.length + 2;
+                ta.setSelectionRange(newPos, newPos);
+                ta.dispatchEvent(new Event('input'));
+                this.hide();
+                ta.focus();
+            }
+
+            hide() { this.dropdown.style.display = 'none'; this.currentMatch = null; this.activeIndex = -1; }
+
+            getCaretCoords(ta) {
+                const mirrorProps = [
+                    'borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
+                    'paddingTop','paddingRight','paddingBottom','paddingLeft',
+                    'fontFamily','fontSize','fontWeight','fontStyle','fontVariant',
+                    'letterSpacing','textTransform','wordSpacing','textIndent','lineHeight','boxSizing'
+                ];
+                const style = window.getComputedStyle(ta);
+                const mirror = document.createElement('div');
+                mirror.style.position = 'absolute';
+                mirror.style.visibility = 'hidden';
+                mirror.style.whiteSpace = 'pre-wrap';
+                mirror.style.wordWrap = 'break-word';
+                mirror.style.width = ta.clientWidth + 'px';
+                mirrorProps.forEach(p => { mirror.style[p] = style[p]; });
+                document.body.appendChild(mirror);
+                mirror.textContent = ta.value.substring(0, ta.selectionStart);
+                const span = document.createElement('span');
+                span.textContent = '|';
+                mirror.appendChild(span);
+                const coords = { top: span.offsetTop, left: span.offsetLeft };
+                document.body.removeChild(mirror);
+                return coords;
+            }
+        }
+
+        const autocomplete = new PlaceholderAutocomplete();
+        autocomplete.attach(textarea);
     </script>
 }

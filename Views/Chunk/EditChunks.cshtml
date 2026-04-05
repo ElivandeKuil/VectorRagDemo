@@ -418,7 +418,7 @@
         getAtMatch(textarea) {
             const pos = textarea.selectionStart;
             const before = textarea.value.substring(0, pos);
-            const m = before.match(/@@(\w*)$/);
+            const m = before.match(/@@@@(\w*)$/);
             if (!m) return null;
             return { partial: m[1], start: pos - m[0].length };
         }
