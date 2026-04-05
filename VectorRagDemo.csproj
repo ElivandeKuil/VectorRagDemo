@@ -47,7 +47,7 @@
 		<_ScssDir>$(MSBuildProjectDirectory)\wwwroot\scss</_ScssDir>
 		<_CssDir>$(MSBuildProjectDirectory)\wwwroot\css</_CssDir>
 	</PropertyGroup>
-	<Target Name="CompileScss" BeforeTargets="Build" Condition="Exists('$(_SassDir)\dart.exe')">
+	<Target Name="CompileScss" BeforeTargets="Build" Condition="Exists('$(_SassDir)\dart.exe') AND '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">
 		<Exec Command="&quot;$(_SassDir)\dart.exe&quot; &quot;$(_SassDir)\sass.snapshot&quot; --no-source-map --style=expanded &quot;$(_ScssDir)\site.scss:$(_CssDir)\site.css&quot; &quot;$(_ScssDir)\chat.scss:$(_CssDir)\chat.css&quot; &quot;$(_ScssDir)\widget-layout.scss:$(_CssDir)\widget-layout.css&quot;" />
 	</Target>
 
