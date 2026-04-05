@@ -2330,3 +2330,129 @@ body {
     padding: 0.5rem 0;
   }
 }
+
+/* ============================================================
+   Hoe het werkt — mode toggle & tier cards
+   ============================================================ */
+
+.hhw-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  gap: .5rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.hhw-toggle-btn {
+  padding: .65rem 1.4rem;
+  border-radius: 2rem;
+  border: 2px solid rgba(255,255,255,.3);
+  background: transparent;
+  color: rgba(255,255,255,.7);
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.hhw-toggle-btn:hover {
+  border-color: rgba(255,255,255,.6);
+  color: #fff;
+}
+
+.hhw-toggle-btn.active {
+  background: #fff;
+  border-color: #fff;
+  color: var(--navy);
+}
+
+/* Tier cards on HoeHetWerkt concierge section */
+.hhw-tier-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.hhw-tier-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem 1.5rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.hhw-tier-card-featured {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,107,245,.12);
+}
+
+.hhw-tier-badge {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--blue);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .2rem .75rem;
+  border-radius: 1rem;
+  white-space: nowrap;
+  letter-spacing: .03em;
+}
+
+.hhw-tier-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.hhw-tier-price {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--blue);
+  line-height: 1;
+}
+
+.hhw-tier-price span {
+  font-size: .9rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.hhw-tier-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+
+.hhw-tier-card ul li {
+  font-size: .875rem;
+  color: var(--text);
+  padding: .3rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.hhw-tier-card ul li:last-child {
+  border-bottom: none;
+}
+
+.hhw-tier-card ul li i {
+  color: var(--blue);
+  margin-top: .15rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .hhw-tier-cards {
+    grid-template-columns: 1fr;
+  }
+}

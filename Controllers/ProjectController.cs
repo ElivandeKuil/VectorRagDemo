@@ -482,6 +482,62 @@ namespace VectorRagDemo.Controllers
             return RedirectToAction(nameof(Edit), new { id });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            if (id == 1)
+            {
+                TempData["Error"] = "Het standaardproject (ID 1) kan niet worden verwijderd.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return NotFound();
+
+            // Unlink any dev projects pointing to this as their production project
+            var devProjects = await _context.Projects.Where(p => p.ProductieProjectId == id).ToListAsync();
+            foreach (var dev in devProjects)
+                dev.ProductieProjectId = null;
+
+            // Delete chunks + bronnen via raw SQL (preserves vector column compatibility)
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            await using var conn = new NpgsqlConnection(connectionString);
+            await conn.OpenAsync();
+
+            await using (var cmd = new NpgsqlCommand(
+                "DELETE FROM chunk WHERE bronid IN (SELECT id FROM bron WHERE project = @Id)", conn))
+            {
+                cmd.Parameters.AddWithValue("Id", id);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            await using (var cmd = new NpgsqlCommand("DELETE FROM bron WHERE project = @Id", conn))
+            {
+                cmd.Parameters.AddWithValue("Id", id);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            // Delete related EF-managed records
+            var prompts = await _context.Prompts.Where(p => p.Project == id).ToListAsync();
+            _context.Prompts.RemoveRange(prompts);
+
+            var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == id);
+            if (widgetConfig != null) _context.WidgetConfigs.Remove(widgetConfig);
+
+            var promptInstelling = await _context.PromptInstellingen.FirstOrDefaultAsync(p => p.ProjectID == id);
+            if (promptInstelling != null) _context.PromptInstellingen.Remove(promptInstelling);
+
+            var placeholders = await _context.Placeholders.Where(p => p.ProjectID == id).ToListAsync();
+            _context.Placeholders.RemoveRange(placeholders);
+
+            _context.Projects.Remove(project);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Project '{project.Naam}' en alle bijbehorende gegevens zijn verwijderd.";
+            return RedirectToAction(nameof(Index));
+        }
+
         private async Task<bool> CanUserAccessProjectAsync(int projectId)
         {
             var userId = User.GetUserId();

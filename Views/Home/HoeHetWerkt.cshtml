@@ -1,142 +1,389 @@
 @{
     Layout = "_MarketingLayout";
     ViewData["Title"] = "Hoe het werkt | ElAI Solutions";
-    ViewData["MetaDescription"] = "Van aanmelding tot live chatbot in enkele dagen. Wij verzorgen alles — u levert de documentatie.";
+    ViewData["MetaDescription"] = "Van aanmelding tot live chatbot. Kies uw route: zelf beheren via ons dashboard of volledig ontzorgd via een Concierge-abonnement.";
 }
 
-<!-- ===== 1. PAGE HEADER ===== -->
+<!-- ===== PAGE HEADER ===== -->
 <section class="page-header">
     <div class="container">
         <div class="text-center">
             <span class="section-label" style="color: rgba(255,255,255,0.55);">Ons proces</span>
-            <h1>Van aanmelding tot live chatbot — in dagen, niet weken</h1>
-            <p>Wij nemen het volledige traject voor onze rekening. Uw enige taak is het aanleveren van uw bedrijfsinformatie.</p>
+            <h1>Hoe het werkt</h1>
+            <p style="color:rgba(255,255,255,0.7); max-width:560px; margin: 1rem auto 0;">Van aanmelding tot live chatbot. Kies de route die bij u past.</p>
+        </div>
+
+        <!-- Toggle -->
+        <div class="hhw-toggle-wrap">
+            <button class="hhw-toggle-btn active" id="btn-self" onclick="switchMode('self')">
+                <i class="bi bi-person-gear me-2"></i>Zelf beheren
+            </button>
+            <button class="hhw-toggle-btn" id="btn-concierge" onclick="switchMode('concierge')">
+                <i class="bi bi-stars me-2"></i>Concierge — volledig ontzorgd
+            </button>
         </div>
     </div>
 </section>
 
-<!-- ===== 2. TIMELINE ===== -->
-<section class="section-light">
-    <div class="container">
-        <div class="text-center mb-5">
-            <span class="section-label">Stappenplan</span>
-            <h2 class="section-title">Hoe het in zijn werk gaat</h2>
-        </div>
+<!-- ===================================================================
+     SELF-MANAGED
+     =================================================================== -->
+<div id="mode-self">
 
-        <div class="timeline">
-            <!-- Step 1 -->
-            <div class="timeline-item">
-                <div class="timeline-icon-wrap">
-                    <i class="bi bi-chat-square-dots"></i>
-                </div>
-                <div class="timeline-content">
-                    <div class="timeline-step-num">Stap 1</div>
-                    <h3>Kennismakingsgesprek</h3>
-                    <p>We bespreken uw wensen, doelgroep en welke informatie de chatbot moet kennen. Dit gesprek duurt 30–45 minuten en is volledig vrijblijvend.</p>
-                </div>
-            </div>
-
-            <!-- Step 2 -->
-            <div class="timeline-item">
-                <div class="timeline-icon-wrap">
-                    <i class="bi bi-file-earmark-arrow-up"></i>
-                </div>
-                <div class="timeline-content">
-                    <div class="timeline-step-num">Stap 2</div>
-                    <h3>Documentatie aanleveren</h3>
-                    <p>U levert productinformatie, FAQ's, prijslijsten of andere documentatie aan. Dit kan via e-mail, Google Drive of een eigen systeem. Wij verwerken alles.</p>
-                </div>
-            </div>
-
-            <!-- Step 3 -->
-            <div class="timeline-item">
-                <div class="timeline-icon-wrap">
-                    <i class="bi bi-sliders"></i>
-                </div>
-                <div class="timeline-content">
-                    <div class="timeline-step-num">Stap 3</div>
-                    <h3>Configuratie &amp; afstemming</h3>
-                    <p>De chatbot wordt ingesteld op uw huisstijl, tone-of-voice en specifieke instructies. U krijgt een preview ter goedkeuring.</p>
-                </div>
-            </div>
-
-            <!-- Step 4 -->
-            <div class="timeline-item">
-                <div class="timeline-icon-wrap">
-                    <i class="bi bi-bug"></i>
-                </div>
-                <div class="timeline-content">
-                    <div class="timeline-step-num">Stap 4</div>
-                    <h3>Testen</h3>
-                    <p>U test de chatbot en geeft feedback. Wij verfijnen tot het perfect is. Alle Concierge-abonnenten hebben een aparte testomgeving zodat aanpassingen veilig getest kunnen worden.</p>
-                </div>
-            </div>
-
-            <!-- Step 5 -->
-            <div class="timeline-item">
-                <div class="timeline-icon-wrap">
-                    <i class="bi bi-rocket-takeoff"></i>
-                </div>
-                <div class="timeline-content">
-                    <div class="timeline-step-num">Stap 5</div>
-                    <h3>Live op uw website</h3>
-                    <p>Een klein stukje code op uw website en de chatbot is bereikbaar voor uw bezoekers. Wij ondersteunen alle gangbare CMS-platforms.</p>
-                </div>
+    <!-- Intro strip -->
+    <section class="section-light" style="padding-bottom: 0;">
+        <div class="container">
+            <div class="text-center mb-2">
+                <h2 class="section-title mt-3">U aan de knoppen — wij leveren de technologie</h2>
+                <p class="mx-auto" style="max-width:620px;">Beheer uw kennisbank en chatbot-instellingen volledig via ons intuïtieve dashboard. Geen technische achtergrond vereist voor de basis — wel handig als u er het maximale uit wilt halen.</p>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- ===== 3. WAT MAAKT ONZE AANPAK ANDERS ===== -->
-<section class="section-alt">
-    <div class="container">
-        <div class="text-center mb-4">
-            <span class="section-label">Onze aanpak</span>
-            <h2 class="section-title">Wat maakt onze aanpak anders?</h2>
-        </div>
-        <div class="approach-grid">
-            <div class="approach-card negative">
-                <div class="approach-card-header">
-                    <i class="bi bi-x-circle-fill"></i> Zelf doen
+    <!-- Timeline -->
+    <section class="section-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="section-label">Stappenplan</span>
+                <h2 class="section-title">Van aanmelding tot live chatbot</h2>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-person-plus"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 1</div>
+                        <h3>Aanmelden &amp; toegang</h3>
+                        <p>Na aanmelding ontvangt u inloggegevens voor uw persoonlijke dashboard. Binnen enkele minuten heeft u toegang tot alle tools die u nodig heeft.</p>
+                    </div>
                 </div>
-                <p>Bij de meeste chatbot-tools moet u zelf documenten uploaden, de widget configureren, API-sleutels beheren en de kennisbank bijhouden. Dat kost tijd, frustratie en technische kennis die u misschien niet heeft.</p>
-            </div>
-            <div class="approach-card positive">
-                <div class="approach-card-header">
-                    <i class="bi bi-check-circle-fill"></i> Met ons
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 2</div>
+                        <h3>Documentatie uploaden</h3>
+                        <p>Upload uw productinformatie, FAQ's, prijslijsten of handleidingen rechtstreeks via het dashboard. De AI verwerkt en indexeert alles automatisch.</p>
+                    </div>
                 </div>
-                <p>Wij nemen alles uit handen. Van de eerste configuratie tot doorlopend beheer — of u doet het zelf via ons intuïtieve dashboard. De keuze is aan u.</p>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-sliders"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 3</div>
+                        <h3>Chatbot configureren</h3>
+                        <p>Stel de tone-of-voice, instructies en huisstijlkleuren in via het dashboard. Pas de chatwidget volledig aan — kleur, positie, begroetingstekst en meer — zonder één regel code.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-bug"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 4</div>
+                        <h3>Testen</h3>
+                        <p>Test uw chatbot uitgebreid via de studio in het dashboard. Business-abonnenten beschikken over een aparte testomgeving zodat wijzigingen veilig getest worden vóór publicatie.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-rocket-takeoff"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 5</div>
+                        <h3>Live op uw website</h3>
+                        <p>Kopieer één klein stukje code vanuit het dashboard en plak het op uw website. De chatbot is direct actief voor uw bezoekers. Werkt op elk platform — WordPress, Shopify, Webflow of maatwerk.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Doorlopend</div>
+                        <h3>U beheert zelf</h3>
+                        <p>Iets veranderd in uw assortiment of beleid? Log in, pas de documentatie aan en de chatbot is direct bijgewerkt. U heeft altijd de volledige controle.</p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- ===== 4. INFO STRIP ===== -->
-<section class="section-light">
-    <div class="container">
-        <div class="info-strip">
-            <div class="info-strip-item">
-                <i class="bi bi-clock"></i>
-                <span>Gemiddelde doorlooptijd: 3–5 werkdagen</span>
+    <!-- What you need -->
+    <section class="section-alt">
+        <div class="container">
+            <div class="text-center mb-4">
+                <span class="section-label">Wat heeft u nodig?</span>
+                <h2 class="section-title">Wat u zelf regelt</h2>
             </div>
-            <div class="info-strip-item">
-                <i class="bi bi-chat-dots"></i>
-                <span>Eerste gesprek: gratis en vrijblijvend</span>
-            </div>
-            <div class="info-strip-item">
-                <i class="bi bi-headset"></i>
-                <span>Ondersteuning: gedurende hele traject</span>
+            <div class="approach-grid">
+                <div class="approach-card positive">
+                    <div class="approach-card-header"><i class="bi bi-check-circle-fill"></i> U regelt dit zelf</div>
+                    <ul style="padding-left:1rem; margin:0; line-height:2;">
+                        <li>Uw documentatie up-to-date houden</li>
+                        <li>Nieuwe informatie uploaden bij wijzigingen</li>
+                        <li>Chatbot-instellingen en tone-of-voice</li>
+                        <li>Widget-styling afstemmen op uw huisstijl</li>
+                        <li>Code-snippet plaatsen op uw website</li>
+                    </ul>
+                </div>
+                <div class="approach-card positive">
+                    <div class="approach-card-header"><i class="bi bi-check-circle-fill"></i> Wij leveren dit</div>
+                    <ul style="padding-left:1rem; margin:0; line-height:2;">
+                        <li>De volledige AI-infrastructuur</li>
+                        <li>Automatische verwerking &amp; indexering</li>
+                        <li>Intuitief beheerdashboard</li>
+                        <li>Hosting, schaalbaarheid en updates</li>
+                        <li>Technische ondersteuning bij problemen</li>
+                    </ul>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- ===== 5. CTA ===== -->
+    <!-- Info strip -->
+    <section class="section-light">
+        <div class="container">
+            <div class="info-strip">
+                <div class="info-strip-item">
+                    <i class="bi bi-clock"></i>
+                    <span>Live in 1–2 werkdagen na aanmelding</span>
+                </div>
+                <div class="info-strip-item">
+                    <i class="bi bi-person-check"></i>
+                    <span>Geen technische kennis vereist voor de basis</span>
+                </div>
+                <div class="info-strip-item">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>Maandelijks opzegbaar</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- ===================================================================
+     CONCIERGE
+     =================================================================== -->
+<div id="mode-concierge" style="display:none;">
+
+    <!-- Intro strip -->
+    <section class="section-light" style="padding-bottom: 0;">
+        <div class="container">
+            <div class="text-center mb-2">
+                <span class="tier-badge tier-badge-concierge" style="font-size:.85rem;">Concierge · Concierge Plus · Concierge Elite</span>
+                <h2 class="section-title mt-3">U levert de kennis — wij doen de rest</h2>
+                <p class="mx-auto" style="max-width:620px;">Van de eerste configuratie tot doorlopend beheer en optimalisatie. U hoeft nooit in het dashboard te werken. Een e-mail aan ons is voldoende om uw chatbot altijd actueel te houden.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Timeline -->
+    <section class="section-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="section-label">Stappenplan</span>
+                <h2 class="section-title">Van intake tot live — en daarna</h2>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-chat-square-dots"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 1</div>
+                        <h3>Kennismakingsgesprek</h3>
+                        <p>We bespreken uw wensen, doelgroep en welke informatie de chatbot moet kennen. Dit gesprek duurt 30–45 minuten, is gratis en volledig vrijblijvend. Samen bepalen we welk Concierge-abonnement het beste bij u past.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 2</div>
+                        <h3>Documentatie aanleveren</h3>
+                        <p>U stuurt ons uw productinformatie, FAQ's, prijslijsten of andere relevante documenten — via e-mail, Google Drive of welk formaat u gebruikt. Wij verwerken alles. U hoeft niets te formatteren of voor te bereiden.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-sliders"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 3</div>
+                        <h3>Wij configureren alles</h3>
+                        <p>Wij richten de volledige kennisbank in, stellen de AI-instructies en tone-of-voice in, en configureren de chatwidget in uw huisstijl. Geen input van u vereist — wij nemen het initiatief en stellen gericht vragen waar nodig.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-eye"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 4</div>
+                        <h3>Preview &amp; goedkeuring</h3>
+                        <p>U krijgt een preview van de chatbot ter beoordeling. Niet tevreden? Geen probleem — wij passen aan tot het klopt. Pas als u akkoord gaat gaan we verder.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-bug"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 5</div>
+                        <h3>Testen in aparte omgeving</h3>
+                        <p>Alle Concierge-abonnenten beschikken over een aparte testomgeving. Wij testen uitgebreid op realistische vragen vóór livegang. U kunt zelf ook testen en feedback geven — wij verwerken alles.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-rocket-takeoff"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Stap 6</div>
+                        <h3>Live op uw website</h3>
+                        <p>Wij leveren een kant-en-klaar code-snippet dat u — of uw webbeheerder — eenmalig op uw website plaatst. Werkt op elk platform. Daarna is de chatbot actief voor uw bezoekers.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon-wrap"><i class="bi bi-envelope-check"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-step-num">Doorlopend</div>
+                        <h3>Stuur ons een e-mail — wij verwerken</h3>
+                        <p>Prijswijziging? Nieuw product? Aangepaste openingstijden? U stuurt ons een e-mail en wij verwerken de wijziging, testen het resultaat en zetten het live. U merkt er niets van — behalve dat uw chatbot altijd klopt.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- What you need / what we do -->
+    <section class="section-alt">
+        <div class="container">
+            <div class="text-center mb-4">
+                <span class="section-label">Taakverdeling</span>
+                <h2 class="section-title">Wat is van u — wat is van ons</h2>
+            </div>
+            <div class="approach-grid">
+                <div class="approach-card positive">
+                    <div class="approach-card-header"><i class="bi bi-person"></i> Uw rol</div>
+                    <ul style="padding-left:1rem; margin:0; line-height:2;">
+                        <li>Documentatie en kennis aanleveren</li>
+                        <li>Ons op de hoogte stellen van wijzigingen</li>
+                        <li>Preview goedkeuren voor livegang</li>
+                        <li>Eenmalig code-snippet plaatsen op uw site</li>
+                    </ul>
+                </div>
+                <div class="approach-card positive">
+                    <div class="approach-card-header"><i class="bi bi-stars"></i> Onze rol</div>
+                    <ul style="padding-left:1rem; margin:0; line-height:2;">
+                        <li>Volledige inrichting van kennisbank en chatbot</li>
+                        <li>Prompt-optimalisatie en AI-afstemming</li>
+                        <li>Doorlopend beheer en kennisbank-updates</li>
+                        <li>Testen vóór elke wijziging gaat live</li>
+                        <li>Proactieve optimalisatie op basis van statistieken</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Concierge tiers comparison -->
+    <section class="section-light">
+        <div class="container">
+            <div class="text-center mb-4">
+                <span class="section-label">Kies uw niveau</span>
+                <h2 class="section-title">Drie Concierge-abonnementen</h2>
+            </div>
+            <div class="hhw-tier-cards">
+                <div class="hhw-tier-card">
+                    <div class="hhw-tier-name">Concierge</div>
+                    <div class="hhw-tier-price">€299<span>/maand</span></div>
+                    <ul>
+                        <li><i class="bi bi-check-circle-fill"></i> 2.500 AI-gesprekken/maand</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 25.000 pagina's kennisbank</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Tot 4 wijzigingsverzoeken/maand</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Test + Productie omgeving</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Basis statistieken</li>
+                    </ul>
+                    <a href="/contact" class="pricing-cta">Begin met Concierge</a>
+                </div>
+                <div class="hhw-tier-card hhw-tier-card-featured">
+                    <div class="hhw-tier-badge">Meest gekozen</div>
+                    <div class="hhw-tier-name">Concierge Plus</div>
+                    <div class="hhw-tier-price">€399<span>/maand</span></div>
+                    <ul>
+                        <li><i class="bi bi-check-circle-fill"></i> 3.500 AI-gesprekken/maand</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 35.000 pagina's kennisbank</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Tot 6 wijzigingsverzoeken/maand</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Automatische lead-detectie</li>
+                        <li><i class="bi bi-check-circle-fill"></i> WhatsApp- &amp; e-maildoorschakeling</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Uitgebreid statistieken dashboard</li>
+                    </ul>
+                    <a href="/contact" class="pricing-cta">Begin met Concierge Plus</a>
+                </div>
+                <div class="hhw-tier-card">
+                    <div class="hhw-tier-name">Concierge Elite</div>
+                    <div class="hhw-tier-price">€599<span>/maand</span></div>
+                    <ul>
+                        <li><i class="bi bi-check-circle-fill"></i> Tot 3 chatbots onder één abonnement</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 10.000 AI-gesprekken/maand</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 50.000 pagina's kennisbank</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Onbeperkte wijzigingsverzoeken</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Reactietijd binnen 4 uur</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Kwartaalreview met actieplan</li>
+                    </ul>
+                    <a href="/contact" class="pricing-cta">Begin met Concierge Elite</a>
+                </div>
+            </div>
+            <p class="text-center mt-3" style="font-size:0.8rem; color: var(--muted);">Alle prijzen excl. BTW. Maandelijks opzegbaar. Jaarlijks betalen: 10% korting.</p>
+        </div>
+    </section>
+
+    <!-- Info strip -->
+    <section class="section-alt">
+        <div class="container">
+            <div class="info-strip">
+                <div class="info-strip-item">
+                    <i class="bi bi-clock"></i>
+                    <span>Live al vanaf 3 weken na intake</span>
+                </div>
+                <div class="info-strip-item">
+                    <i class="bi bi-envelope"></i>
+                    <span>Wijziging doorvoeren: stuur één e-mail</span>
+                </div>
+                <div class="info-strip-item">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Getest vóór elke livegang</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- ===== SHARED CTA ===== -->
 <section class="cta-section">
     <div class="container">
         <h2>Klaar om te starten?</h2>
         <p>Plan een vrijblijvend kennismakingsgesprek en ontdek wat een AI-assistent voor uw bedrijf kan betekenen.</p>
         <a href="/contact" class="btn-primary-cta">Plan een gratis demo</a>
-        <a href="/tarieven" class="cta-secondary-link">Of bekijk onze tarieven</a>
     </div>
 </section>
+
+@section Scripts {
+<script>
+    function switchMode(mode) {
+        var self = document.getElementById('mode-self');
+        var concierge = document.getElementById('mode-concierge');
+        var btnSelf = document.getElementById('btn-self');
+        var btnConcierge = document.getElementById('btn-concierge');
+
+        if (mode === 'self') {
+            self.style.display = '';
+            concierge.style.display = 'none';
+            btnSelf.classList.add('active');
+            btnConcierge.classList.remove('active');
+        } else {
+            self.style.display = 'none';
+            concierge.style.display = '';
+            btnSelf.classList.remove('active');
+            btnConcierge.classList.add('active');
+        }
+    }
+</script>
+}

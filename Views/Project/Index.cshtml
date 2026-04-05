@@ -69,6 +69,16 @@ else
                                 <i class="bi @(p.Status == 1 ? "bi-toggle-on" : "bi-toggle-off")"></i>
                             </button>
                         </form>
+                        @if (p.ID != 1)
+                        {
+                            <form asp-action="Delete" asp-route-id="@p.ID" method="post" class="d-inline"
+                                  onsubmit="return confirm('Project \'@p.Naam\' en alle bijbehorende bronnen, chunks, prompts en instellingen permanent verwijderen?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Verwijderen">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        }
                     </td>
                 </tr>
             }
