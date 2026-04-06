@@ -97,10 +97,27 @@
                                 .Select(c => c.Value)
                                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+                            var navUserId = int.TryParse(
+                                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                                out var navUid) ? navUid : 0;
+
+                            var navProject = navUserId > 0
+                                ? VectorDbContext.GebruikerProjecten
+                                    .Where(gp => gp.Gebruiker == navUserId && gp.Status == 1)
+                                    .Join(VectorDbContext.Projects,
+                                          gp => gp.Project,
+                                          p => p.ID,
+                                          (gp, p) => p)
+                                    .FirstOrDefault()
+                                : null;
+
                             foreach (var entry in VectorRagDemo.Services.ProjectAccessService.SubProjectMap)
                             {
                                 if (userSubProjects.Contains(entry.Key))
                                 {
+                                    if (entry.Key == "Statistieken" && (navProject?.StatistiekenTier ?? 0) == 0)
+                                        continue;
+
                                     <li class="nav-item">
                                         <a class="nav-link text-dark"
                                            asp-controller="@entry.Value.Controller"
@@ -119,20 +136,6 @@
                         </li>
 
                         @* Toon "Prompt instellingen" automatisch als het project custom prompts gebruikt. *@
-                            var navUserId = int.TryParse(
-                                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-                                out var navUid) ? navUid : 0;
-
-                            var navProject = navUserId > 0
-                                ? VectorDbContext.GebruikerProjecten
-                                    .Where(gp => gp.Gebruiker == navUserId && gp.Status == 1)
-                                    .Join(VectorDbContext.Projects,
-                                          gp => gp.Project,
-                                          p => p.ID,
-                                          (gp, p) => p)
-                                    .FirstOrDefault()
-                                : null;
-
                             if (navProject != null && !navProject.GebruikPromptTabel)
                             {
                                 <li class="nav-item">

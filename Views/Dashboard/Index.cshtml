@@ -82,10 +82,6 @@ else
         .Select(c => c.Value)
         .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-    var tiles = VectorRagDemo.Services.ProjectAccessService.SubProjectMap
-        .Where(e => userSubProjects.Contains(e.Key))
-        .ToList();
-
     var dashUserId = int.TryParse(
         User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
         out var dashUid) ? dashUid : 0;
@@ -99,6 +95,11 @@ else
                   (gp, p) => p)
             .FirstOrDefault()
         : null;
+
+    var tiles = VectorRagDemo.Services.ProjectAccessService.SubProjectMap
+        .Where(e => userSubProjects.Contains(e.Key))
+        .Where(e => e.Key != "Statistieken" || (dashProject?.StatistiekenTier ?? 0) > 0)
+        .ToList();
 
     var showPromptInstelling = dashProject != null && !dashProject.GebruikPromptTabel;
 
