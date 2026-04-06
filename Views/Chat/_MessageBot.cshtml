@@ -16,52 +16,34 @@
     @if (Model.SourceLinks != null && Model.SourceLinks.Any())
     {
         <div class="source-links mt-2">
-            <div class="source-links-label"><i class="bi bi-journals me-1"></i>Bronnen</div>
             @foreach (var link in Model.SourceLinks)
             {
-                <a href="@link.Url" target="_blank" rel="noopener noreferrer" class="source-link-item">
-                    <i class="bi bi-link-45deg"></i>
-                    <span class="source-link-title">@link.Title</span>
-                    <i class="bi bi-box-arrow-up-right ms-auto"></i>
+                var p = link.Preview;
+                var host = Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) ? uri.Host : link.Url;
+                var displayTitle = p != null && !string.IsNullOrWhiteSpace(p.Title) ? p.Title : host;
+                <a href="@link.Url" target="_blank" rel="noopener noreferrer" class="link-preview-card">
+                    @if (p != null && !string.IsNullOrWhiteSpace(p.ImageUrl))
+                    {
+                        <div class="lpc-image">
+                            <img src="@p.ImageUrl" alt="" onerror="this.parentElement.style.display='none'">
+                        </div>
+                    }
+                    <div class="lpc-body">
+                        <div class="lpc-site">
+                            @if (p != null && !string.IsNullOrWhiteSpace(p.FaviconUrl))
+                            {
+                                <img src="@p.FaviconUrl" alt="" class="lpc-favicon" onerror="this.style.display='none'">
+                            }
+                            <span>@(p?.SiteName ?? host)</span>
+                        </div>
+                        <div class="lpc-title">@displayTitle</div>
+                        @if (p != null && !string.IsNullOrWhiteSpace(p.Description))
+                        {
+                            <div class="lpc-description">@p.Description</div>
+                        }
+                    </div>
                 </a>
             }
-        </div>
-    }
-    else if (Model.LinkPreview != null)
-    {
-        <div class="link-preview">
-            <a href="@Model.LinkPreview.Url" target="_blank" rel="noopener noreferrer" class="link-preview-link">
-                @if (!string.IsNullOrWhiteSpace(Model.LinkPreview.ImageUrl))
-                {
-                    <div class="link-preview-image">
-                        <img src="@Model.LinkPreview.ImageUrl" alt="@Model.LinkPreview.Title" onerror="this.parentElement.innerHTML='<i class=\'bi bi-link-45deg link-preview-fallback-icon\'></i>'">
-                    </div>
-                }
-                else
-                {
-                    <div class="link-preview-thumbnail">
-                        <i class="bi bi-link-45deg link-preview-icon"></i>
-                    </div>
-                }
-                <div class="link-preview-content">
-                    <div class="link-preview-header">
-                        @if (!string.IsNullOrWhiteSpace(Model.LinkPreview.FaviconUrl))
-                        {
-                            <img src="@Model.LinkPreview.FaviconUrl" alt="" class="link-preview-favicon" onerror="this.style.display='none'">
-                        }
-                        <span class="link-preview-site-name">@(Model.LinkPreview.SiteName ?? new Uri(Model.LinkPreview.Url).Host)</span>
-                    </div>
-                    <div class="link-preview-title">@Model.LinkPreview.Title</div>
-                    @if (!string.IsNullOrWhiteSpace(Model.LinkPreview.Description))
-                    {
-                        <div class="link-preview-description">@Model.LinkPreview.Description</div>
-                    }
-                    <div class="link-preview-url">
-                        <i class="bi bi-box-arrow-up-right"></i>
-                        @Model.LinkPreview.Url
-                    </div>
-                </div>
-            </a>
         </div>
     }
     else if (!string.IsNullOrWhiteSpace(Model.RedirectUrl))

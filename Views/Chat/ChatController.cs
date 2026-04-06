@@ -204,22 +204,29 @@ namespace VectorRagDemo.Views.Chat
                 Timestamp = DateTime.Now
             });
 
-            var sourceLinks = response.GenerativeResponse.UsedChunkIds
+            var rawSourceLinks = response.GenerativeResponse.UsedChunkIds
                 .Select(chunkId => response.Chunks.FirstOrDefault(c => c.Chunk.ID == chunkId))
                 .Where(rc => rc != null && !string.IsNullOrWhiteSpace(rc.BronLink))
                 .Select(rc => new VectorRagDemo.Models.DataContracts.SourceLink
                 {
-                    Title = rc.BronTitle ?? rc.Chunk.Bron?.Title ?? "Document",
-                    Url = rc.BronLink!
+                    Url = rc.BronLink!,
+                    FallbackTitle = rc.BronTitle ?? rc.Chunk.Bron?.Title ?? "Document"
                 })
                 .DistinctBy(sl => sl.Url)
                 .ToList();
+
+            // Fetch link previews for all source URLs in parallel.
+            var previewTasks = rawSourceLinks
+                .Select(sl => _linkPreviewService.FetchLinkPreviewAsync(sl.Url));
+            var previews = await Task.WhenAll(previewTasks);
+            for (int i = 0; i < rawSourceLinks.Count; i++)
+                rawSourceLinks[i].Preview = previews[i];
 
             viewModel.Messages.Add(new ChatMessage
             {
                 Content = response.GenerativeResponse.ResponseText,
                 Context = response.GenerativeResponse.SourceText,
-                SourceLinks = sourceLinks,
+                SourceLinks = rawSourceLinks,
                 WhatsAppUrl = whatsAppUrl,
                 WhatsAppCtaText = widgetConfig?.WhatsAppCtaText,
                 WhatsAppButtonText = widgetConfig?.WhatsAppButtonText,
@@ -254,7 +261,9 @@ namespace VectorRagDemo.Views.Chat
                 {
                     Chunk = chunkData,
                     retrievedChunk.Freshness,
-                    retrievedChunk.InitialSimilirityScore
+                    retrievedChunk.InitialSimilirityScore,
+                    retrievedChunk.BronLink,
+                    retrievedChunk.BronTitle
                 }, jsonOptions);
             }).ToList();
 

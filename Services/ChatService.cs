@@ -140,6 +140,12 @@ namespace VectorRagDemo.Services
                     {
                         existingChunk.InitialSimilirityScore = similarityScore;
                     }
+                    // Restore BronLink if it was lost during serialization between turns
+                    if (existingChunk.BronLink == null && neighbor.BronLink != null)
+                    {
+                        existingChunk.BronLink = neighbor.BronLink;
+                        existingChunk.BronTitle ??= neighbor.BronTitle;
+                    }
                 }
                 else
                 {

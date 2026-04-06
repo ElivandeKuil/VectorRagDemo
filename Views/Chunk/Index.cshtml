@@ -133,7 +133,6 @@
                             </td>
                             <td>
                                 @doc.Title
-                                <div class="text-muted" style="font-size:.75rem">@doc.FileName</div>
                                 @if (!string.IsNullOrWhiteSpace(doc.Link))
                                 {
                                     <a href="@doc.Link" target="_blank" rel="noopener noreferrer"
@@ -158,11 +157,6 @@
                                    btn-variant="outline-primary" btn-size="sm" btn-icon="pencil-square" class="me-1"
                                    title="Chunks bewerken"
                                    onclick="event.stopPropagation()"></a>
-                                <button type="button"
-                                        btn-variant="outline-secondary" btn-size="sm" btn-icon="pencil" class="me-1 btn-rename-doc"
-                                        data-bron-id="@doc.BronId"
-                                        data-current-title="@doc.Title"
-                                        title="Hernoemen"></button>
                                 <button type="button"
                                         class="btn btn-sm @(!string.IsNullOrWhiteSpace(doc.Link) ? "btn-outline-primary" : "btn-outline-secondary") me-1 btn-set-link"
                                         data-bron-id="@doc.BronId"

@@ -10,8 +10,14 @@
         <a asp-action="Index" class="text-muted small me-2">
             <i class="bi bi-arrow-left me-1"></i>Terug naar documenten
         </a>
-        <h1 class="mb-0 mt-1">
-            <i class="bi bi-file-earmark-text me-2"></i>@bron?.Title
+        <h1 class="mb-0 mt-1 d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-text me-2"></i><span id="docTitle">@bron?.Title</span>
+            <button type="button"
+                    btn-variant="outline-secondary" btn-size="sm" btn-icon="pencil"
+                    class="btn-rename-doc"
+                    data-bron-id="@bron?.ID"
+                    data-current-title="@bron?.Title"
+                    title="Hernoemen"></button>
         </h1>
         <p class="text-muted small mb-0">@Model.Count chunk@(Model.Count != 1 ? "s" : "") &mdash; bewerk tekst en sla op om de embedding automatisch bij te werken.</p>
     </div>
@@ -131,6 +137,28 @@
 
 <!-- Autocomplete dropdown (portal, appended to body) -->
 <div id="phAutocomplete" class="ph-autocomplete" style="display:none;" role="listbox"></div>
+
+<!-- Rename document modal -->
+<div class="modal fade" id="renameDocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Document hernoemen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="renameDocForm">
+                <div class="modal-body">
+                    <label class="form-label">Nieuwe titel</label>
+                    <input type="text" id="renameDocInput" class="form-control" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Opslaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
 <script>
@@ -544,5 +572,29 @@
 
     const autocomplete = new PlaceholderAutocomplete();
     document.querySelectorAll('.chunk-textarea, #newChunkText').forEach(ta => autocomplete.attach(ta));
+
+    // ── Rename document ───────────────────────────────────────────────────────
+    document.querySelectorAll('.btn-rename-doc').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.getElementById('renameDocInput').value = this.dataset.currentTitle;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('renameDocModal')).show();
+            setTimeout(() => document.getElementById('renameDocInput').select(), 300);
+        });
+    });
+
+    document.getElementById('renameDocForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const title = document.getElementById('renameDocInput').value.trim();
+        if (!title) return;
+        const bronId = @bron?.ID;
+        const data = await apiPost('/Chunk/RenameDocument', { id: bronId, title });
+        if (data.success) {
+            document.getElementById('docTitle').textContent = title;
+            document.querySelector('.btn-rename-doc').dataset.currentTitle = title;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('renameDocModal')).hide();
+        } else {
+            alert(data.message ?? 'Hernoemen mislukt.');
+        }
+    });
 </script>
 }
