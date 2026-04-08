@@ -1,7 +1,9 @@
 (function () {
     'use strict';
 
-    // Read the embed key and server origin from this script's own src attribute
+    // Read the embed key from the script's src or data-key attribute.
+    // Origin is always the current page's origin so the widget works
+    // regardless of whether the script is loaded locally or from a CDN.
     var scriptEl = document.currentScript ||
         (function () {
             var scripts = document.querySelectorAll('script[src*="widget-loader.js"]');
@@ -10,10 +12,9 @@
 
     if (!scriptEl) return;
 
-    var scriptSrc = scriptEl.src;
-    var scriptUrl = new URL(scriptSrc);
-    var key = scriptUrl.searchParams.get('key');
-    var origin = scriptUrl.origin; // e.g. https://elai.nl
+    var key = scriptEl.dataset.key ||
+              new URL(scriptEl.src, window.location.href).searchParams.get('key');
+    var origin = window.location.origin;
 
     if (!key) {
         console.warn('[ElAI Widget] No embed key provided in script src.');
