@@ -114,6 +114,29 @@
                     </div>
                 </div>
 
+                <!-- Intro bubble -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-chat-quote me-2"></i>Introductieballon</div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">
+                            Wordt eenmalig getoond bij het eerste bezoek, als een tekstballon naast de chatknop.
+                            Laat leeg om de ballon uit te schakelen.
+                        </p>
+                        <div class="mb-3">
+                            <label app-label>Tekst</label>
+                            <input type="text" app-field name="config.IntroMessage" id="cfg_intromessage"
+                                   value="@Model.IntroMessage" maxlength="160" oninput="updatePreview()"
+                                   placeholder="Heb je een vraag? Ik help je graag!" />
+                        </div>
+                        <div>
+                            <label app-label>Vertraging <span class="text-muted small" id="lbl_introdelay">@Model.IntroMessageDelay s</span></label>
+                            <input type="range" app-field name="config.IntroMessageDelay" id="cfg_introdelay"
+                                   min="0" max="30" value="@Model.IntroMessageDelay"
+                                   oninput="lbl_introdelay.textContent=this.value+' s';updatePreview()" />
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Button -->
                 <div class="card shadow-sm mb-3">
                     <div class="card-header fw-semibold"><i class="bi bi-circle me-2"></i>Chatknop</div>
@@ -681,6 +704,30 @@
             btnIconEl.style.display = 'block';
             btnIconEl.setAttribute('width', iconMax);
             btnIconEl.setAttribute('height', iconMax);
+        }
+
+        // Intro bubble
+        var introMsg    = (val('cfg_intromessage') || '').trim();
+        var bubble      = get('prev_bubble');
+        var bubbleText  = get('prev_bubbletext');
+        var tailEl      = bubble ? bubble.querySelector('div') : null;
+        if (introMsg && bubble) {
+            bubbleText.textContent = introMsg;
+            // position: above button, aligned to same edge
+            var bubbleBottom = scaledOffY + scaledBtn + Math.round(10 * scale);
+            bubble.style.bottom = bubbleBottom + 'px';
+            if (position === 'bottom-left') {
+                bubble.style.left  = scaledOffX + 'px';
+                bubble.style.right = 'auto';
+                if (tailEl) { tailEl.style.left = Math.max(6, Math.round(scaledBtn / 2) - 6) + 'px'; tailEl.style.right = 'auto'; }
+            } else {
+                bubble.style.right = scaledOffX + 'px';
+                bubble.style.left  = 'auto';
+                if (tailEl) { tailEl.style.right = Math.max(6, Math.round(scaledBtn / 2) - 6) + 'px'; tailEl.style.left = 'auto'; }
+            }
+            bubble.style.display = 'block';
+        } else if (bubble) {
+            bubble.style.display = 'none';
         }
 
         // Peek offset — mirrors computeHideTranslate() in widget-loader.js but uses

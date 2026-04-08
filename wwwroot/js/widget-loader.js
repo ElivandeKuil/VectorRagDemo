@@ -14,7 +14,7 @@
     var origin = window.location.origin;
 
     if (!key) {
-        console.warn('[ElAI Widget] No embed key provided in script src.');
+        console.warn('[ElAi Widget] No embed key provided in script src.');
         return;
     }
 
@@ -41,7 +41,9 @@
         peekAmount: 50,
         buttonSvgIdle: '',
         buttonSvgPeek: '',
-        buttonSvgOpen: ''
+        buttonSvgOpen: '',
+        introMessage: '',
+        introMessageDelay: 3
     };
 
     // Default chat-bubble SVG used when no custom icon is configured
@@ -121,6 +123,50 @@
             '  opacity: 1;',
             '  transform: translateY(0);',
             '}',
+            // Intro bubble
+            '#' + WIDGET_ID + '-bubble {',
+            '  position: fixed;',
+            '  bottom: ' + (cfg.offsetY + cfg.buttonSize + 14) + 'px;',
+            '  ' + hEdge + ': ' + cfg.offsetX + 'px;',
+            '  ' + hEdgeOpp + ': auto;',
+            '  background: #fff;',
+            '  color: #212529;',
+            '  border-radius: 10px;',
+            '  padding: 10px 34px 10px 14px;',
+            '  box-shadow: 0 4px 20px rgba(0,0,0,0.18);',
+            '  font-size: 14px;',
+            '  line-height: 1.45;',
+            '  max-width: 240px;',
+            '  z-index: 2147483644;',
+            '  cursor: default;',
+            '  animation: ' + WIDGET_ID + '-bubble-in 0.35s ease;',
+            '}',
+            '#' + WIDGET_ID + '-bubble::after {',
+            '  content: "";',
+            '  position: absolute;',
+            '  bottom: -8px;',
+            '  ' + hEdge + ': ' + Math.max(8, Math.round(cfg.buttonSize / 2) - 8) + 'px;',
+            '  border: 8px solid transparent;',
+            '  border-bottom: none;',
+            '  border-top-color: #fff;',
+            '}',
+            '#' + WIDGET_ID + '-bubble-close {',
+            '  position: absolute;',
+            '  top: 6px;',
+            '  right: 8px;',
+            '  background: none;',
+            '  border: none;',
+            '  cursor: pointer;',
+            '  font-size: 18px;',
+            '  line-height: 1;',
+            '  color: #adb5bd;',
+            '  padding: 0 2px;',
+            '}',
+            '#' + WIDGET_ID + '-bubble-close:hover { color: #495057; }',
+            '@keyframes ' + WIDGET_ID + '-bubble-in {',
+            '  from { opacity: 0; transform: translateY(6px); }',
+            '  to   { opacity: 1; transform: translateY(0); }',
+            '}',
             '@media (max-width: 480px) {',
             '  #' + WIDGET_ID + '-popup {',
             '    width: 100vw !important;',
@@ -133,6 +179,9 @@
             '  #' + WIDGET_ID + '-btn {',
             '    bottom: 16px;',
             '    ' + hEdge + ': 16px;',
+            '  }',
+            '  #' + WIDGET_ID + '-bubble {',
+            '    max-width: calc(100vw - ' + (cfg.offsetX * 2 + 16) + 'px);',
             '  }',
             '}',
         ].join('\n');
@@ -213,9 +262,11 @@
             iconHideable:       cfg.iconHideable      != null ? cfg.iconHideable      : defaults.iconHideable,
             hideSide:           cfg.hideSide          || defaults.hideSide,
             peekAmount:         cfg.peekAmount        != null ? cfg.peekAmount        : defaults.peekAmount,
-            buttonSvgIdle:      cfg.buttonSvgIdle     || defaults.buttonSvgIdle,
-            buttonSvgPeek:      cfg.buttonSvgPeek     || defaults.buttonSvgPeek,
-            buttonSvgOpen:      cfg.buttonSvgOpen     || defaults.buttonSvgOpen,
+            buttonSvgIdle:       cfg.buttonSvgIdle       || defaults.buttonSvgIdle,
+            buttonSvgPeek:       cfg.buttonSvgPeek       || defaults.buttonSvgPeek,
+            buttonSvgOpen:       cfg.buttonSvgOpen       || defaults.buttonSvgOpen,
+            introMessage:        cfg.introMessage        || defaults.introMessage,
+            introMessageDelay:   cfg.introMessageDelay   != null ? cfg.introMessageDelay : defaults.introMessageDelay,
         };
 
         // Inject CSS
@@ -256,8 +307,10 @@
         }
 
         // ── Peek / hide behaviour ─────────────────────────────────────────────
+        var bubbleVisible = false;
+
         function shouldPeek() {
-            return c.iconHideable && !hasConversation && !isOpen;
+            return c.iconHideable && !hasConversation && !isOpen && !bubbleVisible;
         }
 
         function applyPeek() {
@@ -335,6 +388,49 @@
         }
         // ─────────────────────────────────────────────────────────────────────
 
+        // ── Intro bubble ──────────────────────────────────────────────────────
+        var BUBBLE_SEEN_KEY = 'elai-intro-seen-' + key;
+
+        function dismissBubble() {
+            try { localStorage.setItem(BUBBLE_SEEN_KEY, '1'); } catch (_) {}
+            bubbleVisible = false;
+            var el = document.getElementById(WIDGET_ID + '-bubble');
+            if (el) el.parentNode.removeChild(el);
+            syncState(); // allow peek again if applicable
+        }
+
+        if (c.introMessage) {
+            var alreadySeen = false;
+            try { alreadySeen = !!localStorage.getItem(BUBBLE_SEEN_KEY); } catch (_) {}
+
+            if (!alreadySeen) {
+                setTimeout(function () {
+                    bubbleVisible = true;
+                    syncState(); // reveal button so bubble points to something visible
+
+                    var bubble = document.createElement('div');
+                    bubble.id = WIDGET_ID + '-bubble';
+
+                    var text = document.createElement('span');
+                    text.textContent = c.introMessage;
+                    bubble.appendChild(text);
+
+                    var closeBtn = document.createElement('button');
+                    closeBtn.id = WIDGET_ID + '-bubble-close';
+                    closeBtn.innerHTML = '&times;';
+                    closeBtn.setAttribute('aria-label', 'Sluiten');
+                    closeBtn.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        dismissBubble();
+                    });
+                    bubble.appendChild(closeBtn);
+
+                    document.body.appendChild(bubble);
+                }, Math.max(0, c.introMessageDelay) * 1000);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         function openWidget() {
             iframe.style.display = 'block';
             iframe.getBoundingClientRect(); // force reflow
@@ -355,6 +451,7 @@
         }
 
         btn.addEventListener('click', function () {
+            dismissBubble();
             if (isOpen) { closeWidget(); } else { openWidget(); }
         });
 
@@ -362,6 +459,7 @@
             if (event.origin !== origin) return;
             if (event.data === 'elai-widget-close') closeWidget();
             if (event.data === 'elai-conversation-started') {
+                dismissBubble();
                 hasConversation = true;
                 syncState();
             }

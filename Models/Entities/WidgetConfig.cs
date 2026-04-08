@@ -55,6 +55,12 @@ namespace VectorRagDemo.Models.Entities
         // Typography
         public string WidgetFontSize { get; set; } = "md";        // sm | md | lg
 
+        // Intro bubble (shown once on first page load)
+        /// <summary>Text shown in a speech bubble next to the chat button on first visit. Empty = disabled.</summary>
+        public string IntroMessage { get; set; } = "";
+        /// <summary>Seconds to wait after page load before showing the intro bubble.</summary>
+        public int IntroMessageDelay { get; set; } = 3;
+
         // Content
         public string GreetingMessage { get; set; } = "Hallo! Hoe kan ik u helpen?";
 

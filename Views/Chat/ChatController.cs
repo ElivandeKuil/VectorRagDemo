@@ -343,6 +343,7 @@ namespace VectorRagDemo.Views.Chat
             config.ButtonShape        = config.ButtonShape        ?? "circle";
             config.ButtonBorderColor  = config.ButtonBorderColor  ?? "#ffffff";
             config.HideSide           = config.HideSide           ?? "right";
+            config.IntroMessage       = config.IntroMessage       ?? string.Empty;
             config.ButtonSvgIdle      = config.ButtonSvgIdle      ?? string.Empty;
             config.ButtonSvgPeek      = config.ButtonSvgPeek      ?? string.Empty;
             config.ButtonSvgOpen      = config.ButtonSvgOpen      ?? string.Empty;
@@ -397,6 +398,8 @@ namespace VectorRagDemo.Views.Chat
                 existing.ButtonSvgIdle     = config.ButtonSvgIdle;
                 existing.ButtonSvgPeek     = config.ButtonSvgPeek;
                 existing.ButtonSvgOpen     = config.ButtonSvgOpen;
+                existing.IntroMessage      = config.IntroMessage;
+                existing.IntroMessageDelay = Math.Clamp(config.IntroMessageDelay, 0, 30);
 
                 // Channel settings (editable by all, but only active when admin enables them)
                 existing.WhatsAppEnabled   = config.WhatsAppEnabled;
@@ -450,7 +453,9 @@ namespace VectorRagDemo.Views.Chat
                 cfg.PeekAmount,
                 cfg.ButtonSvgIdle,
                 cfg.ButtonSvgPeek,
-                cfg.ButtonSvgOpen
+                cfg.ButtonSvgOpen,
+                cfg.IntroMessage,
+                cfg.IntroMessageDelay
             });
         }
 

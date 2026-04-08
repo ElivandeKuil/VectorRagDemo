@@ -362,6 +362,8 @@ namespace VectorRagDemo.Controllers
                 prodCfg.ButtonSvgIdle       = devCfg.ButtonSvgIdle;
                 prodCfg.ButtonSvgPeek       = devCfg.ButtonSvgPeek;
                 prodCfg.ButtonSvgOpen       = devCfg.ButtonSvgOpen;
+                prodCfg.IntroMessage        = devCfg.IntroMessage;
+                prodCfg.IntroMessageDelay   = devCfg.IntroMessageDelay;
 
                 await _context.SaveChangesAsync();
             }

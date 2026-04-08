@@ -1,4 +1,4 @@
-// ElAI Solutions — site.js
+// ElAi Solutions — site.js
 
 (function () {
   'use strict';
