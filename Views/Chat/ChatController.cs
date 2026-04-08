@@ -340,6 +340,10 @@ namespace VectorRagDemo.Views.Chat
             config.HeaderTitle        = config.HeaderTitle        ?? string.Empty;
             config.HeaderLogoUrl      = config.HeaderLogoUrl      ?? string.Empty;
             config.ButtonLogoUrl      = config.ButtonLogoUrl      ?? string.Empty;
+            config.HideSide           = config.HideSide           ?? "right";
+            config.ButtonSvgIdle      = config.ButtonSvgIdle      ?? string.Empty;
+            config.ButtonSvgPeek      = config.ButtonSvgPeek      ?? string.Empty;
+            config.ButtonSvgOpen      = config.ButtonSvgOpen      ?? string.Empty;
             config.WhatsAppNumber     = config.WhatsAppNumber     ?? string.Empty;
             config.WhatsAppButtonText = config.WhatsAppButtonText ?? "Chat via WhatsApp";
             config.WhatsAppCtaText    = config.WhatsAppCtaText    ?? "Neem gelijk contact op met mijn collega";
@@ -381,6 +385,12 @@ namespace VectorRagDemo.Views.Chat
                 existing.SendButtonColor   = config.SendButtonColor;
                 existing.SendButtonIconColor = config.SendButtonIconColor;
                 existing.ButtonLogoUrl     = config.ButtonLogoUrl;
+                existing.IconHideable      = config.IconHideable;
+                existing.HideSide          = config.HideSide;
+                existing.PeekAmount        = Math.Clamp(config.PeekAmount, 20, 70);
+                existing.ButtonSvgIdle     = config.ButtonSvgIdle;
+                existing.ButtonSvgPeek     = config.ButtonSvgPeek;
+                existing.ButtonSvgOpen     = config.ButtonSvgOpen;
 
                 // Channel settings (editable by all, but only active when admin enables them)
                 existing.WhatsAppEnabled   = config.WhatsAppEnabled;
@@ -424,7 +434,13 @@ namespace VectorRagDemo.Views.Chat
                 cfg.ButtonLogoUrl,
                 cfg.PopupWidth,
                 cfg.PopupHeight,
-                cfg.PopupBorderRadius
+                cfg.PopupBorderRadius,
+                cfg.IconHideable,
+                cfg.HideSide,
+                cfg.PeekAmount,
+                cfg.ButtonSvgIdle,
+                cfg.ButtonSvgPeek,
+                cfg.ButtonSvgOpen
             });
         }
 

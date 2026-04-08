@@ -1,9 +1,6 @@
 (function () {
     'use strict';
 
-    // Read the embed key from the script's src or data-key attribute.
-    // Origin is always the current page's origin so the widget works
-    // regardless of whether the script is loaded locally or from a CDN.
     var scriptEl = document.currentScript ||
         (function () {
             var scripts = document.querySelectorAll('script[src*="widget-loader.js"]');
@@ -25,7 +22,6 @@
     var IFRAME_URL = origin + '/Chat/Embed?key=' + encodeURIComponent(key);
     var CONFIG_URL = origin + '/Chat/GetWidgetConfig?key=' + encodeURIComponent(key);
 
-    // Defaults — match WidgetConfig C# defaults exactly
     var defaults = {
         position: 'bottom-right',
         offsetX: 24,
@@ -35,12 +31,25 @@
         buttonLogoUrl: '',
         popupWidth: 380,
         popupHeight: 560,
-        popupBorderRadius: 12
+        popupBorderRadius: 12,
+        iconHideable: false,
+        hideSide: 'right',
+        peekAmount: 50,
+        buttonSvgIdle: '',
+        buttonSvgPeek: '',
+        buttonSvgOpen: ''
     };
 
+    // Default chat-bubble SVG used when no custom icon is configured
+    function defaultIconHtml(size) {
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" fill="currentColor" viewBox="0 0 16 16">' +
+            '<path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.088-.243 22 22 0 0 1-.713-.129Z"/>' +
+            '</svg>';
+    }
+
     function buildCss(cfg) {
-        var isLeft = cfg.position === 'bottom-left';
-        var hEdge  = isLeft ? 'left' : 'right';
+        var isLeft   = cfg.position === 'bottom-left';
+        var hEdge    = isLeft ? 'left' : 'right';
         var hEdgeOpp = isLeft ? 'right' : 'left';
 
         return [
@@ -62,11 +71,22 @@
             '  justify-content: center;',
             '  font-size: 24px;',
             '  z-index: 2147483646;',
-            '  transition: transform 0.15s ease, box-shadow 0.15s ease;',
+            '  overflow: hidden;',
+            '  padding: 0;',
+            '  transition: transform 0.3s ease, box-shadow 0.15s ease;',
             '}',
-            '#' + WIDGET_ID + '-btn:hover {',
+            '#' + WIDGET_ID + '-btn:not(.elai-btn-peeking):hover {',
             '  transform: scale(1.08);',
             '  box-shadow: 0 6px 20px rgba(0,0,0,0.32);',
+            '}',
+            // Ensure SVG/img inside the button fills it proportionally
+            '#' + WIDGET_ID + '-btn svg,',
+            '#' + WIDGET_ID + '-btn img {',
+            '  display: block;',
+            '  max-width: ' + Math.round(cfg.buttonSize * 0.62) + 'px;',
+            '  max-height: ' + Math.round(cfg.buttonSize * 0.62) + 'px;',
+            '  width: auto;',
+            '  height: auto;',
             '}',
             '#' + WIDGET_ID + '-popup {',
             '  position: fixed;',
@@ -106,8 +126,49 @@
         ].join('\n');
     }
 
+    /**
+     * Returns the button innerHTML for the given state ('idle' | 'peek' | 'open').
+     * Priority: state-specific SVG → idle SVG → ButtonLogoUrl image → default bubble.
+     */
+    function resolveIconHtml(state, c) {
+        var svg = (state === 'peek' && c.buttonSvgPeek) ? c.buttonSvgPeek
+                : (state === 'open' && c.buttonSvgOpen) ? c.buttonSvgOpen
+                : c.buttonSvgIdle;
+
+        if (svg) return svg;
+
+        if (c.buttonLogoUrl) {
+            var imgSize = Math.round(c.buttonSize * 0.62) + 'px';
+            return '<img src="' + c.buttonLogoUrl + '" width="' + imgSize + '" height="' + imgSize +
+                   '" alt="" style="border-radius:50%;object-fit:cover;display:block;" />';
+        }
+
+        return defaultIconHtml(Math.round(c.buttonSize * 0.46));
+    }
+
+    /**
+     * Compute the X translation so that only 30% of the button is visible
+     * at the given hide edge.
+     */
+    function computeHideTranslate(cfg) {
+        var isLeft      = cfg.position === 'bottom-left';
+        var hideLeft    = cfg.hideSide === 'left';
+        var hideFrac    = 1 - (cfg.peekAmount / 100);   // hidden fraction, e.g. 0.5 for 50 % visible
+        var partial     = Math.round(cfg.buttonSize * hideFrac);
+        var visiblePart = cfg.buttonSize - partial;
+
+        if (hideLeft) {
+            return isLeft
+                ? -(cfg.offsetX + partial)
+                : -(window.innerWidth - cfg.offsetX - visiblePart);
+        } else {
+            return isLeft
+                ? window.innerWidth - cfg.offsetX - visiblePart
+                : cfg.offsetX + partial;
+        }
+    }
+
     function init(cfg) {
-        // Merge with defaults (keys from server use camelCase)
         var c = {
             position:          cfg.widgetPosition    || defaults.position,
             offsetX:           cfg.offsetX           != null ? cfg.offsetX           : defaults.offsetX,
@@ -118,6 +179,12 @@
             popupWidth:        cfg.popupWidth        != null ? cfg.popupWidth        : defaults.popupWidth,
             popupHeight:       cfg.popupHeight       != null ? cfg.popupHeight       : defaults.popupHeight,
             popupBorderRadius: cfg.popupBorderRadius != null ? cfg.popupBorderRadius : defaults.popupBorderRadius,
+            iconHideable:      cfg.iconHideable      != null ? cfg.iconHideable      : defaults.iconHideable,
+            hideSide:          cfg.hideSide          || defaults.hideSide,
+            peekAmount:        cfg.peekAmount        != null ? cfg.peekAmount        : defaults.peekAmount,
+            buttonSvgIdle:     cfg.buttonSvgIdle     || defaults.buttonSvgIdle,
+            buttonSvgPeek:     cfg.buttonSvgPeek     || defaults.buttonSvgPeek,
+            buttonSvgOpen:     cfg.buttonSvgOpen     || defaults.buttonSvgOpen,
         };
 
         // Inject CSS
@@ -130,13 +197,7 @@
         btn.id = WIDGET_ID + '-btn';
         btn.setAttribute('aria-label', 'Open chat');
         btn.setAttribute('title', 'Open chat');
-        if (c.buttonLogoUrl) {
-            var imgSize = Math.round(c.buttonSize * 0.62) + 'px';
-            btn.innerHTML = '<img src="' + c.buttonLogoUrl + '" width="' + imgSize + '" height="' + imgSize + '" alt="" style="border-radius:50%; object-fit:cover; display:block;" />';
-        } else {
-            var iconSize = Math.round(c.buttonSize * 0.46);
-            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="' + iconSize + '" height="' + iconSize + '" fill="currentColor" viewBox="0 0 16 16"><path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.088-.243 22 22 0 0 1-.713-.129Z"/></svg>';
-        }
+        btn.innerHTML = resolveIconHtml('idle', c);
         document.body.appendChild(btn);
 
         // Iframe popup
@@ -148,6 +209,79 @@
         document.body.appendChild(iframe);
 
         var isOpen = false;
+        var hasConversation = false;
+        var hideTranslate = c.iconHideable ? computeHideTranslate(c) : 0;
+        var currentIconState = null;
+        var peekTimer = null;
+
+        // ── Icon state ────────────────────────────────────────────────────────
+        // Only replaces innerHTML when the state actually changes, so CSS
+        // animations inside the SVG are never needlessly restarted.
+        function setIcon(state) {
+            if (state === currentIconState) return;
+            currentIconState = state;
+            btn.innerHTML = resolveIconHtml(state, c);
+        }
+
+        // ── Peek / hide behaviour ─────────────────────────────────────────────
+        function shouldPeek() {
+            return c.iconHideable && !hasConversation && !isOpen;
+        }
+
+        function applyPeek() {
+            clearTimeout(peekTimer);
+            peekTimer = null;
+            btn.classList.add('elai-btn-peeking');
+            btn.style.transform = 'translateX(' + hideTranslate + 'px)';
+            setIcon('peek');
+        }
+
+        function removePeek() {
+            clearTimeout(peekTimer);
+            peekTimer = null;
+            btn.classList.remove('elai-btn-peeking');
+            btn.style.transform = '';
+            setIcon(isOpen ? 'open' : 'idle');
+        }
+
+        function syncState() {
+            if (shouldPeek()) { applyPeek(); } else { removePeek(); }
+        }
+
+        // Initial state — short delay so the peek slide-in is visible on load
+        if (c.iconHideable) {
+            setTimeout(function () { syncState(); }, 120);
+
+            // Track mouse against a FIXED zone (the full path the button travels),
+            // not against the button element itself which moves and causes the
+            // cursor to fall outside it mid-slide, re-triggering the animation.
+            function isInPeekZone(e) {
+                var margin   = 8;
+                var zoneTop  = window.innerHeight - c.offsetY - c.buttonSize - margin;
+                var zoneBtm  = window.innerHeight - c.offsetY + margin;
+                if (e.clientY < zoneTop || e.clientY > zoneBtm) return false;
+                if (c.hideSide === 'left') {
+                    return e.clientX <= c.offsetX + c.buttonSize + margin;
+                } else {
+                    return e.clientX >= window.innerWidth - c.offsetX - c.buttonSize - margin;
+                }
+            }
+
+            document.addEventListener('mousemove', function (e) {
+                if (hasConversation || isOpen) return;
+                if (isInPeekZone(e)) {
+                    clearTimeout(peekTimer);
+                    peekTimer = null;
+                    if (btn.classList.contains('elai-btn-peeking')) removePeek();
+                } else if (!btn.classList.contains('elai-btn-peeking') && !peekTimer) {
+                    peekTimer = setTimeout(function () {
+                        peekTimer = null;
+                        if (shouldPeek()) applyPeek();
+                    }, 150);
+                }
+            });
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         function openWidget() {
             iframe.style.display = 'block';
@@ -155,6 +289,7 @@
             iframe.classList.add('elai-open');
             btn.setAttribute('aria-label', 'Close chat');
             isOpen = true;
+            syncState();
         }
 
         function closeWidget() {
@@ -164,6 +299,7 @@
             setTimeout(function () {
                 if (!isOpen) iframe.style.display = 'none';
             }, 220);
+            syncState();
         }
 
         btn.addEventListener('click', function () {
@@ -173,10 +309,13 @@
         window.addEventListener('message', function (event) {
             if (event.origin !== origin) return;
             if (event.data === 'elai-widget-close') closeWidget();
+            if (event.data === 'elai-conversation-started') {
+                hasConversation = true;
+                syncState();
+            }
         });
     }
 
-    // Fetch config from server, fall back to defaults on any error
     fetch(CONFIG_URL)
         .then(function (r) { return r.ok ? r.json() : {}; })
         .then(function (cfg) { init(cfg || {}); })

@@ -82,6 +82,33 @@
                         <label app-label class="mt-2">Afgeronde hoeken popup <span class="text-muted small" id="lbl_br">@Model.PopupBorderRadius px</span></label>
                         <input type="range" app-field name="config.PopupBorderRadius" id="cfg_borderradius"
                                min="0" max="24" value="@Model.PopupBorderRadius" oninput="lbl_br.textContent=this.value+' px';updatePreview()" />
+
+                        <hr class="my-3" />
+
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   name="config.IconHideable" id="cfg_iconhideable" value="true"
+                                   @(Model.IconHideable ? "checked" : "")
+                                   onchange="document.getElementById('hideside_row').style.display=this.checked?'':'none';updatePreview()" />
+                            <input type="hidden" name="config.IconHideable" value="false" />
+                            <label class="form-check-label" for="cfg_iconhideable">
+                                Icoon verbergbaar door gebruiker
+                                <span class="text-muted small d-block">Icoon schuift gedeeltelijk buiten het scherm; op hover keert het terug.</span>
+                            </label>
+                        </div>
+
+                        <div id="hideside_row" style="display:@(Model.IconHideable ? "" : "none")">
+                            <label app-label class="mt-1">Verbergen naar kant</label>
+                            @{ var hideRight = Model.HideSide != "left"; }
+                            <select app-field name="config.HideSide" id="cfg_hideside" onchange="updatePreview()">
+                                <option value="right" selected="@hideRight">Rechts</option>
+                                <option value="left"  selected="@(!hideRight)">Links</option>
+                            </select>
+                            <label app-label class="mt-2">Zichtbaar gedeelte <span class="text-muted small" id="lbl_peek">@Model.PeekAmount %</span></label>
+                            <input type="range" app-field name="config.PeekAmount" id="cfg_peekamount"
+                                   min="20" max="70" value="@Model.PeekAmount"
+                                   oninput="lbl_peek.textContent=this.value+' %';updatePreview()" />
+                        </div>
                     </div>
                 </div>
 
@@ -103,10 +130,36 @@
                         <input type="range" app-field name="config.ButtonSize" id="cfg_btnsize"
                                min="36" max="80" value="@Model.ButtonSize" oninput="lbl_bs.textContent=this.value+' px';updatePreview()" />
                         <div class="mt-3">
-                            <label app-label>Logo URL <span class="text-muted small">(optioneel — vervangt het standaard icoon)</span></label>
+                            <label app-label>Logo URL <span class="text-muted small">(optioneel — GIF, PNG, SVG-url; alleen gebruikt als er geen SVG-code hieronder ingevuld is)</span></label>
                             <input type="url" app-field name="config.ButtonLogoUrl" id="cfg_btnlogo"
                                    value="@Model.ButtonLogoUrl" maxlength="500" oninput="updatePreview()"
                                    placeholder="https://..." />
+                        </div>
+
+                        <hr class="my-3" />
+                        <p class="text-muted small mb-2">
+                            <strong>Icoon per staat</strong> — plak hier inline SVG-code (inclusief <code>&lt;svg&gt;...&lt;/svg&gt;</code>).
+                            SVG-animaties via <code>&lt;style&gt;</code> of <code>&lt;animate&gt;</code> worden ondersteund.
+                            Laat leeg om terug te vallen op de staat daarboven of het standaard icoon.
+                        </p>
+
+                        <div class="mb-3">
+                            <label app-label>SVG — normaal (idle)</label>
+                            <textarea app-field name="config.ButtonSvgIdle" rows="4"
+                                      class="font-monospace small"
+                                      placeholder="<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 24 24&quot;>...</svg>">@Model.ButtonSvgIdle</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label app-label>SVG — verborgen (peek) <span class="text-muted small">valt terug op idle</span></label>
+                            <textarea app-field name="config.ButtonSvgPeek" rows="4"
+                                      class="font-monospace small"
+                                      placeholder="<svg ...>...</svg>">@Model.ButtonSvgPeek</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label app-label>SVG — chat open <span class="text-muted small">valt terug op idle</span></label>
+                            <textarea app-field name="config.ButtonSvgOpen" rows="4"
+                                      class="font-monospace small"
+                                      placeholder="<svg ...>...</svg>">@Model.ButtonSvgOpen</textarea>
                         </div>
                     </div>
                 </div>
@@ -563,6 +616,21 @@
             var iconSize = Math.round(scaledBtn * 0.42);
             btnIconEl.setAttribute('width', iconSize);
             btnIconEl.setAttribute('height', iconSize);
+        }
+
+        // Peek offset
+        var iconHideable = get('cfg_iconhideable') && get('cfg_iconhideable').checked;
+        var hideSide     = val('cfg_hideside') || 'right';
+        var peekAmount   = parseInt(val('cfg_peekamount')) || 50;
+        if (iconHideable) {
+            var hideFrac   = 1 - (peekAmount / 100);
+            var partial    = Math.round(scaledBtn * hideFrac);
+            var translateX = (hideSide === 'left' ? -1 : 1) * (scaledOffX + partial);
+            btn.style.transform  = 'translateX(' + translateX + 'px)';
+            btn.style.transition = 'none';
+        } else {
+            btn.style.transform  = '';
+            btn.style.transition = 'none';
         }
     }
 

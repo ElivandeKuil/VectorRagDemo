@@ -10,9 +10,24 @@ namespace VectorRagDemo.Models.Entities
         public int OffsetX { get; set; } = 24;
         public int OffsetY { get; set; } = 24;
 
+        // Hideable icon behaviour
+        /// <summary>When true the icon peeks from the edge of the screen and only slides to its full position on hover.</summary>
+        public bool IconHideable { get; set; } = false;
+        /// <summary>The screen edge the icon slides behind when hidden. "left" or "right".</summary>
+        public string HideSide { get; set; } = "right";
+        /// <summary>How much of the button (%) remains visible in the peek/hidden state. 20–70.</summary>
+        public int PeekAmount { get; set; } = 50;
+
         // Button
         public string ButtonColor { get; set; } = "#0d6efd";
         public int ButtonSize { get; set; } = 56;
+
+        // Per-state button icon SVGs (inline SVG markup, may contain CSS animations).
+        // Falls back: state SVG → ButtonLogoUrl image → built-in chat bubble.
+        // Peek/Open fall back to Idle when not set.
+        public string ButtonSvgIdle { get; set; } = "";
+        public string ButtonSvgPeek { get; set; } = "";
+        public string ButtonSvgOpen { get; set; } = "";
 
         // Popup
         public int PopupWidth { get; set; } = 380;

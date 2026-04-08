@@ -352,6 +352,12 @@ namespace VectorRagDemo.Controllers
                 prodCfg.EmailSubject        = devCfg.EmailSubject;
                 prodCfg.EmailButtonText     = devCfg.EmailButtonText;
                 prodCfg.EmailCtaText        = devCfg.EmailCtaText;
+                prodCfg.IconHideable        = devCfg.IconHideable;
+                prodCfg.HideSide            = devCfg.HideSide;
+                prodCfg.PeekAmount          = devCfg.PeekAmount;
+                prodCfg.ButtonSvgIdle       = devCfg.ButtonSvgIdle;
+                prodCfg.ButtonSvgPeek       = devCfg.ButtonSvgPeek;
+                prodCfg.ButtonSvgOpen       = devCfg.ButtonSvgOpen;
 
                 await _context.SaveChangesAsync();
             }

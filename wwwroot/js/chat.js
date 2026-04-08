@@ -41,12 +41,20 @@ function handleKeyPress(event) {
     }
 }
 
+var _elaiConversationStarted = false;
+
 async function sendMessage() {
     const input = document.getElementById('userInput');
     const query = input.value.trim();
 
     if (!query) {
         return;
+    }
+
+    // Notify the widget loader (parent frame) that a conversation has started
+    if (!_elaiConversationStarted) {
+        _elaiConversationStarted = true;
+        try { window.parent.postMessage('elai-conversation-started', '*'); } catch (_) {}
     }
 
     // Clear input
