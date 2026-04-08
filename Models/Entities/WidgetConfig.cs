@@ -21,6 +21,14 @@ namespace VectorRagDemo.Models.Entities
         // Button
         public string ButtonColor { get; set; } = "#0d6efd";
         public int ButtonSize { get; set; } = 56;
+        /// <summary>Shape of the button backdrop. "circle" | "rounded" | "square".</summary>
+        public string ButtonShape { get; set; } = "circle";
+        /// <summary>Border thickness in pixels (0 = no border).</summary>
+        public int ButtonBorderWidth { get; set; } = 0;
+        /// <summary>Border colour (only used when ButtonBorderWidth > 0).</summary>
+        public string ButtonBorderColor { get; set; } = "#ffffff";
+        /// <summary>Padding between the button edge and the icon, in pixels.</summary>
+        public int ButtonIconPadding { get; set; } = 15;
 
         // Per-state button icon SVGs (inline SVG markup, may contain CSS animations).
         // Falls back: state SVG → ButtonLogoUrl image → built-in chat bubble.

@@ -28,6 +28,10 @@
         offsetY: 24,
         buttonColor: '#0d6efd',
         buttonSize: 56,
+        buttonShape: 'circle',
+        buttonBorderWidth: 0,
+        buttonBorderColor: '#ffffff',
+        buttonIconPadding: 15,
         buttonLogoUrl: '',
         popupWidth: 380,
         popupHeight: 560,
@@ -52,6 +56,14 @@
         var hEdge    = isLeft ? 'left' : 'right';
         var hEdgeOpp = isLeft ? 'right' : 'left';
 
+        var borderRadius = cfg.buttonShape === 'circle'  ? '50%'
+                         : cfg.buttonShape === 'rounded' ? Math.round(cfg.buttonSize * 0.25) + 'px'
+                         : '0';
+        var border = cfg.buttonBorderWidth > 0
+            ? cfg.buttonBorderWidth + 'px solid ' + cfg.buttonBorderColor
+            : 'none';
+        var iconMax = Math.max(8, cfg.buttonSize - 2 * cfg.buttonIconPadding);
+
         return [
             '#' + WIDGET_ID + '-btn {',
             '  position: fixed;',
@@ -60,10 +72,10 @@
             '  ' + hEdgeOpp + ': auto;',
             '  width: ' + cfg.buttonSize + 'px;',
             '  height: ' + cfg.buttonSize + 'px;',
-            '  border-radius: 50%;',
+            '  border-radius: ' + borderRadius + ';',
             '  background: ' + cfg.buttonColor + ';',
             '  color: #fff;',
-            '  border: none;',
+            '  border: ' + border + ';',
             '  cursor: pointer;',
             '  box-shadow: 0 4px 16px rgba(0,0,0,0.25);',
             '  display: flex;',
@@ -83,8 +95,8 @@
             '#' + WIDGET_ID + '-btn svg,',
             '#' + WIDGET_ID + '-btn img {',
             '  display: block;',
-            '  max-width: ' + Math.round(cfg.buttonSize * 0.62) + 'px;',
-            '  max-height: ' + Math.round(cfg.buttonSize * 0.62) + 'px;',
+            '  max-width: ' + iconMax + 'px;',
+            '  max-height: ' + iconMax + 'px;',
             '  width: auto;',
             '  height: auto;',
             '}',
@@ -138,53 +150,72 @@
         if (svg) return svg;
 
         if (c.buttonLogoUrl) {
-            var imgSize = Math.round(c.buttonSize * 0.62) + 'px';
+            var imgSize = Math.max(8, c.buttonSize - 2 * c.buttonIconPadding) + 'px';
             return '<img src="' + c.buttonLogoUrl + '" width="' + imgSize + '" height="' + imgSize +
                    '" alt="" style="border-radius:50%;object-fit:cover;display:block;" />';
         }
 
-        return defaultIconHtml(Math.round(c.buttonSize * 0.46));
+        return defaultIconHtml(Math.max(8, c.buttonSize - 2 * c.buttonIconPadding));
     }
 
     /**
-     * Compute the X translation so that only 30% of the button is visible
-     * at the given hide edge.
+     * Compute the {x, y} translation so that only peekAmount% of the button
+     * is visible at the chosen hide edge.
      */
     function computeHideTranslate(cfg) {
         var isLeft      = cfg.position === 'bottom-left';
-        var hideLeft    = cfg.hideSide === 'left';
-        var hideFrac    = 1 - (cfg.peekAmount / 100);   // hidden fraction, e.g. 0.5 for 50 % visible
+        var hideFrac    = 1 - (cfg.peekAmount / 100);
         var partial     = Math.round(cfg.buttonSize * hideFrac);
         var visiblePart = cfg.buttonSize - partial;
 
-        if (hideLeft) {
-            return isLeft
-                ? -(cfg.offsetX + partial)
-                : -(window.innerWidth - cfg.offsetX - visiblePart);
-        } else {
-            return isLeft
-                ? window.innerWidth - cfg.offsetX - visiblePart
-                : cfg.offsetX + partial;
+        switch (cfg.hideSide) {
+            case 'left':
+                return {
+                    x: isLeft ? -(cfg.offsetX + partial)
+                              : -(window.innerWidth - cfg.offsetX - visiblePart),
+                    y: 0
+                };
+            case 'right':
+                return {
+                    x: isLeft ? window.innerWidth - cfg.offsetX - visiblePart
+                              : cfg.offsetX + partial,
+                    y: 0
+                };
+            case 'top':
+                return {
+                    x: 0,
+                    y: -(window.innerHeight - cfg.offsetY - visiblePart)
+                };
+            case 'bottom':
+            default:
+                return {
+                    x: 0,
+                    y: cfg.offsetY + partial
+                };
         }
     }
 
     function init(cfg) {
         var c = {
-            position:          cfg.widgetPosition    || defaults.position,
-            offsetX:           cfg.offsetX           != null ? cfg.offsetX           : defaults.offsetX,
-            offsetY:           cfg.offsetY           != null ? cfg.offsetY           : defaults.offsetY,
-            buttonColor:       cfg.buttonColor       || defaults.buttonColor,
-            buttonSize:        cfg.buttonSize        != null ? cfg.buttonSize        : defaults.buttonSize,
-            buttonLogoUrl:     cfg.buttonLogoUrl     || defaults.buttonLogoUrl,
-            popupWidth:        cfg.popupWidth        != null ? cfg.popupWidth        : defaults.popupWidth,
-            popupHeight:       cfg.popupHeight       != null ? cfg.popupHeight       : defaults.popupHeight,
-            popupBorderRadius: cfg.popupBorderRadius != null ? cfg.popupBorderRadius : defaults.popupBorderRadius,
-            iconHideable:      cfg.iconHideable      != null ? cfg.iconHideable      : defaults.iconHideable,
-            hideSide:          cfg.hideSide          || defaults.hideSide,
-            peekAmount:        cfg.peekAmount        != null ? cfg.peekAmount        : defaults.peekAmount,
-            buttonSvgIdle:     cfg.buttonSvgIdle     || defaults.buttonSvgIdle,
-            buttonSvgPeek:     cfg.buttonSvgPeek     || defaults.buttonSvgPeek,
-            buttonSvgOpen:     cfg.buttonSvgOpen     || defaults.buttonSvgOpen,
+            position:           cfg.widgetPosition    || defaults.position,
+            offsetX:            cfg.offsetX           != null ? cfg.offsetX           : defaults.offsetX,
+            offsetY:            cfg.offsetY           != null ? cfg.offsetY           : defaults.offsetY,
+            buttonColor:        cfg.buttonColor       || defaults.buttonColor,
+            buttonSize:         cfg.buttonSize        != null ? cfg.buttonSize        : defaults.buttonSize,
+            buttonShape:        cfg.buttonShape       || defaults.buttonShape,
+            buttonBorderWidth:  cfg.buttonBorderWidth != null ? cfg.buttonBorderWidth : defaults.buttonBorderWidth,
+            buttonBorderColor:  cfg.buttonBorderColor || defaults.buttonBorderColor,
+            buttonIconPadding:  cfg.buttonIconPadding != null ? cfg.buttonIconPadding : defaults.buttonIconPadding,
+            buttonLogoUrl:      cfg.buttonLogoUrl     || defaults.buttonLogoUrl,
+            popupWidth:         cfg.popupWidth        != null ? cfg.popupWidth        : defaults.popupWidth,
+            popupHeight:        cfg.popupHeight       != null ? cfg.popupHeight       : defaults.popupHeight,
+            popupBorderRadius:  cfg.popupBorderRadius != null ? cfg.popupBorderRadius : defaults.popupBorderRadius,
+            iconHideable:       cfg.iconHideable      != null ? cfg.iconHideable      : defaults.iconHideable,
+            hideSide:           cfg.hideSide          || defaults.hideSide,
+            peekAmount:         cfg.peekAmount        != null ? cfg.peekAmount        : defaults.peekAmount,
+            buttonSvgIdle:      cfg.buttonSvgIdle     || defaults.buttonSvgIdle,
+            buttonSvgPeek:      cfg.buttonSvgPeek     || defaults.buttonSvgPeek,
+            buttonSvgOpen:      cfg.buttonSvgOpen     || defaults.buttonSvgOpen,
         };
 
         // Inject CSS
@@ -210,9 +241,10 @@
 
         var isOpen = false;
         var hasConversation = false;
-        var hideTranslate = c.iconHideable ? computeHideTranslate(c) : 0;
+        var hideTranslate = c.iconHideable ? computeHideTranslate(c) : { x: 0, y: 0 };
         var currentIconState = null;
         var peekTimer = null;
+        var revealTimer = null; // lockout period after removePeek so the slide-out animation completes
 
         // ── Icon state ────────────────────────────────────────────────────────
         // Only replaces innerHTML when the state actually changes, so CSS
@@ -231,8 +263,10 @@
         function applyPeek() {
             clearTimeout(peekTimer);
             peekTimer = null;
+            clearTimeout(revealTimer);
+            revealTimer = null;
             btn.classList.add('elai-btn-peeking');
-            btn.style.transform = 'translateX(' + hideTranslate + 'px)';
+            btn.style.transform = 'translate(' + hideTranslate.x + 'px,' + hideTranslate.y + 'px)';
             setIcon('peek');
         }
 
@@ -242,6 +276,11 @@
             btn.classList.remove('elai-btn-peeking');
             btn.style.transform = '';
             setIcon(isOpen ? 'open' : 'idle');
+            // Prevent re-peeking until the slide-out CSS transition (300ms) finishes.
+            // Without this the mousemove fires mid-slide, detects the cursor left the
+            // peek zone, and schedules applyPeek before the button reaches its resting spot.
+            clearTimeout(revealTimer);
+            revealTimer = setTimeout(function () { revealTimer = null; }, 350);
         }
 
         function syncState() {
@@ -256,14 +295,27 @@
             // not against the button element itself which moves and causes the
             // cursor to fall outside it mid-slide, re-triggering the animation.
             function isInPeekZone(e) {
-                var margin   = 8;
-                var zoneTop  = window.innerHeight - c.offsetY - c.buttonSize - margin;
-                var zoneBtm  = window.innerHeight - c.offsetY + margin;
-                if (e.clientY < zoneTop || e.clientY > zoneBtm) return false;
-                if (c.hideSide === 'left') {
-                    return e.clientX <= c.offsetX + c.buttonSize + margin;
+                var margin  = 8;
+                var isLeft  = c.position === 'bottom-left';
+
+                if (c.hideSide === 'left' || c.hideSide === 'right') {
+                    // Horizontal slide — constrain Y to the button's row, check the target X edge.
+                    var rowTop = window.innerHeight - c.offsetY - c.buttonSize - margin;
+                    var rowBtm = window.innerHeight - c.offsetY + margin;
+                    if (e.clientY < rowTop || e.clientY > rowBtm) return false;
+                    return c.hideSide === 'left'
+                        ? e.clientX <= c.offsetX + c.buttonSize + margin
+                        : e.clientX >= window.innerWidth - c.offsetX - c.buttonSize - margin;
                 } else {
-                    return e.clientX >= window.innerWidth - c.offsetX - c.buttonSize - margin;
+                    // Vertical slide (top/bottom) — constrain X to the button's column, check the target Y edge.
+                    var colLeft  = isLeft ? c.offsetX - margin
+                                          : window.innerWidth - c.offsetX - c.buttonSize - margin;
+                    var colRight = isLeft ? c.offsetX + c.buttonSize + margin
+                                          : window.innerWidth - c.offsetX + margin;
+                    if (e.clientX < colLeft || e.clientX > colRight) return false;
+                    return c.hideSide === 'top'
+                        ? e.clientY <= c.buttonSize + margin
+                        : e.clientY >= window.innerHeight - c.offsetY - c.buttonSize - margin;
                 }
             }
 
@@ -273,7 +325,7 @@
                     clearTimeout(peekTimer);
                     peekTimer = null;
                     if (btn.classList.contains('elai-btn-peeking')) removePeek();
-                } else if (!btn.classList.contains('elai-btn-peeking') && !peekTimer) {
+                } else if (!btn.classList.contains('elai-btn-peeking') && !peekTimer && !revealTimer) {
                     peekTimer = setTimeout(function () {
                         peekTimer = null;
                         if (shouldPeek()) applyPeek();

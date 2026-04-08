@@ -340,6 +340,8 @@ namespace VectorRagDemo.Views.Chat
             config.HeaderTitle        = config.HeaderTitle        ?? string.Empty;
             config.HeaderLogoUrl      = config.HeaderLogoUrl      ?? string.Empty;
             config.ButtonLogoUrl      = config.ButtonLogoUrl      ?? string.Empty;
+            config.ButtonShape        = config.ButtonShape        ?? "circle";
+            config.ButtonBorderColor  = config.ButtonBorderColor  ?? "#ffffff";
             config.HideSide           = config.HideSide           ?? "right";
             config.ButtonSvgIdle      = config.ButtonSvgIdle      ?? string.Empty;
             config.ButtonSvgPeek      = config.ButtonSvgPeek      ?? string.Empty;
@@ -367,6 +369,10 @@ namespace VectorRagDemo.Views.Chat
                 existing.OffsetY           = config.OffsetY;
                 existing.ButtonColor       = config.ButtonColor;
                 existing.ButtonSize        = config.ButtonSize;
+                existing.ButtonShape       = config.ButtonShape;
+                existing.ButtonBorderWidth = Math.Clamp(config.ButtonBorderWidth, 0, 8);
+                existing.ButtonBorderColor = config.ButtonBorderColor;
+                existing.ButtonIconPadding = Math.Clamp(config.ButtonIconPadding, 0, 30);
                 existing.PopupWidth        = config.PopupWidth;
                 existing.PopupHeight       = config.PopupHeight;
                 existing.PopupBorderRadius = config.PopupBorderRadius;
@@ -431,6 +437,10 @@ namespace VectorRagDemo.Views.Chat
                 cfg.OffsetY,
                 cfg.ButtonColor,
                 cfg.ButtonSize,
+                cfg.ButtonShape,
+                cfg.ButtonBorderWidth,
+                cfg.ButtonBorderColor,
+                cfg.ButtonIconPadding,
                 cfg.ButtonLogoUrl,
                 cfg.PopupWidth,
                 cfg.PopupHeight,

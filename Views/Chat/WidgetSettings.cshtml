@@ -99,10 +99,12 @@
 
                         <div id="hideside_row" style="display:@(Model.IconHideable ? "" : "none")">
                             <label app-label class="mt-1">Verbergen naar kant</label>
-                            @{ var hideRight = Model.HideSide != "left"; }
+                            @{ var hideSideVal = Model.HideSide ?? "right"; }
                             <select app-field name="config.HideSide" id="cfg_hideside" onchange="updatePreview()">
-                                <option value="right" selected="@hideRight">Rechts</option>
-                                <option value="left"  selected="@(!hideRight)">Links</option>
+                                <option value="right"  selected="@(hideSideVal == "right")">Rechts</option>
+                                <option value="left"   selected="@(hideSideVal == "left")">Links</option>
+                                <option value="top"    selected="@(hideSideVal == "top")">Boven</option>
+                                <option value="bottom" selected="@(hideSideVal == "bottom")">Onder</option>
                             </select>
                             <label app-label class="mt-2">Zichtbaar gedeelte <span class="text-muted small" id="lbl_peek">@Model.PeekAmount %</span></label>
                             <input type="range" app-field name="config.PeekAmount" id="cfg_peekamount"
@@ -129,6 +131,35 @@
                         <label app-label>Grootte <span class="text-muted small" id="lbl_bs">@Model.ButtonSize px</span></label>
                         <input type="range" app-field name="config.ButtonSize" id="cfg_btnsize"
                                min="36" max="80" value="@Model.ButtonSize" oninput="lbl_bs.textContent=this.value+' px';updatePreview()" />
+
+                        <label app-label class="mt-3">Vorm</label>
+                        @{ var shape = Model.ButtonShape ?? "circle"; }
+                        <select app-field name="config.ButtonShape" id="cfg_btnshape" onchange="updatePreview()">
+                            <option value="circle"  selected="@(shape == "circle")">Cirkel</option>
+                            <option value="rounded" selected="@(shape == "rounded")">Afgerond</option>
+                            <option value="square"  selected="@(shape == "square")">Vierkant</option>
+                        </select>
+
+                        <label app-label class="mt-3">Rand dikte <span class="text-muted small" id="lbl_bw">@Model.ButtonBorderWidth px</span></label>
+                        <input type="range" app-field name="config.ButtonBorderWidth" id="cfg_btnborderwidth"
+                               min="0" max="8" value="@Model.ButtonBorderWidth"
+                               oninput="lbl_bw.textContent=this.value+' px';document.getElementById('btnbordercolor_row').style.display=this.value>0?'':'none';updatePreview()" />
+
+                        <div id="btnbordercolor_row" style="display:@(Model.ButtonBorderWidth > 0 ? "" : "none")">
+                            <label app-label class="mt-2">Randkleur</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" app-field name="config.ButtonBorderColor"
+                                       id="cfg_btnbordercolor" value="@Model.ButtonBorderColor" oninput="updatePreview()" />
+                                <input type="text" app-field class="font-monospace small"
+                                       id="cfg_btnbordercolor_hex" value="@Model.ButtonBorderColor" maxlength="7"
+                                       oninput="syncColorFromHex('cfg_btnbordercolor','cfg_btnbordercolor_hex');updatePreview()" />
+                            </div>
+                        </div>
+
+                        <label app-label class="mt-3">Icoon marge <span class="text-muted small" id="lbl_ip">@Model.ButtonIconPadding px</span></label>
+                        <input type="range" app-field name="config.ButtonIconPadding" id="cfg_iconpadding"
+                               min="0" max="30" value="@Model.ButtonIconPadding" oninput="lbl_ip.textContent=this.value+' px';updatePreview()" />
+
                         <div class="mt-3">
                             <label app-label>Logo URL <span class="text-muted small">(optioneel — GIF, PNG, SVG-url; alleen gebruikt als er geen SVG-code hieronder ingevuld is)</span></label>
                             <input type="url" app-field name="config.ButtonLogoUrl" id="cfg_btnlogo"
@@ -145,20 +176,20 @@
 
                         <div class="mb-3">
                             <label app-label>SVG — normaal (idle)</label>
-                            <textarea app-field name="config.ButtonSvgIdle" rows="4"
-                                      class="font-monospace small"
+                            <textarea app-field name="config.ButtonSvgIdle" id="cfg_svgidle" rows="4"
+                                      class="font-monospace small" oninput="updatePreview()"
                                       placeholder="<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 24 24&quot;>...</svg>">@Model.ButtonSvgIdle</textarea>
                         </div>
                         <div class="mb-3">
                             <label app-label>SVG — verborgen (peek) <span class="text-muted small">valt terug op idle</span></label>
-                            <textarea app-field name="config.ButtonSvgPeek" rows="4"
-                                      class="font-monospace small"
+                            <textarea app-field name="config.ButtonSvgPeek" id="cfg_svgpeek" rows="4"
+                                      class="font-monospace small" oninput="updatePreview()"
                                       placeholder="<svg ...>...</svg>">@Model.ButtonSvgPeek</textarea>
                         </div>
                         <div class="mb-3">
                             <label app-label>SVG — chat open <span class="text-muted small">valt terug op idle</span></label>
-                            <textarea app-field name="config.ButtonSvgOpen" rows="4"
-                                      class="font-monospace small"
+                            <textarea app-field name="config.ButtonSvgOpen" id="cfg_svgopen" rows="4"
+                                      class="font-monospace small" oninput="updatePreview()"
                                       placeholder="<svg ...>...</svg>">@Model.ButtonSvgOpen</textarea>
                         </div>
                     </div>
@@ -454,7 +485,8 @@
                         </div>
 
                         <!-- Preview button -->
-                        <div id="prev_btn" style="position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:default; box-shadow:0 4px 16px rgba(0,0,0,.25); overflow:hidden;">
+                        <div id="prev_btn" style="position:absolute; display:flex; align-items:center; justify-content:center; cursor:default; box-shadow:0 4px 16px rgba(0,0,0,.25); overflow:hidden;">
+                            <div id="prev_btncustomsvg" style="display:none; line-height:0;"></div>
                             <img id="prev_btnlogo" src="" alt="" style="border-radius:50%; object-fit:cover; display:none;" />
                             <svg id="prev_btnicon" xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 16 16">
                                 <path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894m-.493 3.905a22 22 0 0 1-.713.129c-.2.032-.352-.176-.273-.362a10 10 0 0 0 .244-.637l.003-.01c.248-.72.45-1.548.524-2.319C.743 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7-3.582 7-8 7a9 9 0 0 1-2.088-.243 22 22 0 0 1-.713-.129Z"/>
@@ -489,12 +521,16 @@
     }
 
     function updatePreview() {
-        var position    = val('cfg_position');
-        var offsetX     = parseInt(val('cfg_offsetx')) || 24;
-        var offsetY     = parseInt(val('cfg_offsety')) || 24;
-        var btnColor    = val('cfg_btncolor');
-        var btnSize     = parseInt(val('cfg_btnsize')) || 56;
-        var btnLogo     = val('cfg_btnlogo') || '';
+        var position        = val('cfg_position');
+        var offsetX         = parseInt(val('cfg_offsetx')) || 24;
+        var offsetY         = parseInt(val('cfg_offsety')) || 24;
+        var btnColor        = val('cfg_btncolor');
+        var btnSize         = parseInt(val('cfg_btnsize')) || 56;
+        var btnShape        = val('cfg_btnshape') || 'circle';
+        var btnBorderWidth  = parseInt(val('cfg_btnborderwidth')) || 0;
+        var btnBorderColor  = val('cfg_btnbordercolor') || '#ffffff';
+        var btnIconPadding  = parseInt(val('cfg_iconpadding')) || 15;
+        var btnLogo         = val('cfg_btnlogo') || '';
         var popupW      = parseInt(val('cfg_popupwidth')) || 380;
         var popupH      = parseInt(val('cfg_popupheight')) || 560;
         var borderR     = parseInt(val('cfg_borderradius')) || 12;
@@ -567,7 +603,7 @@
         get('prev_inputbar').style.background = inputBg;
 
         // Sync hex inputs with color pickers
-        ['btncolor','headerbg','headertxt','chatbodybg','inputbg','sendbtnbg','sendbtntxt','userbg','usertxt','botbg','bottxt'].forEach(function(k) {
+        ['btncolor','btnbordercolor','headerbg','headertxt','chatbodybg','inputbg','sendbtnbg','sendbtntxt','userbg','usertxt','botbg','bottxt'].forEach(function(k) {
             var picker = get('cfg_' + k);
             var hexBox = get('cfg_' + k + '_hex');
             if (picker && hexBox && document.activeElement !== hexBox) hexBox.value = picker.value;
@@ -591,6 +627,12 @@
         btn.style.width      = scaledBtn + 'px';
         btn.style.height     = scaledBtn + 'px';
         btn.style.background = btnLogo ? 'transparent' : btnColor;
+        var scaledBorderW = Math.round(btnBorderWidth * scale);
+        btn.style.border = scaledBorderW > 0 ? scaledBorderW + 'px solid ' + btnBorderColor : 'none';
+        var btnBr = btnShape === 'circle'  ? '50%'
+                  : btnShape === 'rounded' ? Math.round(scaledBtn * 0.25) + 'px'
+                  : '0';
+        btn.style.borderRadius = btnBr;
         if (position === 'bottom-left') {
             btn.style.left  = scaledOffX + 'px';
             btn.style.right = 'auto';
@@ -600,48 +642,145 @@
         }
         btn.style.bottom = scaledOffY + 'px';
 
-        // Button logo vs default icon
-        var btnLogoEl = get('prev_btnlogo');
-        var btnIconEl = get('prev_btnicon');
-        if (btnLogo) {
-            var imgSize = Math.round(scaledBtn * 0.62) + 'px';
+        // Button icon — SVG textarea → logo URL → default bubble (same priority as widget-loader.js)
+        var btnLogoEl     = get('prev_btnlogo');
+        var btnIconEl     = get('prev_btnicon');
+        var btnCustomSvgEl = get('prev_btncustomsvg');
+        var iconMax       = Math.max(8, scaledBtn - 2 * Math.round(btnIconPadding * scale));
+
+        // Determine which state SVG to show: peek state while peeking, idle otherwise
+        var svgIdle = (val('cfg_svgidle') || '').trim();
+        var svgPeek = (val('cfg_svgpeek') || '').trim();
+        var iconHideableNow = get('cfg_iconhideable') && get('cfg_iconhideable').checked;
+        var isPeeking = iconHideableNow && !_previewRevealed;
+        var activeSvg = isPeeking ? (svgPeek || svgIdle) : svgIdle;
+
+        if (activeSvg) {
+            btnCustomSvgEl.innerHTML = activeSvg;
+            var innerSvg = btnCustomSvgEl.querySelector('svg');
+            if (innerSvg) {
+                innerSvg.style.maxWidth  = iconMax + 'px';
+                innerSvg.style.maxHeight = iconMax + 'px';
+                innerSvg.style.width     = 'auto';
+                innerSvg.style.height    = 'auto';
+                innerSvg.style.display   = 'block';
+            }
+            btnCustomSvgEl.style.display = 'block';
+            btnLogoEl.style.display = 'none';
+            btnIconEl.style.display = 'none';
+        } else if (btnLogo) {
+            btnCustomSvgEl.style.display = 'none';
             btnLogoEl.src = btnLogo;
-            btnLogoEl.style.width   = scaledBtn + 'px';
-            btnLogoEl.style.height  = scaledBtn + 'px';
+            btnLogoEl.style.width   = iconMax + 'px';
+            btnLogoEl.style.height  = iconMax + 'px';
             btnLogoEl.style.display = 'block';
             btnIconEl.style.display = 'none';
         } else {
+            btnCustomSvgEl.style.display = 'none';
             btnLogoEl.style.display = 'none';
             btnIconEl.style.display = 'block';
-            var iconSize = Math.round(scaledBtn * 0.42);
-            btnIconEl.setAttribute('width', iconSize);
-            btnIconEl.setAttribute('height', iconSize);
+            btnIconEl.setAttribute('width', iconMax);
+            btnIconEl.setAttribute('height', iconMax);
         }
 
-        // Peek offset
-        var iconHideable = get('cfg_iconhideable') && get('cfg_iconhideable').checked;
-        var hideSide     = val('cfg_hideside') || 'right';
-        var peekAmount   = parseInt(val('cfg_peekamount')) || 50;
-        if (iconHideable) {
-            var hideFrac   = 1 - (peekAmount / 100);
-            var partial    = Math.round(scaledBtn * hideFrac);
-            var translateX = (hideSide === 'left' ? -1 : 1) * (scaledOffX + partial);
-            btn.style.transform  = 'translateX(' + translateX + 'px)';
-            btn.style.transition = 'none';
+        // Peek offset — mirrors computeHideTranslate() in widget-loader.js but uses
+        // container dimensions (cW/cH) instead of window.inner*.
+        var hideSide   = val('cfg_hideside') || 'right';
+        var peekAmount = parseInt(val('cfg_peekamount')) || 50;
+        if (iconHideableNow && !_previewRevealed) {
+            var hideFrac    = 1 - (peekAmount / 100);
+            var partial     = Math.round(scaledBtn * hideFrac);
+            var visiblePart = scaledBtn - partial;
+            var isLeftPos   = position === 'bottom-left';
+            var peekTX = 0, peekTY = 0;
+            switch (hideSide) {
+                case 'left':
+                    peekTX = isLeftPos ? -(scaledOffX + partial) : -(cW - scaledOffX - visiblePart);
+                    break;
+                case 'right':
+                    peekTX = isLeftPos ? cW - scaledOffX - visiblePart : scaledOffX + partial;
+                    break;
+                case 'top':
+                    peekTY = -(cH - scaledOffY - visiblePart);
+                    break;
+                case 'bottom':
+                    peekTY = scaledOffY + partial;
+                    break;
+            }
+            btn.style.transform  = 'translate(' + peekTX + 'px,' + peekTY + 'px)';
+            btn.style.transition = 'transform 0.3s ease';
         } else {
             btn.style.transform  = '';
-            btn.style.transition = 'none';
+            btn.style.transition = 'transform 0.3s ease';
         }
     }
 
+    // Interactive peek in the preview: hover near the button edge to reveal it.
+    var _previewRevealed = false;
+    var _previewPeekTimer = null;
+    var _previewRevealTimer = null;
+
+    function previewReveal() {
+        clearTimeout(_previewPeekTimer);
+        _previewPeekTimer = null;
+        clearTimeout(_previewRevealTimer);
+        _previewRevealTimer = setTimeout(function () { _previewRevealTimer = null; }, 350);
+        _previewRevealed = true;
+        updatePreview();
+    }
+
+    function previewPeekBack() {
+        if (_previewRevealTimer) return;
+        clearTimeout(_previewPeekTimer);
+        _previewPeekTimer = setTimeout(function () {
+            _previewPeekTimer = null;
+            _previewRevealed = false;
+            updatePreview();
+        }, 300);
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        // Wire position select (no oninput on select)
+        // Wire selects that don't fire oninput
         var posEl = get('cfg_position');
         if (posEl) posEl.addEventListener('change', updatePreview);
         var fsEl = get('cfg_fontsize');
         if (fsEl) fsEl.addEventListener('change', updatePreview);
 
         updatePreview();
+
+        // Interactive peek hover on the preview container
+        var container = get('prev_popup') && get('prev_popup').parentElement;
+        if (container) {
+            container.addEventListener('mousemove', function (e) {
+                var iconHideable = get('cfg_iconhideable') && get('cfg_iconhideable').checked;
+                if (!iconHideable) return;
+
+                var rect        = container.getBoundingClientRect();
+                var mx          = e.clientX - rect.left;
+                var my          = e.clientY - rect.top;
+                var hideSide    = val('cfg_hideside') || 'right';
+                var hoverMargin = 56; // px from edge
+                var inZone;
+                switch (hideSide) {
+                    case 'left':   inZone = mx <= hoverMargin; break;
+                    case 'top':    inZone = my <= hoverMargin; break;
+                    case 'bottom': inZone = my >= rect.height - hoverMargin; break;
+                    default:       inZone = mx >= rect.width - hoverMargin; break; // right
+                }
+
+                if (inZone) {
+                    if (!_previewRevealed) previewReveal();
+                    else { clearTimeout(_previewPeekTimer); _previewPeekTimer = null; }
+                } else if (_previewRevealed && !_previewRevealTimer) {
+                    previewPeekBack();
+                }
+            });
+
+            container.addEventListener('mouseleave', function () {
+                var iconHideable = get('cfg_iconhideable') && get('cfg_iconhideable').checked;
+                if (iconHideable && _previewRevealed) previewPeekBack();
+            });
+        }
     });
 
     window.addEventListener('resize', updatePreview);

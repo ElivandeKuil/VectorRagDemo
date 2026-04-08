@@ -352,6 +352,10 @@ namespace VectorRagDemo.Controllers
                 prodCfg.EmailSubject        = devCfg.EmailSubject;
                 prodCfg.EmailButtonText     = devCfg.EmailButtonText;
                 prodCfg.EmailCtaText        = devCfg.EmailCtaText;
+                prodCfg.ButtonShape         = devCfg.ButtonShape;
+                prodCfg.ButtonBorderWidth   = devCfg.ButtonBorderWidth;
+                prodCfg.ButtonBorderColor   = devCfg.ButtonBorderColor;
+                prodCfg.ButtonIconPadding   = devCfg.ButtonIconPadding;
                 prodCfg.IconHideable        = devCfg.IconHideable;
                 prodCfg.HideSide            = devCfg.HideSide;
                 prodCfg.PeekAmount          = devCfg.PeekAmount;
