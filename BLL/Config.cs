@@ -2,11 +2,9 @@
 {
     public static class Config
     {
-        public const string Location = "europe-west4";
-        public const string EmbeddingModel = "text-embedding-004";
-        public const string GeminiModelID = "gemini-2.5-flash-lite";
+        public const string EmbeddingModel = "mistral-embed";
 
-        //Gemini parameters
+        //Mistral parameters
         public const int MaxTokens = 4000;
         public const double Temperature = 0.4;
         public const double TopP = 1.0;

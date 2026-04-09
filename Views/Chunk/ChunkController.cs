@@ -415,7 +415,7 @@ namespace VectorRagDemo.Controllers
                 await connection.OpenAsync();
 
                 const string sql = @"
-                    INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status)
+                    INSERT INTO chunk (bronid, tekst, tekstvector_mistral, gemaaktop, status)
                     VALUES (@BronID, @Tekst, @TekstVector::vector, NOW(), @Status)
                     RETURNING id;";
 
@@ -533,7 +533,7 @@ namespace VectorRagDemo.Controllers
                 await connection.OpenAsync();
 
                 const string sql = @"
-                    INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status)
+                    INSERT INTO chunk (bronid, tekst, tekstvector_mistral, gemaaktop, status)
                     VALUES (@BronID, @Tekst, @TekstVector::vector, NOW(), @Status)
                     RETURNING id;";
 
@@ -684,7 +684,7 @@ namespace VectorRagDemo.Controllers
             await connection.OpenAsync();
 
             using var cmd = new NpgsqlCommand(
-                "UPDATE chunk SET tekst = @Tekst, tekstvector = @Vector::vector, gewijzigdop = NOW() WHERE id = @ID",
+                "UPDATE chunk SET tekst = @Tekst, tekstvector_mistral = @Vector::vector, gewijzigdop = NOW() WHERE id = @ID",
                 connection);
             cmd.Parameters.AddWithValue("@Tekst", tekst.Trim());
             cmd.Parameters.AddWithValue("@Vector", vectorString);
@@ -737,7 +737,7 @@ namespace VectorRagDemo.Controllers
             await connection.OpenAsync();
 
             using var cmd = new NpgsqlCommand(
-                "INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status) VALUES (@BronID, @Tekst, @Vector::vector, NOW(), 1) RETURNING id",
+                "INSERT INTO chunk (bronid, tekst, tekstvector_mistral, gemaaktop, status) VALUES (@BronID, @Tekst, @Vector::vector, NOW(), 1) RETURNING id",
                 connection);
             cmd.Parameters.AddWithValue("@BronID", bronId);
             cmd.Parameters.AddWithValue("@Tekst", tekst.Trim());

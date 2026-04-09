@@ -280,8 +280,8 @@ namespace VectorRagDemo.Controllers
                 }
 
                 await using (var cmd = new NpgsqlCommand(
-                    @"INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status, correctie)
-                      SELECT @NewBronId, tekst, tekstvector, NOW(), 1, correctie
+                    @"INSERT INTO chunk (bronid, tekst, tekstvector_mistral, gemaaktop, status, correctie)
+                      SELECT @NewBronId, tekst, tekstvector_mistral, NOW(), 1, correctie
                       FROM chunk WHERE bronid = @DevBronId AND status = 1", conn))
                 {
                     cmd.Parameters.AddWithValue("NewBronId", newBronId);

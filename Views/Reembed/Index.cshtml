@@ -1,0 +1,91 @@
+@{
+    ViewData["Title"] = "Re-embed chunks";
+    int withEmb = ViewBag.WithEmbedding ?? 0;
+    int total   = ViewBag.Total ?? 0;
+    bool done   = ViewBag.Done ?? false;
+    int? projectId = ViewBag.ProjectId;
+}
+
+<h2>Mistral Re-embedding</h2>
+<p>
+    Chunks zonder Mistral-embedding worden overgeslagen in de zoekresultaten totdat ze zijn verwerkt.
+</p>
+
+<div id="progress-info" class="mb-3">
+    <strong id="count-text">@withEmb / @total</strong> chunks embedded
+    @if (total > 0)
+    {
+        <text>
+        (<span id="pct">@((int)Math.Round(withEmb * 100.0 / total))</span>%)
+        </text>
+    }
+</div>
+
+<div class="progress mb-3" style="height:24px">
+    <div id="progress-bar"
+         class="progress-bar bg-success"
+         role="progressbar"
+         style="width:@(total > 0 ? (int)Math.Round(withEmb * 100.0 / total) : 0)%">
+    </div>
+</div>
+
+@if (!done)
+{
+    <button id="btn-start" class="btn btn-primary" onclick="startReembed()">
+        Start re-embedding
+    </button>
+    <span id="status-msg" class="ms-3 text-muted"></span>
+}
+else
+{
+    <div class="alert alert-success">Alle chunks zijn embedded. ✓</div>
+}
+
+<script>
+    let running = false;
+
+    async function startReembed() {
+        if (running) return;
+        running = true;
+        document.getElementById('btn-start').disabled = true;
+        document.getElementById('status-msg').textContent = 'Bezig…';
+        processBatch();
+    }
+
+    async function processBatch() {
+        try {
+            const body = new URLSearchParams({ batchSize: 50 @(projectId.HasValue ? $", projectId: {projectId}" : "") });
+            const resp = await fetch('@Url.Action("ProcessBatch", "Reembed")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded',
+                           'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' },
+                body: body
+            });
+
+            const data = await resp.json();
+            if (data.error) {
+                document.getElementById('status-msg').textContent = 'Fout: ' + data.error;
+                document.getElementById('btn-start').disabled = false;
+                running = false;
+                return;
+            }
+
+            const pct = data.total > 0 ? Math.round(data.processed * 100 / data.total) : 0;
+            document.getElementById('count-text').textContent = data.processed + ' / ' + data.total;
+            document.getElementById('pct').textContent = pct;
+            document.getElementById('progress-bar').style.width = pct + '%';
+
+            if (data.done) {
+                document.getElementById('status-msg').textContent = 'Klaar!';
+                document.getElementById('btn-start').textContent = 'Klaar ✓';
+            } else {
+                setTimeout(processBatch, 200);
+            }
+        } catch (e) {
+            document.getElementById('status-msg').textContent = 'Netwerkfout: ' + e.message;
+            document.getElementById('btn-start').disabled = false;
+            running = false;
+        }
+    }
+</script>
+@Html.AntiForgeryToken()

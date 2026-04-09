@@ -1,4 +1,3 @@
-﻿using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Configuration;
 
 namespace VectorRagDemo.BLL.Processors
@@ -16,48 +15,21 @@ namespace VectorRagDemo.BLL.Processors
         // Aanroepen vanuit Program.cs zodat appsettings beschikbaar zijn.
         public static void Configure(IConfiguration config) => _config = config;
 
-        public static async Task<string> GetAuthenticationToken()
+        public static string GetApiKey()
         {
-            // Probeer eerst volledige JSON-inhoud
-            var credentialsJson = _config?["Google:CredentialsJson"]
-                ?? Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+            var apiKey = _config?["Mistral:ApiKey"]
+                ?? Environment.GetEnvironmentVariable("MISTRAL_API_KEY");
 
-            if (string.IsNullOrEmpty(credentialsJson))
-            {
-                // Probeer pad naar JSON-bestand
-                var credentialsPath = _config?["Google:CredentialsPath"]
-                    ?? Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
-
-                if (string.IsNullOrEmpty(credentialsPath))
-                    throw new InvalidOperationException(
-                        "Google-credentials niet geconfigureerd. " +
-                        "Voeg 'Google:CredentialsJson' of 'Google:CredentialsPath' toe aan " +
-                        "appsettings.Development.json (dev) of stel GOOGLE_CREDENTIALS_JSON / " +
-                        "GOOGLE_APPLICATION_CREDENTIALS in als omgevingsvariabele (prod).");
-
-                credentialsJson = await File.ReadAllTextAsync(credentialsPath);
-            }
-
-            GoogleCredential credential = GoogleCredential.FromJson(credentialsJson);
-
-            if (credential.IsCreateScopedRequired)
-                credential = credential.CreateScoped("https://www.googleapis.com/auth/cloud-platform");
-
-            return await credential.UnderlyingCredential.GetAccessTokenForRequestAsync();
-        }
-
-        public static string GetProjectId()
-        {
-            var projectNumber = _config?["Google:ProjectNumber"]
-                ?? Environment.GetEnvironmentVariable("GOOGLE_PROJECT_NUMBER");
-
-            if (string.IsNullOrEmpty(projectNumber))
+            if (string.IsNullOrEmpty(apiKey))
                 throw new InvalidOperationException(
-                    "Google-projectnummer niet geconfigureerd. " +
-                    "Voeg 'Google:ProjectNumber' toe aan appsettings.Development.json (dev) " +
-                    "of stel GOOGLE_PROJECT_NUMBER in als omgevingsvariabele (prod).");
+                    "Mistral API-sleutel niet geconfigureerd. " +
+                    "Voeg 'Mistral:ApiKey' toe aan appsettings.Development.json (dev) " +
+                    "of stel MISTRAL_API_KEY in als omgevingsvariabele (prod).");
 
-            return projectNumber;
+            return apiKey;
         }
+
+        // Kept for backwards compatibility — returns the API key as a bearer token value
+        public static Task<string> GetAuthenticationToken() => Task.FromResult(GetApiKey());
     }
 }

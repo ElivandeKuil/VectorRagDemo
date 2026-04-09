@@ -46,10 +46,11 @@ namespace VectorRagDemo.Services
                         c.bronid,
                         c.tekst,
                         b.title as brontitle,
-                        c.tekstvector <=> @QueryVector::vector as distance
+                        c.tekstvector_mistral <=> @QueryVector::vector as distance
                     FROM chunk c
                     INNER JOIN bron b ON c.bronid = b.id
-                    WHERE c.status = 1";
+                    WHERE c.status = 1
+                    AND c.tekstvector_mistral IS NOT NULL";
 
                 if (request.ProjectId > 0)
                 {
@@ -106,7 +107,7 @@ namespace VectorRagDemo.Services
                 await connection.OpenAsync();
 
                 var sql = @"
-                    INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status)
+                    INSERT INTO chunk (bronid, tekst, tekstvector_mistral, gemaaktop, status)
                     VALUES (@BronID, @Tekst, @TekstVector::vector, NOW(), @Status)
                     RETURNING id;";
 

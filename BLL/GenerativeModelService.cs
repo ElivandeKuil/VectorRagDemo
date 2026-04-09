@@ -3,14 +3,13 @@ using Newtonsoft.Json;
 using VectorRagDemo.Models.Enums;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.Entities;
-using VectorRagDemo.Models.ApiContracts.GeminiAPI;
-using VectorRagDemo.Models.JsonContracts.GeminiAPI;
+using VectorRagDemo.Models.JsonContracts.MistralAPI;
 using VectorRagDemo.BLL.Processors;
 
 namespace VectorRagDemo.BLL
 {
     /// <summary>
-    /// Centralized service for calling generative models (Gemini) across the application.
+    /// Centralized service for calling generative models (Mistral) across the application.
     /// This service can be used by any processor that needs to call generative models.
     /// </summary>
     public class GenerativeModelService
@@ -31,19 +30,13 @@ namespace VectorRagDemo.BLL
         /// <summary>
         /// Executes a single generative model pipeline step with a provided prompt.
         /// </summary>
-        /// <typeparam name="TResponse">The type of the inner response from the model</typeparam>
-        /// <typeparam name="TOutput">The type of the output after mapping</typeparam>
-        /// <param name="prompt">The prompt to execute</param>
-        /// <param name="mapper">Function to map the response to the desired output</param>
-        /// <param name="formatArgs">Arguments to format the prompt content</param>
-        /// <returns>The mapped output</returns>
         public async Task<TOutput> ExecutePipelineStep<TResponse, TOutput>(
             Prompt prompt,
             Func<TResponse, TOutput> mapper,
             params string[] formatArgs)
         {
             var requestContent = BuildRequestContent(prompt, formatArgs);
-            var response = await SendGeminiRequestAsync(requestContent, prompt.Model);
+            var response = await SendMistralRequestAsync(requestContent, prompt.Model);
             return await ProcessResponse<TResponse, TOutput>(response, mapper);
         }
 
@@ -61,12 +54,6 @@ namespace VectorRagDemo.BLL
         /// <summary>
         /// Executes a single generative model pipeline step by retrieving the first prompt of the given type.
         /// </summary>
-        /// <typeparam name="TResponse">The type of the inner response from the model</typeparam>
-        /// <typeparam name="TOutput">The type of the output after mapping</typeparam>
-        /// <param name="promptType">The type of prompt to use</param>
-        /// <param name="mapper">Function to map the response to the desired output</param>
-        /// <param name="formatArgs">Arguments to format the prompt content</param>
-        /// <returns>The mapped output</returns>
         public async Task<TOutput> ExecutePipelineStep<TResponse, TOutput>(
             PromptTypeEnum promptType,
             Func<TResponse, TOutput> mapper,
@@ -119,14 +106,14 @@ namespace VectorRagDemo.BLL
         }
 
         /// <summary>
-        /// Sends a request to the Gemini API.
+        /// Sends a request to the Mistral chat completions API.
         /// </summary>
-        private async Task<HttpResponseMessage> SendGeminiRequestAsync(StringContent content, string model)
+        private async Task<HttpResponseMessage> SendMistralRequestAsync(StringContent content, string model)
         {
-            string endpoint = VertexApiEndpointBuilder.BuildGeminiEndpoint(model);
-            string accessToken = await ConnectionProcessor.GetAuthenticationToken();
+            string endpoint = MistralApiEndpointBuilder.BuildChatEndpoint();
+            string apiKey = ConnectionProcessor.GetApiKey();
 
-            return await _apiClient.PostAsync(endpoint, content, accessToken, _correlationId);
+            return await _apiClient.PostAsync(endpoint, content, apiKey, _correlationId);
         }
 
         /// <summary>
@@ -178,31 +165,24 @@ namespace VectorRagDemo.BLL
         }
 
         /// <summary>
-        /// Builds the request content for a Gemini API call.
+        /// Builds the request content for a Mistral chat completions call.
         /// </summary>
         private StringContent BuildRequestContent(Prompt prompt, params string[] formatArgs)
         {
-            var formattedPrompt = string.Format(prompt.Content, formatArgs);
+            var formattedContent = string.Format(prompt.Content, formatArgs);
 
             var payload = new
             {
-                systemInstruction = new GeminiContent
+                model = prompt.Model,
+                messages = new[]
                 {
-                    Parts = new List<GeminiPart> { new GeminiPart { Text = BuildSystemInstruction(prompt) } }
+                    new { role = "system", content = BuildSystemInstruction(prompt) },
+                    new { role = "user",   content = formattedContent }
                 },
-                contents = new List<GeminiContent>
-                {
-                    CreateGeminiContent("user", formattedPrompt)
-                },
-                generationConfig = new
-                {
-                    maxOutputTokens = prompt.MaxTokens,
-                    temperature = prompt.Temperature,
-                    topP = prompt.TopP,
-                    topK = prompt.TopK,
-                    responseMimeType = "application/json",
-                    responseSchema = JsonConvert.DeserializeObject<object>(prompt.ResponseSchema)
-                }
+                temperature = prompt.Temperature,
+                top_p = prompt.TopP,
+                max_tokens = prompt.MaxTokens,
+                response_format = new { type = "json_object" }
             };
 
             string jsonPayload = JsonConvert.SerializeObject(payload,
@@ -212,7 +192,7 @@ namespace VectorRagDemo.BLL
         }
 
         /// <summary>
-        /// Processes the response from the Gemini API and maps it to the desired output type.
+        /// Processes the response from the Mistral API and maps it to the desired output type.
         /// </summary>
         private async Task<TOutput> ProcessResponse<TResponse, TOutput>(
             HttpResponseMessage response,
@@ -221,37 +201,23 @@ namespace VectorRagDemo.BLL
             if (!response.IsSuccessStatusCode)
             {
                 string errorContent = await response.Content.ReadAsStringAsync();
-                throw new Exception($"Gemini API call failed with status {response.StatusCode}: {errorContent}");
+                throw new Exception($"Mistral API call failed with status {response.StatusCode}: {errorContent}");
             }
 
             string jsonResponse = await response.Content.ReadAsStringAsync();
-            var geminiResponse = JsonConvert.DeserializeObject<GeminiResponse>(jsonResponse);
+            var mistralResponse = JsonConvert.DeserializeObject<MistralChatResponse>(jsonResponse);
 
-            if (geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault() is { } part)
+            var content = mistralResponse?.Choices?.FirstOrDefault()?.Message?.Content;
+            if (!string.IsNullOrEmpty(content))
             {
-                var innerData = JsonConvert.DeserializeObject<TResponse>(part.Text);
+                var innerData = JsonConvert.DeserializeObject<TResponse>(content);
                 if (innerData != null)
                 {
                     return mapper(innerData);
                 }
             }
 
-            throw new Exception("No valid response received from Gemini API");
-        }
-
-        /// <summary>
-        /// Creates a GeminiContent object with the specified role and text.
-        /// </summary>
-        private GeminiContent CreateGeminiContent(string role, string text)
-        {
-            var parts = new List<GeminiPart>();
-
-            if (!string.IsNullOrEmpty(text))
-            {
-                parts.Add(new GeminiPart { Text = text });
-            }
-
-            return new GeminiContent { Role = role, Parts = parts };
+            throw new Exception("No valid response received from Mistral API");
         }
     }
 }

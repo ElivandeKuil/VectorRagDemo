@@ -22,18 +22,20 @@ namespace VectorRagDemo.DAL
             HttpContent content,
             string? authorizationToken = null,
             Guid? correlationId = null,
-            string? clientIP = null)
+            string? clientIP = null,
+            CancellationToken cancellationToken = default)
         {
-            return await SendAsync(HttpMethod.Post, requestUri, content, authorizationToken, correlationId, clientIP);
+            return await SendAsync(HttpMethod.Post, requestUri, content, authorizationToken, correlationId, clientIP, cancellationToken);
         }
 
         public async Task<HttpResponseMessage> GetAsync(
             string requestUri,
             string? authorizationToken = null,
             Guid? correlationId = null,
-            string? clientIP = null)
+            string? clientIP = null,
+            CancellationToken cancellationToken = default)
         {
-            return await SendAsync(HttpMethod.Get, requestUri, null, authorizationToken, correlationId, clientIP);
+            return await SendAsync(HttpMethod.Get, requestUri, null, authorizationToken, correlationId, clientIP, cancellationToken);
         }
 
         public async Task<HttpResponseMessage> SendAsync(
@@ -42,7 +44,8 @@ namespace VectorRagDemo.DAL
             HttpContent? content = null,
             string? authorizationToken = null,
             Guid? correlationId = null,
-            string? clientIP = null)
+            string? clientIP = null,
+            CancellationToken cancellationToken = default)
         {
             var stopwatch = Stopwatch.StartNew();
             var logEntry = new ApiCallLog
@@ -80,7 +83,7 @@ namespace VectorRagDemo.DAL
                 logEntry.RequestContent = TruncateIfNeeded(requestContent, 10000);
 
                 // Send the request
-                response = await _httpClient.SendAsync(request);
+                response = await _httpClient.SendAsync(request, cancellationToken);
                 stopwatch.Stop();
 
                 // Capture response details

@@ -99,7 +99,7 @@ namespace VectorRagDemo.Services
 
             const string updateChunkSql = @"
                 UPDATE chunk
-                SET tekst = @Tekst, tekstvector = @TekstVector::vector, gewijzigdop = NOW()
+                SET tekst = @Tekst, tekstvector_mistral = @TekstVector::vector, gewijzigdop = NOW()
                 WHERE id = @ChunkID;";
 
             using var cmd = new NpgsqlCommand(updateChunkSql, conn);
@@ -136,7 +136,7 @@ namespace VectorRagDemo.Services
             await conn.OpenAsync();
 
             const string sql = @"
-                INSERT INTO chunk (bronid, tekst, tekstvector, gemaaktop, status, correctie)
+                INSERT INTO chunk (bronid, tekst, tekstvector_mistral, gemaaktop, status, correctie)
                 VALUES (@BronID, @Tekst, @TekstVector::vector, NOW(), 1, true)
                 RETURNING id;";
 

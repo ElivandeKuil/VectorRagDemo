@@ -2,8 +2,8 @@
 {
     public static class GeminiModelEnum
     {
-        public static string FlashLite = "gemini-2.5-flash-lite";
-        public static string Flash = "gemini-2.5-flash";
-        public static string TextEmbedder = "text-embedding-004";
+        public static string FlashLite = "mistral-small-latest";
+        public static string Flash = "mistral-medium-latest";
+        public static string TextEmbedder = "mistral-embed";
     }
 }

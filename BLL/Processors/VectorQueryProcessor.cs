@@ -78,11 +78,12 @@ namespace VectorRagDemo.BLL.Processors
                     c.tekst,
                     b.title as brontitle,
                     b.project as projectid,
-                    c.tekstvector <=> @QueryVector::vector as distance,
+                    c.tekstvector_mistral <=> @QueryVector::vector as distance,
                     b.link as bronlink
                 FROM chunk c
                 INNER JOIN bron b ON c.bronid = b.id
-                WHERE c.status = 1";
+                WHERE c.status = 1
+                AND c.tekstvector_mistral IS NOT NULL";
 
             if (projectId > 0)
                 sql += " AND b.project = @ProjectId";
