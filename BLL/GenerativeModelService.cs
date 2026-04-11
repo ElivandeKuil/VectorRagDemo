@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Newtonsoft.Json;
 using VectorRagDemo.Models.Enums;
@@ -15,6 +17,7 @@ namespace VectorRagDemo.BLL
     public class GenerativeModelService
     {
         private readonly VectorDbContext _context;
+        private readonly HttpClient _client;
         private readonly ApiClient _apiClient;
         private readonly int _project;
         private readonly Guid? _correlationId;
@@ -22,6 +25,7 @@ namespace VectorRagDemo.BLL
         public GenerativeModelService(VectorDbContext context, HttpClient client, LogboekDbContext logboekContext, int projectId = 1, Guid? correlationId = null)
         {
             _context = context;
+            _client = client;
             _apiClient = new ApiClient(client, logboekContext);
             _project = projectId;
             _correlationId = correlationId;
@@ -166,6 +170,8 @@ namespace VectorRagDemo.BLL
 
         /// <summary>
         /// Builds the request content for a Mistral chat completions call.
+        /// When the prompt carries a ResponseSchema it is forwarded as <c>json_schema</c> so
+        /// Mistral enforces the exact structure. Falls back to <c>json_object</c> when absent.
         /// </summary>
         private StringContent BuildRequestContent(Prompt prompt, params string[] formatArgs)
         {
@@ -182,13 +188,44 @@ namespace VectorRagDemo.BLL
                 temperature = prompt.Temperature,
                 top_p = prompt.TopP,
                 max_tokens = prompt.MaxTokens,
-                response_format = new { type = "json_object" }
+                response_format = BuildResponseFormat(prompt.ResponseSchema)
             };
 
             string jsonPayload = JsonConvert.SerializeObject(payload,
                 new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             return new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+        }
+
+        /// <summary>
+        /// Returns a <c>json_schema</c> response-format object when <paramref name="responseSchema"/>
+        /// is a valid JSON schema string, otherwise falls back to <c>json_object</c>.
+        /// </summary>
+        private static object BuildResponseFormat(string? responseSchema)
+        {
+            if (!string.IsNullOrWhiteSpace(responseSchema))
+            {
+                try
+                {
+                    var schemaObject = JsonConvert.DeserializeObject(responseSchema);
+                    if (schemaObject != null)
+                    {
+                        return new
+                        {
+                            type = "json_schema",
+                            json_schema = new
+                            {
+                                name = "response",
+                                schema = schemaObject,
+                                strict = false
+                            }
+                        };
+                    }
+                }
+                catch { /* malformed schema — fall through to json_object */ }
+            }
+
+            return new { type = "json_object" };
         }
 
         /// <summary>
@@ -218,6 +255,89 @@ namespace VectorRagDemo.BLL
             }
 
             throw new Exception("No valid response received from Mistral API");
+        }
+
+        /// <summary>
+        /// Streams the final response tokens from the Mistral API using Server-Sent Events.
+        /// Uses plain-text output (no json_object format) so tokens are human-readable.
+        /// The system instruction is augmented with a plain-text override to ensure
+        /// the model does not output JSON schema formatting.
+        /// </summary>
+        public async IAsyncEnumerable<string> ExecuteStreamingStep(
+            Prompt prompt,
+            string[] formatArgs,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            var requestContent = BuildStreamingRequestContent(prompt, formatArgs);
+
+            string endpoint = MistralApiEndpointBuilder.BuildChatEndpoint();
+            string apiKey = ConnectionProcessor.GetApiKey();
+
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            httpRequest.Content = requestContent;
+
+            using var response = await _client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync(ct);
+                throw new Exception($"Mistral streaming API failed ({response.StatusCode}): {error}");
+            }
+
+            using var stream = await response.Content.ReadAsStreamAsync(ct);
+            using var reader = new System.IO.StreamReader(stream);
+
+            while (!ct.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync(ct);
+                if (line == null) break;
+                if (!line.StartsWith("data: ")) continue;
+
+                var data = line.Substring(6);
+                if (data == "[DONE]") yield break;
+
+                MistralStreamChunk? chunk;
+                try { chunk = JsonConvert.DeserializeObject<MistralStreamChunk>(data); }
+                catch { continue; }
+
+                var tokenContent = chunk?.Choices?.FirstOrDefault()?.Delta?.Content;
+                if (tokenContent != null)
+                    yield return tokenContent;
+            }
+        }
+
+        /// <summary>
+        /// Builds a streaming-compatible request: plain text output, stream=true,
+        /// with a plain-text override appended to the system instruction.
+        /// </summary>
+        private StringContent BuildStreamingRequestContent(Prompt prompt, string[] formatArgs)
+        {
+            var formattedContent = string.Format(prompt.Content, formatArgs);
+
+            // Override any JSON formatting that may exist in the system instruction.
+            var systemInstruction = BuildSystemInstruction(prompt)
+                + "\n\nAntwoord uitsluitend in gewone tekst. Gebruik geen JSON-opmaak.";
+
+            var payload = new
+            {
+                model = prompt.Model,
+                messages = new[]
+                {
+                    new { role = "system", content = systemInstruction },
+                    new { role = "user",   content = formattedContent }
+                },
+                temperature = prompt.Temperature,
+                top_p = prompt.TopP,
+                max_tokens = prompt.MaxTokens,
+                stream = true
+                // No response_format — plain text output
+            };
+
+            string jsonPayload = JsonConvert.SerializeObject(payload,
+                new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+            return new StringContent(jsonPayload, Encoding.UTF8, "application/json");
         }
     }
 }

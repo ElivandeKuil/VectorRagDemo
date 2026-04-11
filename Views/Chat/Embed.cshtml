@@ -6,6 +6,7 @@
     var embedKey = ViewData["EmbedKey"] as string ?? "";
     var cfg = ViewData["WidgetConfig"] as WidgetConfig ?? new WidgetConfig();
     var fontSizeCss = cfg.WidgetFontSize == "sm" ? "13px" : cfg.WidgetFontSize == "lg" ? "16px" : "14px";
+    var streamingEnabled = ViewData["StreamingEnabled"] is true;
 }
 
 @section Styles {
@@ -31,6 +32,8 @@
 
 <div class="chat-container"
      data-ask-url="@Url.Action("AskEmbed", "Chat")?key=@embedKey"
+     data-stream-url="@Url.Action("AskEmbedStream", "Chat")?key=@embedKey"
+     data-streaming="@(streamingEnabled ? "true" : "false")"
      data-bot-name="@botName"
      data-project-id="@projectId">
 

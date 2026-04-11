@@ -75,7 +75,7 @@ namespace VectorRagDemo.Views.Chat
         }
 
         [HttpPost]
-        public async Task<IActionResult> Settings(int id, string botName)
+        public async Task<IActionResult> Settings(int id, string botName, bool streamingEnabled)
         {
             if (User.IsInRole("Admin")) return Forbid();
 
@@ -90,6 +90,7 @@ namespace VectorRagDemo.Views.Chat
             if (project == null) return RedirectToAction("Index");
 
             project.BotName = string.IsNullOrWhiteSpace(botName) ? "Assistant" : botName.Trim();
+            project.StreamingEnabled = streamingEnabled;
             project.GewijzigdOp = DateTime.Now;
             await _context.SaveChangesAsync();
 
@@ -112,6 +113,7 @@ namespace VectorRagDemo.Views.Chat
             ViewData["ProjectId"] = project.ID;
             ViewData["EmbedKey"] = key;
             ViewData["WidgetConfig"] = project.WidgetConfig ?? new Models.Entities.WidgetConfig();
+            ViewData["StreamingEnabled"] = project.StreamingEnabled;
             return View();
         }
 
@@ -268,6 +270,243 @@ namespace VectorRagDemo.Views.Chat
             }).ToList();
 
             return PartialView("_ChatPanel", viewModel);
+        }
+
+        /// <summary>
+        /// Streaming variant of AskEmbed. Returns an SSE stream with individual token events
+        /// followed by a final "done" event containing metadata (conversationId, chatHistory, etc.).
+        /// Used when project.StreamingEnabled is true.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task AskEmbedStream([FromQuery] string key, [FromBody] ChatRequest request, CancellationToken ct)
+        {
+            Response.ContentType = "text/event-stream; charset=utf-8";
+            Response.Headers["Cache-Control"] = "no-cache";
+            Response.Headers["X-Accel-Buffering"] = "no";
+            Response.Headers["Connection"] = "keep-alive";
+
+            async Task WriteEventAsync(string data)
+            {
+                await Response.WriteAsync($"data: {data}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                await WriteEventAsync("{\"type\":\"error\",\"message\":\"Missing embed key.\"}");
+                return;
+            }
+
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.EmbedKey == key && p.Status == 1, ct);
+
+            if (project == null)
+            {
+                await WriteEventAsync("{\"type\":\"error\",\"message\":\"Invalid embed key.\"}");
+                return;
+            }
+
+            var projectId = project.ID;
+            var botName = project.BotName;
+
+            // Session / conversation handling — identical to AskEmbed
+            var sessionToken = request.SessionToken?.Trim();
+            Conversation? existingConversation = null;
+
+            if (!string.IsNullOrEmpty(sessionToken))
+            {
+                existingConversation = await _context.Conversations
+                    .FirstOrDefaultAsync(c => c.SessionToken == sessionToken && c.BronType == "widget", ct);
+            }
+
+            if (existingConversation == null)
+            {
+                sessionToken = Guid.NewGuid().ToString("N");
+                existingConversation = new Conversation
+                {
+                    Gebruiker = null,
+                    SessionToken = sessionToken,
+                    ProjectID = projectId,
+                    BronType = "widget",
+                    GemaaktOp = DateTime.Now,
+                    GewijzigdOp = DateTime.Now,
+                    Status = 1
+                };
+                _context.Conversations.Add(existingConversation);
+                await _context.SaveChangesAsync(ct);
+            }
+
+            var conversationId = existingConversation.ID;
+            var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId, ct);
+            var escalateCommunication = HasActiveEscalationChannel(project, widgetConfig);
+
+            // Run preparation (pre-processing, embedding, vector search, placeholders)
+            Services.ChatPreparation prep;
+            try
+            {
+                prep = await _chatService.PrepareAsync(request, projectId);
+            }
+            catch (Exception ex)
+            {
+                await WriteEventAsync($"{{\"type\":\"error\",\"message\":{System.Text.Json.JsonSerializer.Serialize(ex.Message)}}}");
+                return;
+            }
+
+            // Run summarization — also detects transferToWhatsApp when escalation is active,
+            // so the result is available before streaming starts.
+            (string RelevantOutput, List<int> UsedChunkIds, bool TransferToWhatsApp) summarized;
+            try
+            {
+                summarized = await _chatService.SummarizeAsync(prep, projectId, escalateCommunication);
+            }
+            catch (Exception ex)
+            {
+                await WriteEventAsync($"{{\"type\":\"error\",\"message\":{System.Text.Json.JsonSerializer.Serialize(ex.Message)}}}");
+                return;
+            }
+
+            // Stream final response tokens
+            var fullResponse = new System.Text.StringBuilder();
+            try
+            {
+                await foreach (var token in _chatService.StreamFinalResponseAsync(prep, summarized.RelevantOutput, projectId, ct))
+                {
+                    fullResponse.Append(token);
+                    await WriteEventAsync(System.Text.Json.JsonSerializer.Serialize(new { type = "token", content = token }));
+                }
+            }
+            catch (OperationCanceledException) { return; }
+            catch (Exception ex)
+            {
+                await WriteEventAsync($"{{\"type\":\"error\",\"message\":{System.Text.Json.JsonSerializer.Serialize(ex.Message)}}}");
+                return;
+            }
+
+            if (ct.IsCancellationRequested) return;
+
+            var responseText = fullResponse.ToString();
+
+            // Build escalation URLs (same logic as AskEmbed)
+            var (whatsAppUrl, emailUrl) = BuildEscalationUrls(project, widgetConfig, summarized.TransferToWhatsApp);
+
+            // Build source links
+            var rawSourceLinks = summarized.UsedChunkIds
+                .Select(chunkId => prep.RetrievedChunks.FirstOrDefault(c => c.Chunk.ID == chunkId))
+                .Where(rc => rc != null && !string.IsNullOrWhiteSpace(rc!.BronLink))
+                .Select(rc => new Models.DataContracts.SourceLink
+                {
+                    Url = rc!.BronLink!,
+                    FallbackTitle = rc.BronTitle ?? rc.Chunk.Bron?.Title ?? "Document"
+                })
+                .DistinctBy(sl => sl.Url)
+                .ToList();
+
+            var previewTasks = rawSourceLinks.Select(sl => _linkPreviewService.FetchLinkPreviewAsync(sl.Url));
+            var previews = await Task.WhenAll(previewTasks);
+            for (int i = 0; i < rawSourceLinks.Count; i++)
+                rawSourceLinks[i].Preview = previews[i];
+
+            // Build updated chat history for the client
+            var jsonOptions = new JsonSerializerOptions
+            {
+                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
+                WriteIndented = false
+            };
+
+            var updatedHistory = new List<Models.DataContracts.ChatMessage>();
+            if (request.History != null) updatedHistory.AddRange(request.History);
+            updatedHistory.Add(new Models.DataContracts.ChatMessage { Content = request.Query, IsResponse = false, Timestamp = DateTime.Now });
+            updatedHistory.Add(new Models.DataContracts.ChatMessage
+            {
+                Content = responseText,
+                IsResponse = true,
+                Timestamp = DateTime.Now,
+                Context = summarized.RelevantOutput,
+                WhatsAppUrl = whatsAppUrl,
+                WhatsAppCtaText = widgetConfig?.WhatsAppCtaText,
+                WhatsAppButtonText = widgetConfig?.WhatsAppButtonText,
+                EmailUrl = emailUrl,
+                EmailCtaText = widgetConfig?.EmailCtaText,
+                EmailButtonText = widgetConfig?.EmailButtonText
+            });
+
+            var retrievedChunksJson = prep.RetrievedChunks.Select(rc =>
+            {
+                var entity = rc.Chunk;
+                var chunkData = new
+                {
+                    entity.ID,
+                    entity.BronID,
+                    entity.Tekst,
+                    entity.GemaaktOp,
+                    entity.GewijzigdOp,
+                    entity.Status,
+                    BronTitle = entity.Bron?.Title
+                };
+                return JsonSerializer.Serialize(new
+                {
+                    Chunk = chunkData,
+                    rc.Freshness,
+                    rc.InitialSimilirityScore,
+                    rc.BronLink,
+                    rc.BronTitle
+                }, jsonOptions);
+            }).ToList();
+
+            // Save messages to database
+            _context.Messages.Add(new Message
+            {
+                Conversation = conversationId,
+                Tekst = request.Query,
+                GemaaktOp = DateTime.Now,
+                SenderType = 1
+            });
+            _context.Messages.Add(new Message
+            {
+                Conversation = conversationId,
+                Tekst = responseText,
+                GemaaktOp = DateTime.Now,
+                SenderType = 2
+            });
+            await _context.SaveChangesAsync(ct);
+
+            // Send final "done" event with all metadata the client needs to update state
+            var donePayload = new
+            {
+                type = "done",
+                conversationId,
+                sessionToken,
+                usedChunkIds = summarized.UsedChunkIds,
+                context = summarized.RelevantOutput,
+                chatHistoryJson = JsonSerializer.Serialize(updatedHistory, jsonOptions),
+                retrievedChunksJson = JsonSerializer.Serialize(retrievedChunksJson, jsonOptions),
+                sourceLinks = rawSourceLinks.Select(sl => new
+                {
+                    url = sl.Url,
+                    fallbackTitle = sl.FallbackTitle,
+                    preview = sl.Preview == null ? null : new
+                    {
+                        title = sl.Preview.Title,
+                        description = sl.Preview.Description,
+                        imageUrl = sl.Preview.ImageUrl,
+                        faviconUrl = sl.Preview.FaviconUrl,
+                        siteName = sl.Preview.SiteName
+                    }
+                }).ToList(),
+                // Escalation — null when not triggered
+                whatsAppUrl,
+                whatsAppCtaText = whatsAppUrl != null ? widgetConfig?.WhatsAppCtaText : null,
+                whatsAppButtonText = whatsAppUrl != null ? widgetConfig?.WhatsAppButtonText : null,
+                emailUrl,
+                emailCtaText = emailUrl != null ? widgetConfig?.EmailCtaText : null,
+                emailButtonText = emailUrl != null ? widgetConfig?.EmailButtonText : null,
+                botName,
+                timestamp = DateTime.Now.ToString("HH:mm")
+            };
+
+            await WriteEventAsync(JsonSerializer.Serialize(donePayload, jsonOptions));
+            await WriteEventAsync("[DONE]");
         }
 
         // Verwijdert een widget-gesprek op basis van session token (GDPR Art. 17).

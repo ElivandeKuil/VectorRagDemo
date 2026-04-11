@@ -23,6 +23,16 @@
                     <input asp-for="BotName" app-field />
                     <div class="form-text">De naam die verschijnt in de chatbot header en typindicator.</div>
                 </div>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input asp-for="StreamingEnabled" class="form-check-input" type="checkbox" role="switch" id="chk_streaming" />
+                        <label class="form-check-label fw-semibold" for="chk_streaming">Streaming antwoorden</label>
+                    </div>
+                    <div class="form-text mt-1">
+                        <strong>Aan:</strong> het antwoord van de bot verschijnt woord voor woord terwijl het gegenereerd wordt.<br />
+                        <strong>Uit:</strong> het volledige antwoord wordt in één keer getoond nadat het klaar is.
+                    </div>
+                </div>
             </div>
         </div>
     </div>

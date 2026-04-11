@@ -128,6 +128,7 @@ namespace VectorRagDemo.Controllers
 
             project.Naam = model.Naam.Trim();
             project.BotName = string.IsNullOrWhiteSpace(model.BotName) ? "Assistant" : model.BotName.Trim();
+            project.StreamingEnabled = model.StreamingEnabled;
 
             if (User.IsInRole("Admin"))
             {
@@ -304,6 +305,7 @@ namespace VectorRagDemo.Controllers
                 prodProject.ExtraCommunicationEnabled = devProject.ExtraCommunicationEnabled;
                 prodProject.KoppelingIngeschakeld     = devProject.KoppelingIngeschakeld;
                 prodProject.StatistiekenTier          = devProject.StatistiekenTier;
+                prodProject.StreamingEnabled          = devProject.StreamingEnabled;
                 await _context.SaveChangesAsync();
             }
 

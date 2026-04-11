@@ -37,6 +37,12 @@
         public bool KoppelingIngeschakeld { get; set; } = false;
 
         /// <summary>
+        /// When true the final LLM response is streamed token-by-token to the widget.
+        /// Toggleable by regular users (not admin-only).
+        /// </summary>
+        public bool StreamingEnabled { get; set; } = false;
+
+        /// <summary>
         /// Wanneer ingesteld is dit de ontwikkelomgeving; de waarde verwijst naar het gekoppelde productieproject.
         /// </summary>
         public int? ProductieProjectId { get; set; }

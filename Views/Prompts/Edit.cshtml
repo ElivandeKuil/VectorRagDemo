@@ -49,10 +49,11 @@
                 <label asp-for="Model" app-label>Model</label>
                 <select asp-for="Model" app-field required>
                     <option value="">-- Select a Model --</option>
-                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Faster, Lower Cost)</option>
-                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
+                    <option value="mistral-small-latest">Mistral Small (Faster, Lower Cost)</option>
+                    <option value="mistral-medium-latest">Mistral Medium (Balanced)</option>
+                    <option value="mistral-large-latest">Mistral Large (Most Capable)</option>
                 </select>
-                <div class="form-text">Select the Gemini model to use for this prompt.</div>
+                <div class="form-text">Select the Mistral model to use for this prompt.</div>
             </div>
 
             <div class="mb-3">

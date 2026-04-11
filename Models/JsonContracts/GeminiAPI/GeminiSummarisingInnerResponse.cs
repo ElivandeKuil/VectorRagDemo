@@ -9,5 +9,12 @@ namespace VectorRagDemo.Models.ApiContracts.GeminiAPI
 
         [JsonProperty("usedChunkIds")]
         public List<int>? UsedChunkIds { get; set; }
+
+        /// <summary>
+        /// Only populated when escalation was injected into the summarization prompt.
+        /// Indicates the bot should hand off to WhatsApp/email.
+        /// </summary>
+        [JsonProperty("transferToWhatsApp")]
+        public bool TransferToWhatsApp { get; set; }
     }
 }

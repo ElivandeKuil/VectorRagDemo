@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
@@ -26,74 +27,20 @@ namespace VectorRagDemo.Services
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(request.Query))
-                {
-                    throw new ArgumentException("Query cannot be empty.");
-                }
-
-                var correlationId = Guid.NewGuid();
-
-                var preProcessedQuery = await PreProcessingProcessor.GetPreProcessedQuery(request.Query, request.History, correlationId);
-                AppLogger.Log($"Pre-processed query: {preProcessedQuery}", source: nameof(ChatService));
-
-                List<float> queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery, correlationId);
-
-                if (queryEmbedding == null || !queryEmbedding.Any())
-                {
-                    throw new InvalidOperationException("Failed to generate query embedding.");
-                }
-
-                AppLogger.Log($"Embedding ready: {queryEmbedding.Count} dimensions — passing to vector search", source: nameof(ChatService));
-
-                var connectionString = Configuration.GetConnectionString("DefaultConnection");
-
-                // Get new chunks from vector search, filtered to user's project when set
-                var newNeighbors = await VectorQueryProcessor.GetNearestNeighborsAsync(
-                    connectionString,
-                    queryEmbedding,
-                    topK: Config.VectorQueryTopK,
-                    projectId: projectId
-                );
-
-                // Process and merge with existing retrieved chunks
-                var retrievedChunks = ProcessRetrievedChunks(request.RetrievedChunks, newNeighbors);
-
-                // Build chat history
-                var chatHistory = new List<ChatMessage>();
-                if (request.History != null && request.History.Any())
-                {
-                    chatHistory.AddRange(request.History);
-                }
-
-                // Resolve @@placeholders in chunk text before sending to LLM
-                Dictionary<string, string> placeholders = new();
-                if (projectId > 0)
-                {
-                    var proc = new PlaceholderProcessor(Context);
-                    placeholders = await proc.GetPlaceholdersAsync(projectId);
-                }
-
-                // Generate response using Gemini
-                var formattedNeighbors = FormatChunksForGemini(retrievedChunks, placeholders);
+                var prep = await PrepareAsync(request, projectId);
                 var geminiResponse = await GeminiProcessor.GenerateContent(
-                    chatHistory,
-                    preProcessedQuery,
-                    formattedNeighbors,
+                    prep.ChatHistory,
+                    prep.PreProcessedQuery,
+                    prep.FormattedNeighbors,
                     extraCommunicationEnabled,
                     projectId,
-                    correlationId
+                    prep.CorrelationId
                 );
-
-                return new ChatResponse
-                {
-                    GenerativeResponse = geminiResponse,
-                    Chunks = retrievedChunks
-                };
+                return new ChatResponse { GenerativeResponse = geminiResponse, Chunks = prep.RetrievedChunks };
             }
             catch (Exception ex)
             {
                 AppLogger.LogError(ex.Message, source: nameof(ChatService), detail: ex.ToString());
-                // Return error response
                 return new ChatResponse
                 {
                     GenerativeResponse = new GenerativeModelResponse
@@ -103,6 +50,96 @@ namespace VectorRagDemo.Services
                     },
                     Chunks = new List<RetrievedChunk>()
                 };
+            }
+        }
+
+        /// <summary>
+        /// Runs the pre-processing, embedding, vector search, and placeholder resolution steps.
+        /// Returns all intermediate state needed for the final LLM step (streaming or non-streaming).
+        /// Throws on error — callers must handle exceptions.
+        /// </summary>
+        public async Task<ChatPreparation> PrepareAsync(ChatRequest request, int projectId)
+        {
+            if (string.IsNullOrWhiteSpace(request.Query))
+                throw new ArgumentException("Query cannot be empty.");
+
+            var correlationId = Guid.NewGuid();
+
+            var preProcessedQuery = await PreProcessingProcessor.GetPreProcessedQuery(request.Query, request.History, correlationId);
+            AppLogger.Log($"Pre-processed query: {preProcessedQuery}", source: nameof(ChatService));
+
+            var queryEmbedding = await EmbeddingProcessor.GenerateQueryEmbeddingAsync(preProcessedQuery, correlationId);
+            if (queryEmbedding == null || !queryEmbedding.Any())
+                throw new InvalidOperationException("Failed to generate query embedding.");
+
+            AppLogger.Log($"Embedding ready: {queryEmbedding.Count} dimensions", source: nameof(ChatService));
+
+            var connectionString = Configuration.GetConnectionString("DefaultConnection");
+            var newNeighbors = await VectorQueryProcessor.GetNearestNeighborsAsync(
+                connectionString, queryEmbedding, topK: Config.VectorQueryTopK, projectId: projectId);
+
+            var retrievedChunks = ProcessRetrievedChunks(request.RetrievedChunks, newNeighbors);
+
+            var chatHistory = new List<ChatMessage>();
+            if (request.History != null && request.History.Any())
+                chatHistory.AddRange(request.History);
+
+            Dictionary<string, string> placeholders = new();
+            if (projectId > 0)
+            {
+                var proc = new PlaceholderProcessor(Context);
+                placeholders = await proc.GetPlaceholdersAsync(projectId);
+            }
+
+            var formattedNeighbors = FormatChunksForGemini(retrievedChunks, placeholders);
+            var chatHistoryString = FormatChatHistoryString(chatHistory);
+
+            return new ChatPreparation
+            {
+                PreProcessedQuery = preProcessedQuery,
+                RetrievedChunks = retrievedChunks,
+                FormattedNeighbors = formattedNeighbors,
+                ChatHistory = chatHistory,
+                ChatHistoryString = chatHistoryString,
+                CorrelationId = correlationId
+            };
+        }
+
+        /// <summary>
+        /// Runs the summarization step on a prepared pipeline state.
+        /// When <paramref name="extraCommunicationEnabled"/> is true the escalation signal
+        /// (<c>transferToWhatsApp</c>) is detected here so it is available before streaming starts.
+        /// </summary>
+        public async Task<(string RelevantOutput, List<int> UsedChunkIds, bool TransferToWhatsApp)> SummarizeAsync(
+            ChatPreparation prep, int projectId, bool extraCommunicationEnabled = false)
+        {
+            return await GeminiProcessor.SummarizeAsync(
+                prep.FormattedNeighbors,
+                prep.ChatHistoryString,
+                prep.PreProcessedQuery,
+                projectId,
+                extraCommunicationEnabled,
+                prep.CorrelationId);
+        }
+
+        /// <summary>
+        /// Streams the final LLM response token-by-token using the prepared state and summarised context.
+        /// </summary>
+        public async IAsyncEnumerable<string> StreamFinalResponseAsync(
+            ChatPreparation prep,
+            string summarisedContent,
+            int projectId,
+            [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            await foreach (var token in GeminiProcessor.StreamFinalResponseAsync(
+                summarisedContent,
+                prep.PreProcessedQuery,
+                prep.ChatHistoryString,
+                projectId,
+                prep.CorrelationId,
+                ct))
+            {
+                yield return token;
             }
         }
 
@@ -204,6 +241,9 @@ namespace VectorRagDemo.Services
             return (normalizedFreshness * FreshnessWeight) + (normalizedSimilarity * SimilarityWeight);
         }
 
+        private static string FormatChatHistoryString(List<ChatMessage> chatHistory)
+            => string.Join("\n", chatHistory.Select(m => $"{m.Role}: {m.Content}"));
+
         private string FormatChunksForGemini(List<RetrievedChunk> chunks, Dictionary<string, string>? placeholders = null)
         {
             if (!chunks.Any())
@@ -231,5 +271,19 @@ namespace VectorRagDemo.Services
 
             return formattedChunks.ToString();
         }
+    }
+
+    /// <summary>
+    /// Intermediate result of the RAG preparation steps (pre-processing through placeholder resolution).
+    /// Passed to the final LLM step, which may be streaming or non-streaming.
+    /// </summary>
+    public class ChatPreparation
+    {
+        public string PreProcessedQuery { get; set; } = string.Empty;
+        public List<RetrievedChunk> RetrievedChunks { get; set; } = new();
+        public string FormattedNeighbors { get; set; } = string.Empty;
+        public List<ChatMessage> ChatHistory { get; set; } = new();
+        public string ChatHistoryString { get; set; } = string.Empty;
+        public Guid CorrelationId { get; set; }
     }
 }
