@@ -112,7 +112,7 @@ namespace VectorRagDemo.Views.Chat
             ViewData["BotName"] = project.BotName;
             ViewData["ProjectId"] = project.ID;
             ViewData["EmbedKey"] = key;
-            ViewData["WidgetConfig"] = project.WidgetConfig ?? new Models.Entities.WidgetConfig();
+            ViewData["WidgetConfig"] = project.WidgetConfig ?? new WidgetConfig();
             ViewData["StreamingEnabled"] = project.StreamingEnabled;
             return View();
         }
@@ -165,10 +165,7 @@ namespace VectorRagDemo.Views.Chat
 
             var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId);
 
-            var escalateCommunication = HasActiveEscalationChannel(project, widgetConfig);
-
-            var response = await _chatService.Ask(request, projectId,
-                extraCommunicationEnabled: escalateCommunication);
+            var response = await _chatService.Ask(request, projectId);
 
             var (whatsAppUrl, emailUrl) = BuildEscalationUrls(
                 project, widgetConfig, response.GenerativeResponse.TransferToWhatsApp);
@@ -339,8 +336,7 @@ namespace VectorRagDemo.Views.Chat
 
             var conversationId = existingConversation.ID;
             var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId, ct);
-            var escalateCommunication = HasActiveEscalationChannel(project, widgetConfig);
-
+            
             // Run preparation (pre-processing, embedding, vector search, placeholders)
             Services.ChatPreparation prep;
             try
@@ -358,7 +354,7 @@ namespace VectorRagDemo.Views.Chat
             (string RelevantOutput, List<int> UsedChunkIds, bool TransferToWhatsApp) summarized;
             try
             {
-                summarized = await _chatService.SummarizeAsync(prep, projectId, escalateCommunication);
+                summarized = await _chatService.SummarizeAsync(prep, projectId);
             }
             catch (Exception ex)
             {
@@ -370,7 +366,7 @@ namespace VectorRagDemo.Views.Chat
             var fullResponse = new System.Text.StringBuilder();
             try
             {
-                await foreach (var token in _chatService.StreamFinalResponseAsync(prep, summarized.RelevantOutput, projectId, ct))
+                await foreach (var token in _chatService.StreamFinalResponseAsync(prep, summarized.RelevantOutput, projectId, summarized.TransferToWhatsApp, ct))
                 {
                     fullResponse.Append(token);
                     await WriteEventAsync(System.Text.Json.JsonSerializer.Serialize(new { type = "token", content = token }));
@@ -548,7 +544,7 @@ namespace VectorRagDemo.Views.Chat
             if (project == null) return RedirectToAction("Index");
 
             await _context.Entry(project).Reference(p => p.WidgetConfig).LoadAsync();
-            var config = project.WidgetConfig ?? new Models.Entities.WidgetConfig { ProjectID = project.ID };
+            var config = project.WidgetConfig ?? new WidgetConfig { ProjectID = project.ID };
 
             ViewData["ProjectId"] = project.ID;
             ViewData["ProjectName"] = project.Naam;
@@ -567,7 +563,7 @@ namespace VectorRagDemo.Views.Chat
         }
 
         [HttpPost]
-        public async Task<IActionResult> WidgetSettings(int projectId, Models.Entities.WidgetConfig config)
+        public async Task<IActionResult> WidgetSettings(int projectId, WidgetConfig config)
         {
             var project = await ResolveProjectForSettingsAsync(projectId);
             if (project == null) return RedirectToAction("Index");
@@ -671,7 +667,7 @@ namespace VectorRagDemo.Views.Chat
 
             if (project == null) return NotFound();
 
-            var cfg = project.WidgetConfig ?? new Models.Entities.WidgetConfig();
+            var cfg = project.WidgetConfig ?? new WidgetConfig();
             return Json(new
             {
                 cfg.WidgetPosition,
@@ -717,7 +713,7 @@ namespace VectorRagDemo.Views.Chat
             if (conversation == null)
                 return Ok();
 
-            _context.EscalatieEvents.Add(new Models.Entities.EscalatieEvent
+            _context.EscalatieEvents.Add(new EscalatieEvent
             {
                 ConversatieID = conversationId,
                 ProjectID = conversation.ProjectID,
@@ -730,7 +726,7 @@ namespace VectorRagDemo.Views.Chat
             return Ok();
         }
 
-        private async Task<Models.Entities.Project?> ResolveProjectForSettingsAsync(int projectId)
+        private async Task<Project?> ResolveProjectForSettingsAsync(int projectId)
         {
             if (User.IsInRole("Admin"))
             {
@@ -753,7 +749,7 @@ namespace VectorRagDemo.Views.Chat
         /// Both are null when the bot did not signal escalation or ExtraCommunicationEnabled is off.
         /// </summary>
         private static (string? WhatsAppUrl, string? EmailUrl) BuildEscalationUrls(
-            Models.Entities.Project? project, Models.Entities.WidgetConfig? cfg, bool botSignalled)
+            Project? project, WidgetConfig? cfg, bool botSignalled)
         {
             if (!botSignalled || project == null || !project.ExtraCommunicationEnabled || cfg == null)
                 return (null, null);
@@ -776,7 +772,7 @@ namespace VectorRagDemo.Views.Chat
         }
 
         /// <summary>True when ExtraCommunicationEnabled (on project) and at least one channel has valid settings.</summary>
-        private static bool HasActiveEscalationChannel(Models.Entities.Project? project, Models.Entities.WidgetConfig? cfg)
+        private static bool HasActiveEscalationChannel(Project? project, WidgetConfig? cfg)
         {
             bool hasProjectSetting = project != null && project.ExtraCommunicationEnabled;
 

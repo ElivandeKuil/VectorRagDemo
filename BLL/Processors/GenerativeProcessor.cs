@@ -9,13 +9,13 @@ using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.BLL.Processors
 {
-    public class GeminiProcessor
+    public class GenerativeProcessor
     {
         private readonly VectorDbContext _context;
         private readonly HttpClient _client;
         private readonly LogboekDbContext _logboekContext;
 
-        public GeminiProcessor(VectorDbContext context, HttpClient client, LogboekDbContext logboekContext)
+        public GenerativeProcessor(VectorDbContext context, HttpClient client, LogboekDbContext logboekContext)
         {
             _context = context;
             _client = client;
@@ -26,7 +26,6 @@ namespace VectorRagDemo.BLL.Processors
             List<ChatMessage> chatHistory,
             string currentUserInput,
             string formattedNeighbors,
-            bool extraCommunicationEnabled = false,
             int projectId = 0,
             Guid? correlationId = null)
         {
@@ -36,16 +35,17 @@ namespace VectorRagDemo.BLL.Processors
             // Summarization detects transferToWhatsApp when escalation is active —
             // it has access to the user query and chunks, so the decision is made once
             // and shared by both the streaming and non-streaming paths.
-            var summarisedResult = await SummarizeAsync(
+            (string RelevantOutput, List<int> UsedChunkIds, bool TransferToWhatsApp) summarisedResult = await SummarizeAsync(
                 formattedNeighbors,
                 chatHistoryString,
                 currentUserInput,
                 projectId,
-                extraCommunicationEnabled,
                 correlationId);
 
             var basePrompt = generativeModelService.GetPrompt(PromptTypeEnum.GenerateResponse).FirstOrDefault()
                 ?? throw new Exception($"No active prompt found for type {PromptTypeEnum.GenerateResponse}");
+
+            var prompt = InjectExtraContext(basePrompt, summarisedResult.TransferToWhatsApp);
 
             var result = await generativeModelService.ExecutePipelineStep<GeminiAnswerGenerationInnerResponse, GenerativeModelResponse>(
                 basePrompt,
@@ -69,50 +69,28 @@ namespace VectorRagDemo.BLL.Processors
         /// appended and <c>transferToWhatsApp</c> injected into the response schema.
         /// The original DB entity is never modified.
         /// </summary>
-        private static Prompt WithEscalationInjected(Prompt prompt) => new()
+        private Prompt InjectExtraContext(Prompt prompt, bool hasCommunicationEscalation)
         {
-            ID = prompt.ID,
-            Project = prompt.Project,
-            PromptType = prompt.PromptType,
-            Model = prompt.Model,
-            Volgorde = prompt.Volgorde,
-            Status = prompt.Status,
-            MaxTokens = prompt.MaxTokens,
-            Temperature = prompt.Temperature,
-            TopP = prompt.TopP,
-            TopK = prompt.TopK,
-            Content = prompt.Content,
-            SystemInstruction = prompt.SystemInstruction + WhatsAppSystemInstruction,
-            ResponseSchema = InjectWhatsAppIntoSchema(prompt.ResponseSchema)
-        };
-
-        internal const string WhatsAppSystemInstruction =
-            "\n\nWanneer je een vraag niet kunt beantwoorden op basis van de beschikbare informatie, " +
-            "of wanneer je detecteert dat de gebruiker interesse toont in een aankoop, offerte of persoonlijk contact, " +
-            "stel dan 'transferToWhatsApp' in op true. In alle andere gevallen is het false.";
-
-        private static string InjectWhatsAppIntoSchema(string existingSchema)
-        {
-            try
+            if (hasCommunicationEscalation)
             {
-                var schema = JObject.Parse(existingSchema);
+                string extraContext = "<CONTEXT_INJECTION>";
 
-                var properties = schema["properties"] as JObject ?? new JObject();
-                properties["transferToWhatsApp"] = JObject.Parse("{\"type\":\"boolean\"}");
-                schema["properties"] = properties;
+                if (hasCommunicationEscalation)
+                {
 
-                var required = schema["required"] as JArray ?? new JArray();
-                if (!required.Any(t => t.Value<string>() == "transferToWhatsApp"))
-                    required.Add("transferToWhatsApp");
-                schema["required"] = required;
+                    extraContext += @"A previous step in the pipeline has detected a lead or blockade and has therefore 
+determined an escalation to human communication channels. This means that there will be one or more buttons underneath your response which the 
+user can click to go straight to a human communication channel. Adjust your response accordingly to this new context.";
+                }
+                
+                extraContext += "</CONTEXT_INJECTION>";
 
-                return schema.ToString(Newtonsoft.Json.Formatting.None);
+                prompt.Content += extraContext;
             }
-            catch
-            {
-                return existingSchema;
-            }
+
+            return prompt;
         }
+
 
         internal static string FormatChatHistory(List<ChatMessage> chatHistory)
         {
@@ -130,15 +108,12 @@ namespace VectorRagDemo.BLL.Processors
             string chatHistoryString,
             string currentUserInput,
             int projectId,
-            bool extraCommunicationEnabled = false,
             Guid? correlationId = null)
         {
             var generativeModelService = new GenerativeModelService(_context, _client, _logboekContext, projectId, correlationId);
 
-            var basePrompt = generativeModelService.GetPrompt(PromptTypeEnum.Sumarizing).FirstOrDefault()
+            var prompt = generativeModelService.GetPrompt(PromptTypeEnum.Sumarizing).FirstOrDefault()
                 ?? throw new Exception($"No active prompt found for type {PromptTypeEnum.Sumarizing}");
-
-            var prompt = extraCommunicationEnabled ? WithEscalationInjected(basePrompt) : basePrompt;
 
             return await generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse, (string, List<int>, bool)>(
                 prompt,
@@ -158,6 +133,7 @@ namespace VectorRagDemo.BLL.Processors
             string currentUserInput,
             string chatHistoryString,
             int projectId,
+            bool transferToWhatsApp = false,
             Guid? correlationId = null,
             [EnumeratorCancellation] CancellationToken ct = default)
         {
@@ -166,8 +142,10 @@ namespace VectorRagDemo.BLL.Processors
             var basePrompt = generativeModelService.GetPrompt(PromptTypeEnum.GenerateResponse).FirstOrDefault()
                 ?? throw new Exception($"No active prompt found for type {PromptTypeEnum.GenerateResponse}");
 
+            var prompt = InjectExtraContext(basePrompt, transferToWhatsApp);
+
             await foreach (var token in generativeModelService.ExecuteStreamingStep(
-                basePrompt,
+                prompt,
                 new[] { summarisedContent, currentUserInput, chatHistoryString },
                 ct))
             {

@@ -201,14 +201,15 @@ async function sendMessageStreaming(streamUrl, requestBody, messagesContainer, b
                         contentEl.innerHTML = marked.parse(fullText);
                     }
 
-                    // Append source links if any
+                    // Append source links inside the message bubble
                     if (event.sourceLinks && event.sourceLinks.length > 0) {
                         botMessageDiv.appendChild(buildSourceLinksElement(event.sourceLinks));
                     }
 
-                    // Append escalation buttons if the bot signalled a hand-off
+                    // Escalation goes in its own bubble, inserted after botMessageDiv
                     if (event.whatsAppUrl || event.emailUrl) {
-                        botMessageDiv.appendChild(buildEscalationElement(event));
+                        const escalationEl = buildEscalationElement(event);
+                        botMessageDiv.insertAdjacentElement('afterend', escalationEl);
                     }
 
                     // Update hidden state divs used by subsequent requests
@@ -250,17 +251,17 @@ function _ensureStateDiv(id, container, value) {
 }
 
 function buildEscalationElement(event) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'escalation-cta mt-2';
+    // Rendered as a separate bubble (sibling to the main bot message div)
+    const bubble = document.createElement('div');
+    bubble.className = 'message assistant escalation-bubble';
 
-    const ctaText = event.whatsAppCtaText || event.emailCtaText || 'Neem gelijk contact op met mijn collega';
-    const p = document.createElement('p');
-    p.className = 'escalation-cta-text';
-    p.innerHTML = `<i class="bi bi-person-lines-fill me-1"></i>${escapeHtml(ctaText)}`;
-    wrapper.appendChild(p);
+    const label = document.createElement('span');
+    label.className = 'escalation-label';
+    label.innerHTML = `<i class="bi bi-person-lines-fill"></i>${escapeHtml(event.whatsAppCtaText || event.emailCtaText || 'Neem contact op met mijn collega')}`;
+    bubble.appendChild(label);
 
     const btns = document.createElement('div');
-    btns.className = 'escalation-cta-buttons';
+    btns.className = 'escalation-btns';
 
     if (event.whatsAppUrl) {
         const a = document.createElement('a');
@@ -285,43 +286,92 @@ function buildEscalationElement(event) {
         btns.appendChild(a);
     }
 
-    wrapper.appendChild(btns);
-    return wrapper;
+    bubble.appendChild(btns);
+    return bubble;
 }
 
 function buildSourceLinksElement(sourceLinks) {
-    const div = document.createElement('div');
-    div.className = 'source-links mt-2';
+    const section = document.createElement('div');
+    section.className = 'source-links-section';
 
-    for (const link of sourceLinks) {
-        const p = link.preview;
-        let host = link.url;
-        try { host = new URL(link.url).host; } catch (_) {}
-        const displayTitle = (p && p.title) ? p.title : (link.fallbackTitle || host);
+    const [first, ...rest] = sourceLinks;
 
-        const a = document.createElement('a');
-        a.href = link.url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.className = 'link-preview-card';
+    // Primary card
+    section.appendChild(_buildSourceCard(first));
 
-        let inner = '';
-        if (p && p.imageUrl) {
-            inner += `<div class="lpc-image"><img src="${escapeHtml(p.imageUrl)}" alt="" onerror="this.parentElement.style.display='none'"></div>`;
+    // If more than one, add a toggle + hidden extras
+    if (rest.length > 0) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'source-links-toggle';
+        const noun = rest.length === 1 ? 'bron' : 'bronnen';
+        toggle.innerHTML = `<i class="bi bi-chevron-down"></i>${escapeHtml(`+${rest.length} ${noun}`)}`;
+
+        const extras = document.createElement('div');
+        extras.className = 'source-links-extra';
+        extras.hidden = true;
+
+        for (const link of rest) {
+            extras.appendChild(_buildSourceChip(link));
         }
-        inner += `<div class="lpc-body">
-            <div class="lpc-site">
-                ${p && p.faviconUrl ? `<img src="${escapeHtml(p.faviconUrl)}" alt="" class="lpc-favicon" onerror="this.style.display='none'">` : ''}
-                <span>${escapeHtml((p && p.siteName) ? p.siteName : host)}</span>
-            </div>
-            <div class="lpc-title">${escapeHtml(displayTitle)}</div>
-            ${p && p.description ? `<div class="lpc-description">${escapeHtml(p.description)}</div>` : ''}
-        </div>`;
-        a.innerHTML = inner;
-        div.appendChild(a);
+
+        toggle.addEventListener('click', () => {
+            extras.hidden = !extras.hidden;
+            toggle.classList.toggle('open');
+        });
+
+        section.appendChild(toggle);
+        section.appendChild(extras);
     }
 
-    return div;
+    return section;
+}
+
+function _buildSourceCard(link) {
+    const p = link.preview;
+    let host = link.url;
+    try { host = new URL(link.url).host; } catch (_) {}
+    const site  = (p && p.siteName) ? p.siteName : host;
+    const title = (p && p.title)    ? p.title    : (link.fallbackTitle || host);
+
+    const a = document.createElement('a');
+    a.href = link.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'source-card';
+    a.title = title;
+
+    const favicon = p && p.faviconUrl
+        ? `<img src="${escapeHtml(p.faviconUrl)}" alt="" class="source-card-favicon" onerror="this.style.display='none'">`
+        : `<i class="bi bi-globe2 source-card-globe"></i>`;
+
+    a.innerHTML = `<div class="source-card-meta">${favicon}<span class="source-card-site">${escapeHtml(site)}</span></div>
+        <div class="source-card-title">${escapeHtml(title)}</div>
+        ${p && p.description ? `<div class="source-card-desc">${escapeHtml(p.description)}</div>` : ''}`;
+
+    return a;
+}
+
+function _buildSourceChip(link) {
+    const p = link.preview;
+    let host = link.url;
+    try { host = new URL(link.url).host; } catch (_) {}
+    const label = (p && p.siteName) ? p.siteName : ((p && p.title) ? p.title : host);
+
+    const a = document.createElement('a');
+    a.href = link.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'source-chip';
+    a.title = (p && p.title) ? p.title : link.url;
+
+    if (p && p.faviconUrl) {
+        a.innerHTML = `<img src="${escapeHtml(p.faviconUrl)}" alt="" class="source-chip-favicon" onerror="this.style.display='none'">`;
+    } else {
+        a.innerHTML = `<i class="bi bi-link-45deg"></i>`;
+    }
+    a.innerHTML += `<span>${escapeHtml(label)}</span>`;
+    return a;
 }
 
 function escapeHtml(text) {

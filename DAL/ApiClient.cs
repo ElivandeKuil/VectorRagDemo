@@ -80,7 +80,7 @@ namespace VectorRagDemo.DAL
 
                 // Capture request headers
                 logEntry.RequestHeaders = SerializeHeaders(request.Headers, content?.Headers);
-                logEntry.RequestContent = TruncateIfNeeded(requestContent, 10000);
+                logEntry.RequestContent = requestContent;
 
                 // Send the request
                 response = await _httpClient.SendAsync(request, cancellationToken);
@@ -91,7 +91,7 @@ namespace VectorRagDemo.DAL
                 logEntry.ResponseHeaders = SerializeHeaders(response.Headers, response.Content?.Headers);
 
                 var responseContent = await response.Content.ReadAsStringAsync();
-                logEntry.ResponseContent = TruncateIfNeeded(responseContent, 10000);
+                logEntry.ResponseContent = responseContent;
                 logEntry.DurationMs = (int)stopwatch.ElapsedMilliseconds;
 
                 return response;
@@ -110,6 +110,11 @@ namespace VectorRagDemo.DAL
             {
                 await LogToDatabase(logEntry);
             }
+        }
+
+        public async Task LogAsync(ApiCallLog entry)
+        {
+            await LogToDatabase(entry);
         }
 
         private async Task LogToDatabase(ApiCallLog logEntry)

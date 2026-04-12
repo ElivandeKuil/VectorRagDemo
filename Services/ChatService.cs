@@ -23,7 +23,7 @@ namespace VectorRagDemo.Services
 
         }
 
-        public async Task<ChatResponse> Ask(ChatRequest request, int projectId = 0, bool extraCommunicationEnabled = false)
+        public async Task<ChatResponse> Ask(ChatRequest request, int projectId = 0)
         {
             try
             {
@@ -32,7 +32,6 @@ namespace VectorRagDemo.Services
                     prep.ChatHistory,
                     prep.PreProcessedQuery,
                     prep.FormattedNeighbors,
-                    extraCommunicationEnabled,
                     projectId,
                     prep.CorrelationId
                 );
@@ -111,14 +110,13 @@ namespace VectorRagDemo.Services
         /// (<c>transferToWhatsApp</c>) is detected here so it is available before streaming starts.
         /// </summary>
         public async Task<(string RelevantOutput, List<int> UsedChunkIds, bool TransferToWhatsApp)> SummarizeAsync(
-            ChatPreparation prep, int projectId, bool extraCommunicationEnabled = false)
+            ChatPreparation prep, int projectId)
         {
             return await GeminiProcessor.SummarizeAsync(
                 prep.FormattedNeighbors,
                 prep.ChatHistoryString,
                 prep.PreProcessedQuery,
                 projectId,
-                extraCommunicationEnabled,
                 prep.CorrelationId);
         }
 
@@ -129,6 +127,7 @@ namespace VectorRagDemo.Services
             ChatPreparation prep,
             string summarisedContent,
             int projectId,
+            bool transferToWhatsApp = false,
             [EnumeratorCancellation] CancellationToken ct = default)
         {
             await foreach (var token in GeminiProcessor.StreamFinalResponseAsync(
@@ -136,6 +135,7 @@ namespace VectorRagDemo.Services
                 prep.PreProcessedQuery,
                 prep.ChatHistoryString,
                 projectId,
+                transferToWhatsApp,
                 prep.CorrelationId,
                 ct))
             {

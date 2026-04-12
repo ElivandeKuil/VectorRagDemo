@@ -159,12 +159,6 @@ namespace VectorRagDemo.BLL
                 ? prompt.SystemInstruction
                 : string.Join("\n\n", parts);
 
-            // If the prompt was escalation-injected (WhatsApp suffix appended at runtime),
-            // re-attach that suffix so it isn't lost when building from PromptInstelling.
-            if (prompt.SystemInstruction.EndsWith(GeminiProcessor.WhatsAppSystemInstruction,
-                    StringComparison.Ordinal))
-                built += GeminiProcessor.WhatsAppSystemInstruction;
-
             return built;
         }
 
@@ -268,42 +262,90 @@ namespace VectorRagDemo.BLL
             string[] formatArgs,
             [EnumeratorCancellation] CancellationToken ct = default)
         {
+            // Read request body up front so we can log it and reuse the string
             var requestContent = BuildStreamingRequestContent(prompt, formatArgs);
+            var requestContentString = await requestContent.ReadAsStringAsync(ct);
 
             string endpoint = MistralApiEndpointBuilder.BuildChatEndpoint();
             string apiKey = ConnectionProcessor.GetApiKey();
 
+            var logEntry = new ApiCallLog
+            {
+                RequestMethod  = "POST",
+                RequestUri     = endpoint,
+                CorrelationId  = _correlationId ?? Guid.NewGuid(),
+                GemaaktOp      = DateTime.UtcNow,
+                RequestContent = requestContentString,
+            };
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            // Use a fresh StringContent — the original stream was already read above
             var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
             httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-            httpRequest.Content = requestContent;
+            httpRequest.Content = new StringContent(requestContentString, Encoding.UTF8, "application/json");
 
-            using var response = await _client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+            // Send (errors before streaming are handled without yield so a catch clause is fine here)
+            HttpResponseMessage response;
+            try
+            {
+                response = await _client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+                logEntry.ResponseStatus = (int)response.StatusCode;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                logEntry.DurationMs    = (int)stopwatch.ElapsedMilliseconds;
+                logEntry.ErrorMessage  = $"{ex.GetType().Name}: {ex.Message}";
+                await _apiClient.LogAsync(logEntry);
+                throw;
+            }
 
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync(ct);
+                stopwatch.Stop();
+                logEntry.DurationMs    = (int)stopwatch.ElapsedMilliseconds;
+                logEntry.ResponseContent = error;
+                logEntry.ErrorMessage  = $"Streaming API failed ({response.StatusCode})";
+                await _apiClient.LogAsync(logEntry);
                 throw new Exception($"Mistral streaming API failed ({response.StatusCode}): {error}");
             }
 
-            using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var reader = new System.IO.StreamReader(stream);
-
-            while (!ct.IsCancellationRequested)
+            // Stream tokens — try/finally (no catch) is allowed with yield return
+            var responseBuilder = new StringBuilder();
+            try
             {
-                var line = await reader.ReadLineAsync(ct);
-                if (line == null) break;
-                if (!line.StartsWith("data: ")) continue;
+                using var stream = await response.Content.ReadAsStreamAsync(ct);
+                using var reader = new System.IO.StreamReader(stream);
 
-                var data = line.Substring(6);
-                if (data == "[DONE]") yield break;
+                while (!ct.IsCancellationRequested)
+                {
+                    var line = await reader.ReadLineAsync(ct);
+                    if (line == null) break;
+                    if (!line.StartsWith("data: ")) continue;
 
-                MistralStreamChunk? chunk;
-                try { chunk = JsonConvert.DeserializeObject<MistralStreamChunk>(data); }
-                catch { continue; }
+                    var data = line.Substring(6);
+                    if (data == "[DONE]") break;
 
-                var tokenContent = chunk?.Choices?.FirstOrDefault()?.Delta?.Content;
-                if (tokenContent != null)
-                    yield return tokenContent;
+                    MistralStreamChunk? chunk;
+                    try { chunk = JsonConvert.DeserializeObject<MistralStreamChunk>(data); }
+                    catch { continue; }
+
+                    var tokenContent = chunk?.Choices?.FirstOrDefault()?.Delta?.Content;
+                    if (tokenContent != null)
+                    {
+                        responseBuilder.Append(tokenContent);
+                        yield return tokenContent;
+                    }
+                }
+            }
+            finally
+            {
+                stopwatch.Stop();
+                logEntry.DurationMs      = (int)stopwatch.ElapsedMilliseconds;
+                logEntry.ResponseContent = responseBuilder.ToString();
+                await _apiClient.LogAsync(logEntry);
+                response.Dispose();
             }
         }
 

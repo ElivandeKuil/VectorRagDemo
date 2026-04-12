@@ -95,7 +95,7 @@
             <div class="card-body">
                 @if (!string.IsNullOrEmpty(Model.RequestHeaders))
                 {
-                    <pre class="bg-light p-3" style="max-height: 300px; overflow-y: auto;">@Model.RequestHeaders</pre>
+                    <pre class="bg-light p-3 mb-0" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.82rem;">@Model.RequestHeaders</pre>
                 }
                 else
                 {
@@ -108,14 +108,14 @@
             <div class="card-header">
                 <h5>Request Content</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 @if (!string.IsNullOrEmpty(Model.RequestContent))
                 {
-                    <pre class="bg-light p-3" style="max-height: 400px; overflow-y: auto;">@Model.RequestContent</pre>
+                    <pre class="log-content-block" data-prettify="true">@Model.RequestContent</pre>
                 }
                 else
                 {
-                    <p class="text-muted">No request content</p>
+                    <p class="text-muted p-3 mb-0">No request content</p>
                 }
             </div>
         </div>
@@ -127,7 +127,7 @@
             <div class="card-body">
                 @if (!string.IsNullOrEmpty(Model.ResponseHeaders))
                 {
-                    <pre class="bg-light p-3" style="max-height: 300px; overflow-y: auto;">@Model.ResponseHeaders</pre>
+                    <pre class="bg-light p-3 mb-0" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.82rem;">@Model.ResponseHeaders</pre>
                 }
                 else
                 {
@@ -140,14 +140,14 @@
             <div class="card-header">
                 <h5>Response Content</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 @if (!string.IsNullOrEmpty(Model.ResponseContent))
                 {
-                    <pre class="bg-light p-3" style="max-height: 400px; overflow-y: auto;">@Model.ResponseContent</pre>
+                    <pre class="log-content-block" data-prettify="true">@Model.ResponseContent</pre>
                 }
                 else
                 {
-                    <p class="text-muted">No response content</p>
+                    <p class="text-muted p-3 mb-0">No response content</p>
                 }
             </div>
         </div>
@@ -157,3 +157,29 @@
 <div class="mb-3">
     <a asp-action="Index" btn-variant="secondary">Back to List</a>
 </div>
+
+<style>
+.log-content-block {
+    margin: 0;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 0 0 4px 4px;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+}
+</style>
+
+<script>
+document.querySelectorAll('pre[data-prettify]').forEach(function (el) {
+    var raw = el.textContent.trim();
+    try {
+        var parsed = JSON.parse(raw);
+        el.textContent = JSON.stringify(parsed, null, 2);
+    } catch (_) {
+        // Not JSON — leave as-is, white-space: pre-wrap handles wrapping
+    }
+});
+</script>

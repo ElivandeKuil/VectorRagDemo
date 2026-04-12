@@ -28,15 +28,15 @@ namespace VectorRagDemo.Services
         }
 
 
-        private GeminiProcessor _geminiProcessor;
+        private GenerativeProcessor _geminiProcessor;
 
-        public GeminiProcessor GeminiProcessor
+        public GenerativeProcessor GeminiProcessor
         {
             get
             {
                 if(_geminiProcessor == null)
                 {
-                    _geminiProcessor = new GeminiProcessor(Context, HttpClient, LogboekContext);
+                    _geminiProcessor = new GenerativeProcessor(Context, HttpClient, LogboekContext);
                 }
                 return _geminiProcessor;
             }
