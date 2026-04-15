@@ -96,7 +96,7 @@
             <i class="bi bi-person-lines-fill"></i>
             @(Model.WhatsAppCtaText ?? Model.EmailCtaText ?? "Neem contact op met mijn collega")
         </span>
-        <div class="escalation-btns">
+        <div class="escalation-btns mt-3">
             @if (showWhatsApp)
             {
                 <a href="@Model.WhatsAppUrl" target="_blank" rel="noopener noreferrer" class="whatsapp-cta-btn" data-log-escalation="whatsapp">

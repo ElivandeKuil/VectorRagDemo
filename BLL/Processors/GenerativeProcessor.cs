@@ -77,7 +77,6 @@ namespace VectorRagDemo.BLL.Processors
 
                 if (hasCommunicationEscalation)
                 {
-
                     extraContext += @"A previous step in the pipeline has detected a lead or blockade and has therefore 
 determined an escalation to human communication channels. This means that there will be one or more buttons underneath your response which the 
 user can click to go straight to a human communication channel. Adjust your response accordingly to this new context.";
@@ -90,7 +89,6 @@ user can click to go straight to a human communication channel. Adjust your resp
 
             return prompt;
         }
-
 
         internal static string FormatChatHistory(List<ChatMessage> chatHistory)
         {
