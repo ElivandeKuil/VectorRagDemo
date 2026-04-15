@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using VectorRagDemo.BLL;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Extensions;
 using VectorRagDemo.Services;
@@ -17,13 +18,20 @@ namespace VectorRagDemo.Controllers
         private readonly ConversatieRepository _repo;
         private readonly CorrectieService _correctieService;
         private readonly OmgevingService _omgevingService;
+        private readonly EscalatieService _escalatieService;
 
-        public ConversatiesController(VectorDbContext context, ConversatieRepository repo, CorrectieService correctieService, OmgevingService omgevingService)
+        public ConversatiesController(
+            VectorDbContext context,
+            ConversatieRepository repo,
+            CorrectieService correctieService,
+            OmgevingService omgevingService,
+            EscalatieService escalatieService)
         {
             _context          = context;
             _repo             = repo;
             _correctieService = correctieService;
             _omgevingService  = omgevingService;
+            _escalatieService = escalatieService;
         }
 
         public async Task<IActionResult> Index(int projectId = 0, ConversatieFilterModel? filter = null)
@@ -55,15 +63,7 @@ namespace VectorRagDemo.Controllers
                 ViewData["AdminProjects"] = new SelectList(allProjects, "ID", "Naam", project.ID);
             }
 
-            var heeftEscalatie = false;
-            if (project.ExtraCommunicationEnabled)
-            {
-                await _context.Entry(project).Reference(p => p.WidgetConfig).LoadAsync();
-                var cfg = project.WidgetConfig;
-                heeftEscalatie = cfg != null &&
-                    ((cfg.WhatsAppEnabled && !string.IsNullOrWhiteSpace(cfg.WhatsAppNumber)) ||
-                     (cfg.EmailEnabled   && !string.IsNullOrWhiteSpace(cfg.EmailAddress)));
-            }
+            var heeftEscalatie = await _escalatieService.HeeftEscalatieAsync(project);
 
             var (gesprekken, totaal) = await _repo.GetPaginatedAsync(project.ID, filter);
 

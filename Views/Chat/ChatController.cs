@@ -12,6 +12,7 @@ using VectorRagDemo.Models.Entities.Management;
 using VectorRagDemo.Models.Requests;
 using VectorRagDemo.Models.ViewModels;
 using VectorRagDemo.Services;
+using EscalatieHelper = VectorRagDemo.BLL.EscalatieService;
 
 namespace VectorRagDemo.Views.Chat
 {
@@ -35,26 +36,45 @@ namespace VectorRagDemo.Views.Chat
         public async Task<IActionResult> Index(int projectId = 0)
         {
             var (botName, resolvedProjectId, hasProject) = await GetProjectContextAsync(projectId);
-            ViewData["BotName"] = botName;
-            ViewData["HasProject"] = hasProject;
-            ViewData["SelectedProjectId"] = resolvedProjectId;
 
+            string? embedKey = null;
             if (resolvedProjectId > 0)
             {
                 var project = await _context.Projects.FindAsync(resolvedProjectId);
-                ViewData["EmbedKey"] = project?.EmbedKey;
+                embedKey = project?.EmbedKey;
             }
 
+            SelectList? adminProjects = null;
             if (User.IsInRole("Admin"))
             {
                 var projects = await _context.Projects
                     .Where(p => p.Status == 1)
                     .OrderBy(p => p.Naam)
                     .ToListAsync();
-                ViewData["AdminProjects"] = new SelectList(projects, "ID", "Naam", resolvedProjectId);
+                adminProjects = new SelectList(projects, "ID", "Naam", resolvedProjectId);
             }
 
-            return View();
+            return View(new ChatIndexViewModel
+            {
+                BotName           = botName,
+                HasProject        = hasProject,
+                SelectedProjectId = resolvedProjectId,
+                EmbedKey          = embedKey,
+                AdminProjects     = adminProjects
+            });
+        }
+
+        /// <summary>
+        /// Standalone preview page (no layout) that renders a fake customer website
+        /// and loads the project's chat widget via widget-loader.js.
+        /// Opened inside an iframe on the Chat/Index browser-mockup.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult Preview(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return NotFound();
+            return View((object)key);
         }
 
         [HttpGet]
@@ -109,12 +129,14 @@ namespace VectorRagDemo.Views.Chat
 
             if (project == null) return NotFound();
 
-            ViewData["BotName"] = project.BotName;
-            ViewData["ProjectId"] = project.ID;
-            ViewData["EmbedKey"] = key;
-            ViewData["WidgetConfig"] = project.WidgetConfig ?? new WidgetConfig();
-            ViewData["StreamingEnabled"] = project.StreamingEnabled;
-            return View();
+            return View(new EmbedViewModel
+            {
+                BotName          = project.BotName,
+                ProjectId        = project.ID,
+                EmbedKey         = key,
+                WidgetConfig     = project.WidgetConfig ?? new WidgetConfig(),
+                StreamingEnabled = project.StreamingEnabled
+            });
         }
 
         [AllowAnonymous]
@@ -133,41 +155,14 @@ namespace VectorRagDemo.Views.Chat
             var projectId = project.ID;
             var botName = project.BotName;
 
-            // Zoek of maak een conversatie op basis van het session token.
-            // Gebruiker blijft altijd null voor widget-gesprekken — geen persoonsgebonden ID.
-            var sessionToken = request.SessionToken?.Trim();
-            Conversation? existingConversation = null;
-
-            if (!string.IsNullOrEmpty(sessionToken))
-            {
-                existingConversation = await _context.Conversations
-                    .FirstOrDefaultAsync(c => c.SessionToken == sessionToken && c.BronType == "widget");
-            }
-
-            if (existingConversation == null)
-            {
-                sessionToken = Guid.NewGuid().ToString("N");
-                existingConversation = new Conversation
-                {
-                    Gebruiker = null,
-                    SessionToken = sessionToken,
-                    ProjectID = projectId,
-                    BronType = "widget",
-                    GemaaktOp = DateTime.Now,
-                    GewijzigdOp = DateTime.Now,
-                    Status = 1
-                };
-                _context.Conversations.Add(existingConversation);
-                await _context.SaveChangesAsync();
-            }
-
-            var conversationId = existingConversation.ID;
+            var (sessionToken, conversationId) = await GetOrCreateWidgetConversationAsync(
+                request.SessionToken, projectId);
 
             var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId);
 
             var response = await _chatService.Ask(request, projectId);
 
-            var (whatsAppUrl, emailUrl) = BuildEscalationUrls(
+            var (whatsAppUrl, emailUrl) = EscalatieHelper.BouwEscalatieUrls(
                 project, widgetConfig, response.GenerativeResponse.TransferToWhatsApp);
 
             _context.Messages.Add(new Message
@@ -307,34 +302,9 @@ namespace VectorRagDemo.Views.Chat
             var projectId = project.ID;
             var botName = project.BotName;
 
-            // Session / conversation handling — identical to AskEmbed
-            var sessionToken = request.SessionToken?.Trim();
-            Conversation? existingConversation = null;
+            var (sessionToken, conversationId) = await GetOrCreateWidgetConversationAsync(
+                request.SessionToken, projectId, ct);
 
-            if (!string.IsNullOrEmpty(sessionToken))
-            {
-                existingConversation = await _context.Conversations
-                    .FirstOrDefaultAsync(c => c.SessionToken == sessionToken && c.BronType == "widget", ct);
-            }
-
-            if (existingConversation == null)
-            {
-                sessionToken = Guid.NewGuid().ToString("N");
-                existingConversation = new Conversation
-                {
-                    Gebruiker = null,
-                    SessionToken = sessionToken,
-                    ProjectID = projectId,
-                    BronType = "widget",
-                    GemaaktOp = DateTime.Now,
-                    GewijzigdOp = DateTime.Now,
-                    Status = 1
-                };
-                _context.Conversations.Add(existingConversation);
-                await _context.SaveChangesAsync(ct);
-            }
-
-            var conversationId = existingConversation.ID;
             var widgetConfig = await _context.WidgetConfigs.FirstOrDefaultAsync(w => w.ProjectID == projectId, ct);
             
             // Run preparation (pre-processing, embedding, vector search, placeholders)
@@ -383,8 +353,7 @@ namespace VectorRagDemo.Views.Chat
 
             var responseText = fullResponse.ToString();
 
-            // Build escalation URLs (same logic as AskEmbed)
-            var (whatsAppUrl, emailUrl) = BuildEscalationUrls(project, widgetConfig, summarized.TransferToWhatsApp);
+            var (whatsAppUrl, emailUrl) = EscalatieHelper.BouwEscalatieUrls(project, widgetConfig, summarized.TransferToWhatsApp);
 
             // Build source links
             var rawSourceLinks = summarized.UsedChunkIds
@@ -570,25 +539,7 @@ namespace VectorRagDemo.Views.Chat
 
             await _context.Entry(project).Reference(p => p.WidgetConfig).LoadAsync();
 
-            // Coerce nullable string fields to empty string
-            config.GreetingMessage    = config.GreetingMessage    ?? string.Empty;
-            config.HeaderTitle        = config.HeaderTitle        ?? string.Empty;
-            config.HeaderLogoUrl      = config.HeaderLogoUrl      ?? string.Empty;
-            config.ButtonLogoUrl      = config.ButtonLogoUrl      ?? string.Empty;
-            config.ButtonShape        = config.ButtonShape        ?? "circle";
-            config.ButtonBorderColor  = config.ButtonBorderColor  ?? "#ffffff";
-            config.HideSide           = config.HideSide           ?? "right";
-            config.IntroMessage       = config.IntroMessage       ?? string.Empty;
-            config.ButtonSvgIdle      = config.ButtonSvgIdle      ?? string.Empty;
-            config.ButtonSvgPeek      = config.ButtonSvgPeek      ?? string.Empty;
-            config.ButtonSvgOpen      = config.ButtonSvgOpen      ?? string.Empty;
-            config.WhatsAppNumber     = config.WhatsAppNumber     ?? string.Empty;
-            config.WhatsAppButtonText = config.WhatsAppButtonText ?? "Chat via WhatsApp";
-            config.WhatsAppCtaText    = config.WhatsAppCtaText    ?? "Neem gelijk contact op met mijn collega";
-            config.EmailAddress       = config.EmailAddress       ?? string.Empty;
-            config.EmailSubject       = config.EmailSubject       ?? "Vraag via chat";
-            config.EmailButtonText    = config.EmailButtonText    ?? "Stuur een e-mail";
-            config.EmailCtaText       = config.EmailCtaText       ?? "Neem gelijk contact op met mijn collega";
+            WidgetConfigService.ApplyNullDefaults(config);
 
             if (project.WidgetConfig == null)
             {
@@ -599,53 +550,7 @@ namespace VectorRagDemo.Views.Chat
             }
             else
             {
-                var existing = project.WidgetConfig;
-                existing.WidgetPosition    = config.WidgetPosition;
-                existing.OffsetX           = config.OffsetX;
-                existing.OffsetY           = config.OffsetY;
-                existing.ButtonColor       = config.ButtonColor;
-                existing.ButtonSize        = config.ButtonSize;
-                existing.ButtonShape       = config.ButtonShape;
-                existing.ButtonBorderWidth = Math.Clamp(config.ButtonBorderWidth, 0, 8);
-                existing.ButtonBorderColor = config.ButtonBorderColor;
-                existing.ButtonIconPadding = Math.Clamp(config.ButtonIconPadding, 0, 30);
-                existing.PopupWidth        = config.PopupWidth;
-                existing.PopupHeight       = config.PopupHeight;
-                existing.PopupBorderRadius = config.PopupBorderRadius;
-                existing.HeaderBgColor     = config.HeaderBgColor;
-                existing.HeaderTextColor   = config.HeaderTextColor;
-                existing.UserBubbleBgColor   = config.UserBubbleBgColor;
-                existing.UserBubbleTextColor = config.UserBubbleTextColor;
-                existing.BotBubbleBgColor    = config.BotBubbleBgColor;
-                existing.BotBubbleTextColor  = config.BotBubbleTextColor;
-                existing.WidgetFontSize    = config.WidgetFontSize;
-                existing.GreetingMessage   = config.GreetingMessage;
-                existing.HeaderTitle       = config.HeaderTitle;
-                existing.HeaderLogoUrl     = config.HeaderLogoUrl;
-                existing.ChatBodyBgColor   = config.ChatBodyBgColor;
-                existing.InputAreaBgColor  = config.InputAreaBgColor;
-                existing.SendButtonColor   = config.SendButtonColor;
-                existing.SendButtonIconColor = config.SendButtonIconColor;
-                existing.ButtonLogoUrl     = config.ButtonLogoUrl;
-                existing.IconHideable      = config.IconHideable;
-                existing.HideSide          = config.HideSide;
-                existing.PeekAmount        = Math.Clamp(config.PeekAmount, 20, 70);
-                existing.ButtonSvgIdle     = config.ButtonSvgIdle;
-                existing.ButtonSvgPeek     = config.ButtonSvgPeek;
-                existing.ButtonSvgOpen     = config.ButtonSvgOpen;
-                existing.IntroMessage      = config.IntroMessage;
-                existing.IntroMessageDelay = Math.Clamp(config.IntroMessageDelay, 0, 30);
-
-                // Channel settings (editable by all, but only active when admin enables them)
-                existing.WhatsAppEnabled   = config.WhatsAppEnabled;
-                existing.WhatsAppNumber    = config.WhatsAppNumber;
-                existing.WhatsAppButtonText = config.WhatsAppButtonText;
-                existing.WhatsAppCtaText   = config.WhatsAppCtaText;
-                existing.EmailEnabled      = config.EmailEnabled;
-                existing.EmailAddress      = config.EmailAddress;
-                existing.EmailSubject      = config.EmailSubject;
-                existing.EmailButtonText   = config.EmailButtonText;
-                existing.EmailCtaText      = config.EmailCtaText;
+                WidgetConfigService.ApplyUpdates(project.WidgetConfig, config);
             }
 
             project.GewijzigdOp = DateTime.Now;
@@ -744,42 +649,39 @@ namespace VectorRagDemo.Views.Chat
         }
 
         /// <summary>
-        /// Resolves whichever escalation channels are active for the project.
-        /// Returns (whatsAppUrl, emailUrl) — each is null when that channel is not configured.
-        /// Both are null when the bot did not signal escalation or ExtraCommunicationEnabled is off.
+        /// Finds an existing widget conversation by session token, or creates a new one.
+        /// Returns the (sessionToken, conversationId) pair to use for the current request.
         /// </summary>
-        private static (string? WhatsAppUrl, string? EmailUrl) BuildEscalationUrls(
-            Project? project, WidgetConfig? cfg, bool botSignalled)
+        private async Task<(string SessionToken, int ConversationId)> GetOrCreateWidgetConversationAsync(
+            string? incomingToken, int projectId, CancellationToken ct = default)
         {
-            if (!botSignalled || project == null || !project.ExtraCommunicationEnabled || cfg == null)
-                return (null, null);
+            var sessionToken = incomingToken?.Trim();
+            Conversation? conversation = null;
 
-            string? whatsAppUrl = null;
-            if (cfg.WhatsAppEnabled && !string.IsNullOrWhiteSpace(cfg.WhatsAppNumber))
+            if (!string.IsNullOrEmpty(sessionToken))
             {
-                var number = cfg.WhatsAppNumber.TrimStart('+').Replace(" ", "");
-                whatsAppUrl = $"https://wa.me/{number}";
+                conversation = await _context.Conversations
+                    .FirstOrDefaultAsync(c => c.SessionToken == sessionToken && c.BronType == "widget", ct);
             }
 
-            string? emailUrl = null;
-            if (cfg.EmailEnabled && !string.IsNullOrWhiteSpace(cfg.EmailAddress))
+            if (conversation == null)
             {
-                var subject = string.IsNullOrWhiteSpace(cfg.EmailSubject) ? "" : $"?subject={Uri.EscapeDataString(cfg.EmailSubject)}";
-                emailUrl = $"mailto:{cfg.EmailAddress}{subject}";
+                sessionToken = Guid.NewGuid().ToString("N");
+                conversation = new Conversation
+                {
+                    Gebruiker    = null,
+                    SessionToken = sessionToken,
+                    ProjectID    = projectId,
+                    BronType     = "widget",
+                    GemaaktOp    = DateTime.Now,
+                    GewijzigdOp  = DateTime.Now,
+                    Status       = 1
+                };
+                _context.Conversations.Add(conversation);
+                await _context.SaveChangesAsync(ct);
             }
 
-            return (whatsAppUrl, emailUrl);
-        }
-
-        /// <summary>True when ExtraCommunicationEnabled (on project) and at least one channel has valid settings.</summary>
-        private static bool HasActiveEscalationChannel(Project? project, WidgetConfig? cfg)
-        {
-            bool hasProjectSetting = project != null && project.ExtraCommunicationEnabled;
-
-            bool hasWhatsapp = cfg != null && cfg.WhatsAppEnabled && !string.IsNullOrWhiteSpace(cfg.WhatsAppNumber);
-            bool hasEmail = cfg != null && cfg.EmailEnabled && !string.IsNullOrWhiteSpace(cfg.EmailAddress);
-
-            return hasProjectSetting && (hasWhatsapp || hasEmail);
+            return (sessionToken!, conversation.ID);
         }
 
         private async Task<(string BotName, int ProjectId, bool HasProject)> GetProjectContextAsync(int adminProjectId = 0)

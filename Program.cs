@@ -54,6 +54,8 @@ builder.Services.AddScoped<UserDeletionService>();
 builder.Services.AddScoped<DataExportService>();
 builder.Services.AddScoped<StatistiekenRepository>();
 builder.Services.AddScoped<ConversatieRepository>();
+builder.Services.AddScoped<VectorRagDemo.BLL.EscalatieService>();
+builder.Services.AddScoped<VectorRagDemo.BLL.StatistiekenService>();
 
 builder.Services.AddScoped<CorrectieService>(provider =>
 {

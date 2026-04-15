@@ -77,7 +77,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h6 class="card-title text-danger">Errors</h6>
-                <p class="card-text display-6 text-danger">@Model.Logs.Count(l => l.Level == "Error")</p>
+                <p class="card-text display-6 text-danger">@Model.ErrorCount</p>
             </div>
         </div>
     </div>
@@ -85,7 +85,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h6 class="card-title text-warning">Warnings</h6>
-                <p class="card-text display-6 text-warning">@Model.Logs.Count(l => l.Level == "Warning")</p>
+                <p class="card-text display-6 text-warning">@Model.WarningCount</p>
             </div>
         </div>
     </div>
@@ -93,9 +93,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h6 class="card-title">Laatste log</h6>
-                <p class="card-text small mt-2">
-                    @(Model.Logs.Any() ? Model.Logs.Max(l => l.GemaaktOp).ToString("HH:mm:ss") : "-")
-                </p>
+                <p class="card-text small mt-2">@Model.LatestLogTime</p>
             </div>
         </div>
     </div>

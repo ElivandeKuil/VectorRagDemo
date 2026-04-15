@@ -1,61 +1,69 @@
+@model VectorRagDemo.Models.ViewModels.ChatIndexViewModel
 @{
-    var hasProject = ViewData["HasProject"] is true;
-    var selectedProjectId = (int)(ViewData["SelectedProjectId"] ?? 0);
-    var embedKey = ViewData["EmbedKey"] as string;
-    var botName = ViewData["BotName"] as string ?? "Assistant";
-    var hasWidget = !string.IsNullOrWhiteSpace(embedKey);
+    ViewData["Title"] = "Chat";
 }
 
-@if (User.IsInRole("Admin") && ViewData["AdminProjects"] != null)
+@if (Model.AdminProjects != null)
 {
     <form method="get" asp-action="Index" class="mb-3">
         <div class="d-flex align-items-center gap-2">
             <label app-label class="mb-0 text-muted small">Project:</label>
-            @Html.DropDownList("projectId", (SelectList)ViewData["AdminProjects"],
-                "— Select a project —",
+            @Html.DropDownList("projectId", Model.AdminProjects,
+                "— Selecteer een project —",
                 new { @class = "form-select form-select-sm w-auto", onchange = "this.form.submit()" })
         </div>
     </form>
 }
 
-@if (hasWidget)
+@if (Model.HasWidget)
 {
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-start justify-content-between mb-3 gap-3">
         <div>
-            <h5 class="mb-0">Widget preview — <span class="text-primary">@botName</span></h5>
-            <p class="text-muted small mb-0">This is exactly how the chatbot will appear on your website. Click the button in the bottom-right corner.</p>
+            <h5 class="mb-1">Widget preview — <span class="text-primary">@Model.BotName</span></h5>
+            <p class="text-muted small mb-0">Zo ziet de chatbot eruit voor bezoekers van uw website.</p>
         </div>
-        @if (hasProject)
+        @if (Model.HasProject)
         {
-            <a href="@Url.Action("Settings", "Chat")" btn-variant="outline-secondary" btn-size="sm" btn-icon="gear">Bot name</a>
+            <a href="@Url.Action("Settings", "Chat")" btn-variant="outline-secondary" btn-size="sm" btn-icon="gear" class="flex-shrink-0">Botnaam</a>
         }
     </div>
 
-    <div class="mock-page border rounded" style="min-height:500px; background:#f8f9fa; padding:2rem; position:relative; overflow:hidden;">
-        <div style="max-width:640px;">
-            <div class="mb-4" style="height:18px; width:55%; background:#dee2e6; border-radius:4px;"></div>
-            <div class="mb-2" style="height:12px; background:#dee2e6; border-radius:4px;"></div>
-            <div class="mb-2" style="height:12px; width:90%; background:#dee2e6; border-radius:4px;"></div>
-            <div class="mb-2" style="height:12px; width:75%; background:#dee2e6; border-radius:4px;"></div>
-            <div class="mb-4" style="height:12px; width:85%; background:#dee2e6; border-radius:4px;"></div>
-            <div class="mb-2" style="height:12px; background:#dee2e6; border-radius:4px;"></div>
-            <div class="mb-2" style="height:12px; width:80%; background:#dee2e6; border-radius:4px;"></div>
-            <div style="height:12px; width:60%; background:#dee2e6; border-radius:4px;"></div>
+    <div class="browser-mockup">
+        <div class="browser-chrome">
+            <div class="browser-dots">
+                <span class="browser-dot browser-dot-red"></span>
+                <span class="browser-dot browser-dot-yellow"></span>
+                <span class="browser-dot browser-dot-green"></span>
+            </div>
+            <div class="browser-addressbar">
+                <i class="bi bi-lock-fill browser-lock-icon"></i>
+                <span>www.uw-website.nl</span>
+            </div>
+            <div class="browser-actions">
+                <a href="@Url.Action("WidgetSettings", "Chat", new { projectId = Model.SelectedProjectId })"
+                   class="browser-action-link" title="Widget-instellingen">
+                    <i class="bi bi-sliders"></i>
+                </a>
+            </div>
         </div>
-        <p class="text-muted small mt-4" style="font-style:italic;">↑ Your website content</p>
+        <div class="browser-viewport">
+            <iframe src="@Url.Action("Preview", "Chat")?key=@Model.EmbedKey"
+                    class="browser-preview-frame"
+                    title="Websitepreview met @Model.BotName chatbot"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        </div>
     </div>
-
 }
-else if (User.IsInRole("Admin"))
+else if (Model.AdminProjects != null)
 {
     <div class="text-center text-muted py-5">
         <i class="bi bi-arrow-up fs-3 d-block mb-2"></i>
-        Select a project above to preview its chat widget.
+        Selecteer een project om de chatbot-widget te bekijken.
     </div>
 }
 else
 {
     <div class="alert alert-warning">
-        No project is linked to your account yet. Contact an administrator.
+        Er is nog geen project gekoppeld aan uw account. Neem contact op met een beheerder.
     </div>
 }

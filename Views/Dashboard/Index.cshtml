@@ -1,16 +1,13 @@
-@model IEnumerable<VectorRagDemo.Models.ViewModels.ProjectCardViewModel>
-@inject VectorRagDemo.DAL.VectorDbContext VectorDbContext
+@model VectorRagDemo.Models.ViewModels.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "gebruiker";
-    var isAdmin = User.IsInRole("Admin");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1">Welkom, @fullName</h2>
+        <h2 class="mb-1">Welkom, @Model.FullName</h2>
         <p class="text-muted mb-0">
-            @if (isAdmin)
+            @if (Model.IsAdmin)
             {
                 <span>Selecteer een module om te beginnen</span>
             }
@@ -22,10 +19,9 @@
     </div>
 </div>
 
-@if (isAdmin)
+@if (Model.IsAdmin)
 {
-    @* Admin: card grid showing all projects / modules *@
-    @if (!Model.Any())
+    @if (!Model.ProjectCards.Any())
     {
         <div class="alert alert-info d-flex align-items-center gap-2">
             <i class="bi bi-info-circle fs-5"></i>
@@ -35,12 +31,11 @@
     else
     {
         <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-            @foreach (var item in Model)
+            @foreach (var item in Model.ProjectCards)
             {
-                var info = item.RouteInfo;
-                var icon = info?.Icon ?? "bi-folder";
-                var description = info?.Description ?? item.Project.Omschrijving;
-                var url = info?.Url ?? "#";
+                var icon = item.RouteInfo?.Icon ?? "bi-folder";
+                var description = item.RouteInfo?.Description ?? item.Project.Omschrijving;
+                var url = item.RouteInfo?.Url ?? "#";
                 var hasUrl = url != "#";
 
                 <div class="col">
@@ -76,34 +71,7 @@
 }
 else
 {
-    @* Regular user: app-launcher tiles based on their assigned sub-projects *@
-    var userSubProjects = User.Claims
-        .Where(c => c.Type == "SubProject")
-        .Select(c => c.Value)
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-    var dashUserId = int.TryParse(
-        User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-        out var dashUid) ? dashUid : 0;
-
-    var dashProject = dashUserId > 0
-        ? VectorDbContext.GebruikerProjecten
-            .Where(gp => gp.Gebruiker == dashUserId && gp.Status == 1)
-            .Join(VectorDbContext.Projects,
-                  gp => gp.Project,
-                  p => p.ID,
-                  (gp, p) => p)
-            .FirstOrDefault()
-        : null;
-
-    var tiles = VectorRagDemo.Services.ProjectAccessService.SubProjectMap
-        .Where(e => userSubProjects.Contains(e.Key))
-        .Where(e => e.Key != "Statistieken" || (dashProject?.StatistiekenTier ?? 0) > 0)
-        .ToList();
-
-    var showPromptInstelling = dashProject != null && !dashProject.GebruikPromptTabel;
-
-    if (!tiles.Any() && !showPromptInstelling)
+    @if (!Model.Tiles.Any() && !Model.ShowPromptInstelling)
     {
         <div class="alert alert-info d-flex align-items-center gap-2">
             <i class="bi bi-info-circle fs-5"></i>
@@ -113,18 +81,18 @@ else
     else
     {
         <div class="d-flex flex-wrap gap-4 mt-3">
-            @foreach (var entry in tiles)
+            @foreach (var tile in Model.Tiles)
             {
-                <a asp-controller="@entry.Value.Controller"
-                   asp-action="@entry.Value.Action"
+                <a asp-controller="@tile.Controller"
+                   asp-action="@tile.Action"
                    class="quick-tile text-decoration-none">
                     <div class="icon-wrap">
-                        <i class="bi @entry.Value.Icon"></i>
+                        <i class="bi @tile.Icon"></i>
                     </div>
-                    <div class="fw-semibold mt-3 text-dark">@entry.Value.DisplayName</div>
+                    <div class="fw-semibold mt-3 text-dark">@tile.DisplayName</div>
                 </a>
             }
-            @if (showPromptInstelling)
+            @if (Model.ShowPromptInstelling)
             {
                 <a asp-controller="PromptInstelling" asp-action="Edit" class="quick-tile text-decoration-none">
                     <div class="icon-wrap">
@@ -136,4 +104,3 @@ else
         </div>
     }
 }
-

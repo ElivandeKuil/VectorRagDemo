@@ -23,5 +23,13 @@ namespace VectorRagDemo.Models.ViewModels
         // Sorting
         public string SortBy { get; set; } = "GemaaktOp";
         public string SortOrder { get; set; } = "desc";
+
+        // Computed stats (used on the index page summary cards)
+        public int SuccessCount => Logs.Count(l => l.ResponseStatus >= 200 && l.ResponseStatus < 300);
+        public int SuccessRate => Logs.Any() ? (int)((double)SuccessCount / Logs.Count * 100) : 0;
+        public double AverageDurationMs => Logs.Any(l => l.DurationMs.HasValue)
+            ? Logs.Where(l => l.DurationMs.HasValue).Average(l => l.DurationMs!.Value)
+            : 0;
+        public int ErrorCount => Logs.Count(l => !string.IsNullOrEmpty(l.ErrorMessage));
     }
 }

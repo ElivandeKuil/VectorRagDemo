@@ -1,0 +1,174 @@
+@model string
+@{
+    Layout = null;
+    var key = Model ?? string.Empty;
+}
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Uw website</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            min-height: 100vh;
+        }
+
+        /* ── Site header ─────────────────────────────────────────── */
+        .site-header {
+            background: #1e3a5f;
+            color: white;
+            padding: 0 32px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            flex-shrink: 0;
+        }
+        .site-logo {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+        }
+        .site-nav {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            opacity: 0.75;
+        }
+        .site-nav span { cursor: default; }
+
+        /* ── Hero ────────────────────────────────────────────────── */
+        .hero {
+            background: linear-gradient(135deg, #eef2ff 0%, #e8f5e9 100%);
+            padding: 36px 32px 32px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin-bottom: 10px;
+        }
+        .hero p {
+            font-size: 14px;
+            color: #6c757d;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ── Content ─────────────────────────────────────────────── */
+        .content {
+            max-width: 760px;
+            margin: 28px auto;
+            padding: 0 24px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 18px;
+            border: 1px solid #e9ecef;
+        }
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(30, 58, 95, 0.12);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .card-title  { height: 12px; width: 55%; background: #ced4da; border-radius: 4px; margin-bottom: 8px; }
+        .card-line   { height: 10px; background: #e9ecef; border-radius: 4px; margin-bottom: 6px; }
+
+        .content-block { margin-bottom: 24px; }
+        .content-block h2 { font-size: 17px; font-weight: 600; color: #1e3a5f; margin-bottom: 10px; }
+        .ph-lines { display: flex; flex-direction: column; gap: 7px; }
+        .ph { height: 11px; background: #e9ecef; border-radius: 4px; }
+        .w-100 { width: 100%; }
+        .w-90  { width: 90%;  }
+        .w-85  { width: 85%;  }
+        .w-80  { width: 80%;  }
+        .w-75  { width: 75%;  }
+        .w-70  { width: 70%;  }
+        .w-60  { width: 60%;  }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="site-logo">MijnBedrijf</div>
+        <nav class="site-nav">
+            <span>Producten</span>
+            <span>Over ons</span>
+            <span>Contact</span>
+        </nav>
+    </header>
+
+    <div class="hero">
+        <h1>Welkom op onze website</h1>
+        <p>Dit is een voorbeeld van hoe de chatbot eruitziet voor uw bezoekers. Klik op de knop rechtsonder om een gesprek te starten.</p>
+    </div>
+
+    <div class="content">
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-icon"></div>
+                <div class="card-title"></div>
+                <div class="card-line w-100"></div>
+                <div class="card-line w-90"></div>
+                <div class="card-line w-70"></div>
+            </div>
+            <div class="card">
+                <div class="card-icon"></div>
+                <div class="card-title"></div>
+                <div class="card-line w-100"></div>
+                <div class="card-line w-85"></div>
+                <div class="card-line w-60"></div>
+            </div>
+            <div class="card">
+                <div class="card-icon"></div>
+                <div class="card-title"></div>
+                <div class="card-line w-100"></div>
+                <div class="card-line w-80"></div>
+                <div class="card-line w-75"></div>
+            </div>
+        </div>
+
+        <div class="content-block">
+            <h2>Over ons</h2>
+            <div class="ph-lines">
+                <div class="ph w-100"></div>
+                <div class="ph w-90"></div>
+                <div class="ph w-80"></div>
+                <div class="ph w-100"></div>
+                <div class="ph w-70"></div>
+            </div>
+        </div>
+
+        <div class="content-block">
+            <h2>Onze diensten</h2>
+            <div class="ph-lines">
+                <div class="ph w-100"></div>
+                <div class="ph w-85"></div>
+                <div class="ph w-90"></div>
+                <div class="ph w-60"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/widget-loader.js" data-key="@key"></script>
+</body>
+</html>

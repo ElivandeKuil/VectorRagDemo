@@ -88,13 +88,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">Success Rate</h5>
-                <p class="card-text display-6">
-                    @{
-                        var successCount = Model.Logs.Count(l => l.ResponseStatus >= 200 && l.ResponseStatus < 300);
-                        var successRate = Model.Logs.Any() ? (int)((double)successCount / Model.Logs.Count * 100) : 0;
-                    }
-                    @successRate%
-                </p>
+                <p class="card-text display-6">@Model.SuccessRate%</p>
             </div>
         </div>
     </div>
@@ -102,14 +96,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">Avg Duration</h5>
-                <p class="card-text display-6">
-                    @{
-                        var avgDuration = Model.Logs.Any() && Model.Logs.Any(l => l.DurationMs.HasValue)
-                            ? Model.Logs.Where(l => l.DurationMs.HasValue).Average(l => l.DurationMs.Value)
-                            : 0;
-                    }
-                    @avgDuration.ToString("F0")ms
-                </p>
+                <p class="card-text display-6">@Model.AverageDurationMs.ToString("F0")ms</p>
             </div>
         </div>
     </div>
@@ -117,9 +104,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">Errors</h5>
-                <p class="card-text display-6 text-danger">
-                    @Model.Logs.Count(l => !string.IsNullOrEmpty(l.ErrorMessage))
-                </p>
+                <p class="card-text display-6 text-danger">@Model.ErrorCount</p>
             </div>
         </div>
     </div>

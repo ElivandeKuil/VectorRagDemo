@@ -1,17 +1,13 @@
+@model VectorRagDemo.Models.ViewModels.ToestemmingViewModel
 @using VectorRagDemo.BLL
-@using VectorRagDemo.Models.Entities
 @{
     ViewData["Title"] = "Privacyverklaring &amp; toestemming";
-    bool hasActiveConsent = ViewBag.HasActiveConsent ?? false;
-    bool consentRequired = User.HasClaim("ConsentRequired", "true");
-    var history = ViewBag.ConsentHistory as List<Toestemming> ?? new List<Toestemming>();
-    string? returnUrl = ViewData["ReturnUrl"]?.ToString();
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
 
-        @if (consentRequired)
+        @if (Model.ConsentRequired)
         {
             <div class="alert alert-warning d-flex align-items-center gap-2 mb-4" role="alert">
                 <i class="bi bi-shield-exclamation fs-5 flex-shrink-0"></i>
@@ -22,7 +18,7 @@
         @await Html.PartialAsync("_PrivacyVerklaringInhoud")
 
         @* ── Toestemming geven of weigeren ─────────────────────────────── *@
-        @if (consentRequired)
+        @if (Model.ConsentRequired)
         {
             <div class="card shadow-sm border-warning mb-4">
                 <div class="card-body">
@@ -30,7 +26,7 @@
                         Gaat u akkoord met de hierboven beschreven verwerking van uw persoonsgegevens?
                     </p>
                     <div class="d-flex gap-3">
-                        <form asp-action="ToestemmingAkkoord" asp-route-returnUrl="@returnUrl" method="post">
+                        <form asp-action="ToestemmingAkkoord" asp-route-returnUrl="@Model.ReturnUrl" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit" btn-variant="success" btn-icon="check-circle">Ja, ik ga akkoord</button>
                         </form>
@@ -53,7 +49,7 @@
                     <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Mijn toestemming</h5>
                 </div>
                 <div class="card-body">
-                    @if (hasActiveConsent)
+                    @if (Model.HasActiveConsent)
                     {
                         <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
                             <i class="bi bi-check-circle-fill"></i>
@@ -75,7 +71,7 @@
                 </div>
             </div>
 
-            @if (history.Count > 0)
+            @if (Model.History.Count > 0)
             {
                 <div class="card shadow-sm mb-4">
                     <div class="card-header">
@@ -92,7 +88,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var t in history)
+                                @foreach (var t in Model.History)
                                 {
                                     <tr>
                                         <td><span class="badge bg-secondary">@t.Versie</span></td>

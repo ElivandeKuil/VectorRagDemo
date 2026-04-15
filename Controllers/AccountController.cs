@@ -117,13 +117,15 @@ namespace VectorRagDemo.Controllers
         [HttpGet]
         public async Task<IActionResult> Toestemming(string? returnUrl = null)
         {
-            ViewData["ReturnUrl"] = returnUrl;
-
-            // Gebruiker die al toestemming heeft kan de pagina bezoeken om geschiedenis te zien
             var userId = User.GetUserId();
-            ViewBag.ConsentHistory = await _consentService.GetConsentHistoryAsync(userId);
-            ViewBag.HasActiveConsent = await _consentService.HasActiveConsentAsync(userId);
-            return View();
+            var vm = new ToestemmingViewModel
+            {
+                HasActiveConsent = await _consentService.HasActiveConsentAsync(userId),
+                ConsentRequired  = User.HasClaim("ConsentRequired", "true"),
+                History          = await _consentService.GetConsentHistoryAsync(userId),
+                ReturnUrl        = returnUrl
+            };
+            return View(vm);
         }
 
         [Authorize]

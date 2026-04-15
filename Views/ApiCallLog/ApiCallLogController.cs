@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VectorRagDemo.DAL;
 using VectorRagDemo.Models.ViewModels;
+using VectorRagDemo.Models.Entities;
 
 namespace VectorRagDemo.Views.ApiCallLog
 {
@@ -96,12 +97,9 @@ namespace VectorRagDemo.Views.ApiCallLog
             var log = await _logboekContext.ApiCallLogs
                 .FirstOrDefaultAsync(l => l.ID == id);
 
-            if (log == null)
-            {
-                return NotFound();
-            }
+            if (log == null) return NotFound();
 
-            return View(log);
+            return View(new ApiCallLogDetailViewModel { Log = log });
         }
 
         [HttpPost]

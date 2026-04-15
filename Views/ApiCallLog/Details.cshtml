@@ -1,4 +1,4 @@
-@model VectorRagDemo.Models.Entities.ApiCallLog
+@model VectorRagDemo.Models.ViewModels.ApiCallLogDetailViewModel
 
 @{
     ViewData["Title"] = "API Call Details";
@@ -18,27 +18,27 @@
             <div class="card-body">
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>ID:</strong></div>
-                    <div class="col-md-9">@Model.ID</div>
+                    <div class="col-md-9">@Model.Log.ID</div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>Timestamp:</strong></div>
-                    <div class="col-md-9">@Model.GemaaktOp.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                    <div class="col-md-9">@Model.Log.GemaaktOp.ToString("yyyy-MM-dd HH:mm:ss")</div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>Method:</strong></div>
-                    <div class="col-md-9"><span class="badge bg-secondary">@Model.RequestMethod</span></div>
+                    <div class="col-md-9"><span class="badge bg-secondary">@Model.Log.RequestMethod</span></div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>Request URI:</strong></div>
-                    <div class="col-md-9"><code style="word-break: break-all;">@Model.RequestUri</code></div>
+                    <div class="col-md-9"><code style="word-break: break-all;">@Model.Log.RequestUri</code></div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>Client IP:</strong></div>
-                    <div class="col-md-9">@(Model.ClientIP ?? "N/A")</div>
+                    <div class="col-md-9">@(Model.Log.ClientIP ?? "N/A")</div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>Correlation ID:</strong></div>
-                    <div class="col-md-9">@(Model.CorrelationId?.ToString() ?? "N/A")</div>
+                    <div class="col-md-9">@(Model.Log.CorrelationId?.ToString() ?? "N/A")</div>
                 </div>
             </div>
         </div>
@@ -51,22 +51,15 @@
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>Status Code:</strong></div>
                     <div class="col-md-9">
-                        <span class="badge @(Model.ResponseStatus >= 200 && Model.ResponseStatus < 300 ? "bg-success" :
-                                            Model.ResponseStatus >= 300 && Model.ResponseStatus < 400 ? "bg-warning" :
-                                            Model.ResponseStatus >= 400 ? "bg-danger" : "bg-secondary")">
-                            @Model.ResponseStatus
-                        </span>
+                        <span class="badge @Model.StatusBadgeClass">@Model.Log.ResponseStatus</span>
                     </div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-3"><strong>Duration:</strong></div>
                     <div class="col-md-9">
-                        @if (Model.DurationMs.HasValue)
+                        @if (Model.DurationBadgeClass != null)
                         {
-                            <span class="badge @(Model.DurationMs.Value < 1000 ? "bg-success" :
-                                               Model.DurationMs.Value < 3000 ? "bg-warning" : "bg-danger")">
-                                @Model.DurationMs.Value ms
-                            </span>
+                            <span class="badge @Model.DurationBadgeClass">@Model.Log.DurationMs ms</span>
                         }
                         else
                         {
@@ -74,13 +67,13 @@
                         }
                     </div>
                 </div>
-                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                @if (!string.IsNullOrEmpty(Model.Log.ErrorMessage))
                 {
                     <div class="row mb-2">
                         <div class="col-md-3"><strong>Error:</strong></div>
                         <div class="col-md-9">
                             <div class="alert alert-danger" role="alert">
-                                @Model.ErrorMessage
+                                @Model.Log.ErrorMessage
                             </div>
                         </div>
                     </div>
@@ -93,9 +86,9 @@
                 <h5>Request Headers</h5>
             </div>
             <div class="card-body">
-                @if (!string.IsNullOrEmpty(Model.RequestHeaders))
+                @if (!string.IsNullOrEmpty(Model.Log.RequestHeaders))
                 {
-                    <pre class="bg-light p-3 mb-0" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.82rem;">@Model.RequestHeaders</pre>
+                    <pre class="bg-light p-3 mb-0" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.82rem;">@Model.Log.RequestHeaders</pre>
                 }
                 else
                 {
@@ -109,9 +102,9 @@
                 <h5>Request Content</h5>
             </div>
             <div class="card-body p-0">
-                @if (!string.IsNullOrEmpty(Model.RequestContent))
+                @if (!string.IsNullOrEmpty(Model.Log.RequestContent))
                 {
-                    <pre class="log-content-block" data-prettify="true">@Model.RequestContent</pre>
+                    <pre class="log-content-block" data-prettify="true">@Model.Log.RequestContent</pre>
                 }
                 else
                 {
@@ -125,9 +118,9 @@
                 <h5>Response Headers</h5>
             </div>
             <div class="card-body">
-                @if (!string.IsNullOrEmpty(Model.ResponseHeaders))
+                @if (!string.IsNullOrEmpty(Model.Log.ResponseHeaders))
                 {
-                    <pre class="bg-light p-3 mb-0" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.82rem;">@Model.ResponseHeaders</pre>
+                    <pre class="bg-light p-3 mb-0" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.82rem;">@Model.Log.ResponseHeaders</pre>
                 }
                 else
                 {
@@ -141,9 +134,9 @@
                 <h5>Response Content</h5>
             </div>
             <div class="card-body p-0">
-                @if (!string.IsNullOrEmpty(Model.ResponseContent))
+                @if (!string.IsNullOrEmpty(Model.Log.ResponseContent))
                 {
-                    <pre class="log-content-block" data-prettify="true">@Model.ResponseContent</pre>
+                    <pre class="log-content-block" data-prettify="true">@Model.Log.ResponseContent</pre>
                 }
                 else
                 {
