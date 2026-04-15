@@ -157,90 +157,128 @@
     flex-shrink: 0;
 }
 
-/* Escalation bubble — rendered as a sibling .message.assistant after the main reply */
-.escalation-bubble {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 14px !important;
-    background: #f5fbff !important;
-    border: 1px solid rgba(13, 110, 253, 0.12) !important;
-    margin-top: 4px !important;
+/* Escalation bar — slides out above the input field when the bot suggests human contact */
+.escalation-bar {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+
+    &.is-visible {
+        max-height: 56px;
+        opacity: 1;
+    }
+
+    &.is-visible.is-collapsed {
+        max-height: 30px;
+    }
 }
 
-.escalation-label {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: #555;
+.escalation-bar-inner {
     display: flex;
     align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 8px 12px;
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.07);
+    transition: padding 0.25s ease;
 
-    i { font-size: 0.85rem; color: #888; }
+    .is-collapsed & {
+        padding: 4px 12px;
+    }
 }
 
-.escalation-btns {
+.escalation-bar-actions {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    flex-wrap: nowrap;
     gap: 6px;
+    opacity: 1;
+    transition: opacity 0.15s ease;
+
+    .is-collapsed & {
+        opacity: 0;
+        pointer-events: none;
+        // collapse width so the toggle centres correctly
+        max-width: 0;
+        overflow: hidden;
+        gap: 0;
+    }
 }
 
-// Shared base for both CTA buttons
-%cta-btn-base {
+.escalation-bar-toggle {
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    color: #bbb;
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover {
+        color: #777;
+        background: rgba(0, 0, 0, 0.05);
+    }
+}
+
+.escalation-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 16px 6px 12px;
-    border-radius: 24px;
+    gap: 5px;
+    padding: 4px 11px 4px 8px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
     text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
-    transition: background-color 0.2s ease, transform 0.15s ease;
+    border: 1.5px solid;
+    white-space: nowrap;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.15s, box-shadow 0.15s;
+
+    svg, i { flex-shrink: 0; }
 
     &:hover {
-        transform: translateY(-1px);
         text-decoration: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
-    &:active {
-        transform: translateY(0);
+    &:active { transform: scale(0.97); }
+
+    &.escalation-pill--whatsapp {
+        border-color: #25D366;
+        color: #1a8c47;
+
+        &:hover {
+            background: rgba(37, 211, 102, 0.08);
+            color: #158a3e;
+        }
     }
-}
 
-.whatsapp-cta-btn {
-    @extend %cta-btn-base;
-    background-color: #25D366;
-    color: #ffffff;
-    box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
+    &.escalation-pill--email {
+        border-color: #4a90d9;
+        color: #2563eb;
 
-    &:hover {
-        background-color: #1da851;
-        color: #ffffff;
-        box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4);
-    }
-}
-
-.email-cta-btn {
-    @extend %cta-btn-base;
-    background-color: #0d6efd;
-    color: #ffffff;
-    box-shadow: 0 2px 6px rgba(13, 110, 253, 0.25);
-
-    &:hover {
-        background-color: #0b5ed7;
-        color: #ffffff;
-        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.35);
+        &:hover {
+            background: rgba(37, 99, 235, 0.07);
+            color: #1d4ed8;
+        }
     }
 }
 
-.cta-btn-icon {
-    width: 16px;
-    height: 16px;
+.escalation-pill-icon {
+    width: 14px;
+    height: 14px;
     flex-shrink: 0;
-    font-size: 16px;  // for <i> icon elements
-    line-height: 1;   // neutralise Bootstrap Icons' built-in vertical-align offset
+    font-size: 14px;
+    line-height: 1;
     display: block;
 }
 

@@ -17,6 +17,7 @@
     }
     .chat-messages { background: @cfg.ChatBodyBgColor !important; }
     .chat-input-container { background: @cfg.InputAreaBgColor !important; }
+    .escalation-bar-inner { background: @cfg.InputAreaBgColor !important; }
     .chat-input-container .btn-primary {
         background-color: @cfg.SendButtonColor !important;
         border-color: @cfg.SendButtonColor !important;
@@ -64,6 +65,16 @@
                     <span class="dot"></span>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="escalation-bar" class="escalation-bar" role="region" aria-label="Contact opties" aria-hidden="true">
+        <div class="escalation-bar-inner">
+            <div class="escalation-bar-actions" id="escalation-bar-actions"></div>
+            <button type="button" class="escalation-bar-toggle" id="escalation-bar-toggle"
+                    onclick="toggleEscalationBar()" aria-label="Contact opties inklappen">
+                <i class="bi bi-chevron-down"></i>
+            </button>
         </div>
     </div>
 
