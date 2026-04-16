@@ -26,6 +26,11 @@
     <div class="col-lg-7">
         <div class="card shadow-sm">
             <div class="card-body p-4">
+                <div id="chunk-form-data"
+                     data-koppeling-per-project="@(Json.Serialize(ViewBag.KoppelingPerProject ?? new object()).ToString())"
+                     data-initial-project-id="@(singleProject?.ID.ToString() ?? "")"
+                     data-initial-folder-data="@(Json.Serialize(ViewBag.FolderData ?? new object[0]).ToString())"
+                     style="display:none;"></div>
                 <form method="post" enctype="multipart/form-data" asp-action="Upload" id="uploadForm">
                     @Html.AntiForgeryToken()
 
@@ -99,56 +104,5 @@
 </div>
 
 @section Scripts {
-    <script>
-        const koppelingPerProject = @Html.Raw(Json.Serialize(ViewBag.KoppelingPerProject ?? new object()));
-
-        function updateLinkFieldVisibility(projectId) {
-            const enabled = koppelingPerProject[projectId] === true;
-            document.getElementById('linkField').style.display = enabled ? '' : 'none';
-        }
-
-        const initialProjectId = @(singleProject?.ID.ToString() ?? "null");
-        if (initialProjectId !== null) {
-            updateLinkFieldVisibility(initialProjectId);
-        }
-
-        const initialFolderData = @Html.Raw(Json.Serialize(ViewBag.FolderData ?? new object[0]));
-
-        function buildFolderOptions(folderData, select, parentId, depth) {
-            parentId = parentId ?? null;
-            depth = depth ?? 0;
-            const children = folderData
-                .filter(f => f.parentId === parentId)
-                .sort((a, b) => a.naam.localeCompare(b.naam, 'nl'));
-            for (const f of children) {
-                const opt = document.createElement('option');
-                opt.value = f.id;
-                opt.textContent = '\u00a0\u00a0'.repeat(depth * 2) + (depth > 0 ? '└ ' : '') + f.naam;
-                select.appendChild(opt);
-                buildFolderOptions(folderData, select, f.id, depth + 1);
-            }
-        }
-
-        buildFolderOptions(initialFolderData, document.getElementById('folderId'));
-
-        const projectSelect = document.getElementById('projectId');
-        if (projectSelect) {
-            updateLinkFieldVisibility(parseInt(projectSelect.value));
-            projectSelect.addEventListener('change', async function () {
-                updateLinkFieldVisibility(parseInt(this.value));
-                const sel = document.getElementById('folderId');
-                sel.innerHTML = '<option value="">— Geen map —</option>';
-                if (!this.value) return;
-                const resp = await fetch('/Chunk/GetFolders?projectId=' + this.value);
-                const folders = await resp.json();
-                buildFolderOptions(folders, sel);
-            });
-        }
-
-        document.getElementById('uploadForm').addEventListener('submit', function () {
-            document.getElementById('btnNormal').classList.add('d-none');
-            document.getElementById('btnSpinner').classList.remove('d-none');
-            document.getElementById('submitBtn').disabled = true;
-        });
-    </script>
+    <script src="~/js/chunk-upload.js"></script>
 }

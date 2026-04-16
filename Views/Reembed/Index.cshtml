@@ -31,7 +31,11 @@
 
 @if (!done)
 {
-    <button id="btn-start" class="btn btn-primary" onclick="startReembed()">
+    <div id="reembed-data"
+     data-process-batch-url="@Url.Action("ProcessBatch", "Reembed")"
+     data-project-id="@(projectId.HasValue ? projectId.Value.ToString() : "")"
+     style="display:none;"></div>
+<button id="btn-start" class="btn btn-primary" onclick="startReembed()">
         Start re-embedding
     </button>
     <span id="status-msg" class="ms-3 text-muted"></span>
@@ -41,51 +45,5 @@ else
     <div class="alert alert-success">Alle chunks zijn embedded. ✓</div>
 }
 
-<script>
-    let running = false;
-
-    async function startReembed() {
-        if (running) return;
-        running = true;
-        document.getElementById('btn-start').disabled = true;
-        document.getElementById('status-msg').textContent = 'Bezig…';
-        processBatch();
-    }
-
-    async function processBatch() {
-        try {
-            const body = new URLSearchParams({ batchSize: 50 @(projectId.HasValue ? $", projectId: {projectId}" : "") });
-            const resp = await fetch('@Url.Action("ProcessBatch", "Reembed")', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded',
-                           'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' },
-                body: body
-            });
-
-            const data = await resp.json();
-            if (data.error) {
-                document.getElementById('status-msg').textContent = 'Fout: ' + data.error;
-                document.getElementById('btn-start').disabled = false;
-                running = false;
-                return;
-            }
-
-            const pct = data.total > 0 ? Math.round(data.processed * 100 / data.total) : 0;
-            document.getElementById('count-text').textContent = data.processed + ' / ' + data.total;
-            document.getElementById('pct').textContent = pct;
-            document.getElementById('progress-bar').style.width = pct + '%';
-
-            if (data.done) {
-                document.getElementById('status-msg').textContent = 'Klaar!';
-                document.getElementById('btn-start').textContent = 'Klaar ✓';
-            } else {
-                setTimeout(processBatch, 200);
-            }
-        } catch (e) {
-            document.getElementById('status-msg').textContent = 'Netwerkfout: ' + e.message;
-            document.getElementById('btn-start').disabled = false;
-            running = false;
-        }
-    }
-</script>
+<script src="~/js/reembed.js"></script>
 @Html.AntiForgeryToken()
