@@ -71,23 +71,33 @@ namespace VectorRagDemo.BLL.Processors
         /// </summary>
         private Prompt InjectExtraContext(Prompt prompt, bool hasCommunicationEscalation)
         {
-            if (hasCommunicationEscalation)
+            if (!hasCommunicationEscalation)
+                return prompt;
+
+            string extraContext = @"<CONTEXT_INJECTION>A previous step in the pipeline has detected a lead or blockade and has therefore
+determined an escalation to human communication channels. This means that there will be one or more buttons underneath your response which the
+user can click to go straight to a human communication channel. Adjust your response accordingly to this new context.</CONTEXT_INJECTION>";
+
+            // Return a detached copy so the EF-tracked entity is never mutated
+            // and the injected context is never accidentally persisted to the database.
+            return new Prompt
             {
-                string extraContext = "<CONTEXT_INJECTION>";
-
-                if (hasCommunicationEscalation)
-                {
-                    extraContext += @"A previous step in the pipeline has detected a lead or blockade and has therefore 
-determined an escalation to human communication channels. This means that there will be one or more buttons underneath your response which the 
-user can click to go straight to a human communication channel. Adjust your response accordingly to this new context.";
-                }
-                
-                extraContext += "</CONTEXT_INJECTION>";
-
-                prompt.Content += extraContext;
-            }
-
-            return prompt;
+                ID = prompt.ID,
+                Project = prompt.Project,
+                PromptType = prompt.PromptType,
+                SystemInstruction = prompt.SystemInstruction,
+                Content = prompt.Content + extraContext,
+                GemaaktOp = prompt.GemaaktOp,
+                GewijzigdOp = prompt.GewijzigdOp,
+                Status = prompt.Status,
+                ResponseSchema = prompt.ResponseSchema,
+                MaxTokens = prompt.MaxTokens,
+                Temperature = prompt.Temperature,
+                TopP = prompt.TopP,
+                TopK = prompt.TopK,
+                Model = prompt.Model,
+                Volgorde = prompt.Volgorde
+            };
         }
 
         internal static string FormatChatHistory(List<ChatMessage> chatHistory)
