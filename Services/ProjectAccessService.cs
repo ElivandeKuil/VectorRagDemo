@@ -53,6 +53,7 @@ namespace VectorRagDemo.Services
                 ["Statistieken"]          = new("Statistieken",          "Statistieken",        "Index",          "bi-bar-chart-line"),
                 ["Correcties"]            = new("Correcties",            "Correcties",          "Index",          "bi-pencil-square"),
                 ["Gesprekken"]            = new("Gesprekken",            "Conversaties",        "Index",          "bi-chat-left-text"),
+                ["Woordenboek"]           = new("Woordenboek",           "Woordenboek",         "Index",          "bi-book"),
             };
 
         public ProjectAccessService(ManagementDbContext context)

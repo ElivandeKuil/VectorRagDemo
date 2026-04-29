@@ -28,6 +28,7 @@ namespace VectorRagDemo.DAL
         public DbSet<EscalatieEvent> EscalatieEvents { get; set; }
         public DbSet<Correctie> Correcties { get; set; }
         public DbSet<Placeholder> Placeholders { get; set; }
+        public DbSet<Woordenboek> Woordenboeken { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -285,6 +286,23 @@ namespace VectorRagDemo.DAL
                 entity.Property(e => e.Kanaal).HasMaxLength(20).IsRequired();
                 entity.Property(e => e.SessionToken).HasMaxLength(100);
                 entity.Property(e => e.GemaaktOp).IsRequired();
+            });
+
+            // Woordenboek configuration
+            modelBuilder.Entity<Woordenboek>(entity =>
+            {
+                entity.ToTable("woordenboek");
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.ProjectID).IsRequired();
+                entity.Property(e => e.Woord).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Omschrijving).IsRequired();
+                entity.Property(e => e.GemaaktOp).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+
+                entity.HasOne(e => e.ProjectNavigation)
+                    .WithMany()
+                    .HasForeignKey(e => e.ProjectID)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

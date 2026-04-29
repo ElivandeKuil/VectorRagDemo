@@ -1,0 +1,54 @@
+@model VectorRagDemo.Models.ViewModels.WoordenboekAanmakenViewModel
+@{
+    ViewData["Title"] = "Nieuwe term";
+    var isAdmin = User.IsInRole("Admin");
+}
+
+@* ─── HEADER ──────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1"><i class="bi bi-book me-2 text-primary"></i>Nieuwe term toevoegen</h4>
+        <span class="text-muted small">@Model.Project.Naam</span>
+    </div>
+    <a asp-action="Index"
+       asp-route-projectId="@(isAdmin ? Model.ProjectID : 0)"
+       class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Terug
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Aanmaken" method="post">
+                    <input type="hidden" name="projectId" value="@(isAdmin ? Model.ProjectID : 0)" />
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="woord">Term</label>
+                        <input type="text" class="form-control" id="woord" name="woord"
+                               placeholder="bijv. ABC" required maxlength="200" />
+                        <div class="form-text">Het woord of de afkorting zoals het voorkomt in de tekst.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold" for="omschrijving">Omschrijving</label>
+                        <textarea class="form-control" id="omschrijving" name="omschrijving"
+                                  rows="5" required placeholder="bijv. ABC is een groep bestaande uit bedrijven X, Y en Z."></textarea>
+                        <div class="form-text">Deze omschrijving wordt aan de AI meegegeven wanneer de term in het gesprek voorkomt.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a asp-action="Index"
+                           asp-route-projectId="@(isAdmin ? Model.ProjectID : 0)"
+                           class="btn btn-outline-secondary">Annuleren</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy me-1"></i>Opslaan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

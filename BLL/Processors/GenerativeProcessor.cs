@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using VectorRagDemo.Models.Enums;
 using VectorRagDemo.DAL;
@@ -46,6 +47,7 @@ namespace VectorRagDemo.BLL.Processors
                 ?? throw new Exception($"No active prompt found for type {PromptTypeEnum.GenerateResponse}");
 
             var prompt = InjectExtraContext(basePrompt, summarisedResult.TransferToWhatsApp);
+            prompt = await InjectTaxonomyAsync(prompt, formattedNeighbors + " " + currentUserInput, projectId);
 
             var result = await generativeModelService.ExecutePipelineStep<GeminiAnswerGenerationInnerResponse, GenerativeModelResponse>(
                 basePrompt,
@@ -100,6 +102,50 @@ user can click to go straight to a human communication channel. Adjust your resp
             };
         }
 
+        /// <summary>
+        /// Scans <paramref name="searchText"/> for any words stored in the project's woordenboek.
+        /// When matches are found, appends a DICTIONARY section to a detached copy of the prompt
+        /// so the LLM knows what those terms mean. Returns the original prompt when nothing matches.
+        /// </summary>
+        private async Task<Prompt> InjectTaxonomyAsync(Prompt prompt, string searchText, int projectId)
+        {
+            var entries = await _context.Woordenboeken
+                .Where(w => w.ProjectID == projectId && w.Status == 1)
+                .ToListAsync();
+
+            if (entries.Count == 0)
+                return prompt;
+
+            var matches = entries
+                .Where(e => searchText.Contains(e.Woord, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (matches.Count == 0)
+                return prompt;
+
+            var lines = matches.Select(e => $"- {e.Woord}: {e.Omschrijving}");
+            var taxonomyBlock = "<DICTIONARY>\n" + string.Join("\n", lines) + "\n</DICTIONARY>";
+
+            return new Prompt
+            {
+                ID               = prompt.ID,
+                Project          = prompt.Project,
+                PromptType       = prompt.PromptType,
+                SystemInstruction = prompt.SystemInstruction,
+                Content          = prompt.Content + taxonomyBlock,
+                GemaaktOp        = prompt.GemaaktOp,
+                GewijzigdOp      = prompt.GewijzigdOp,
+                Status           = prompt.Status,
+                ResponseSchema   = prompt.ResponseSchema,
+                MaxTokens        = prompt.MaxTokens,
+                Temperature      = prompt.Temperature,
+                TopP             = prompt.TopP,
+                TopK             = prompt.TopK,
+                Model            = prompt.Model,
+                Volgorde         = prompt.Volgorde
+            };
+        }
+
         internal static string FormatChatHistory(List<ChatMessage> chatHistory)
         {
             return string.Join("\n", chatHistory.Select(m => $"{m.Role}: {m.Content}"));
@@ -120,8 +166,10 @@ user can click to go straight to a human communication channel. Adjust your resp
         {
             var generativeModelService = new GenerativeModelService(_context, _client, _logboekContext, projectId, correlationId);
 
-            var prompt = generativeModelService.GetPrompt(PromptTypeEnum.Sumarizing).FirstOrDefault()
+            var basePrompt = generativeModelService.GetPrompt(PromptTypeEnum.Sumarizing).FirstOrDefault()
                 ?? throw new Exception($"No active prompt found for type {PromptTypeEnum.Sumarizing}");
+
+            var prompt = await InjectTaxonomyAsync(basePrompt, formattedNeighbors + " " + currentUserInput, projectId);
 
             return await generativeModelService.ExecutePipelineStep<GeminiSummarisingInnerResponse, (string, List<int>, bool)>(
                 prompt,
@@ -151,6 +199,7 @@ user can click to go straight to a human communication channel. Adjust your resp
                 ?? throw new Exception($"No active prompt found for type {PromptTypeEnum.GenerateResponse}");
 
             var prompt = InjectExtraContext(basePrompt, transferToWhatsApp);
+            prompt = await InjectTaxonomyAsync(prompt, summarisedContent + " " + currentUserInput, projectId);
 
             await foreach (var token in generativeModelService.ExecuteStreamingStep(
                 prompt,

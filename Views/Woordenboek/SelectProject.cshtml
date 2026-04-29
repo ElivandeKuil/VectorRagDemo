@@ -1,0 +1,23 @@
+@{
+    ViewData["Title"] = "Woordenboek";
+}
+
+<div class="card shadow-sm" style="max-width:400px; margin:2rem auto;">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-book me-2"></i>Woordenboek</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">Selecteer een project om het woordenboek te bekijken.</p>
+        <form asp-action="Index" method="get">
+            <div class="mb-3">
+                @Html.DropDownList("projectId",
+                    (Microsoft.AspNetCore.Mvc.Rendering.SelectList)ViewData["AdminProjects"]!,
+                    "– Kies een project –",
+                    new { @class = "form-select" })
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-arrow-right me-1"></i>Bekijken
+            </button>
+        </form>
+    </div>
+</div>
